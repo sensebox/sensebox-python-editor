@@ -3,4 +3,4 @@ from microbit import *
 
 
 while True:
-    display.scroll('Hello from main.py!')
+    display.scroll('Hello from code.py!')

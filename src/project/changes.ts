@@ -16,7 +16,7 @@ export interface FileInput {
 
 export interface ClassifiedFileInput extends FileInput {
   /**
-   * Whether this file is a candidate to be the "main.py" script.
+   * Whether this file is a candidate to be the "code.py" script.
    */
   script: boolean;
   /**

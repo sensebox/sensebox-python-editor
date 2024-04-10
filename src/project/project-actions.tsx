@@ -18,9 +18,9 @@ import PostSaveDialog, { PostSaveChoice } from "../common/PostSaveDialog";
 import { ActionFeedback } from "../common/use-action-feedback";
 import { Dialogs } from "../common/use-dialogs";
 import {
+  ConnectOptions,
   ConnectionAction,
   ConnectionStatus,
-  ConnectOptions,
   DeviceConnection,
   EVENT_END_USB_SELECT,
   HexGenerationError,
@@ -35,9 +35,9 @@ import {
   readFileAsUint8Array,
 } from "../fs/fs-util";
 import {
+  PythonProject,
   defaultInitialProject,
   projectFilesToBase64,
-  PythonProject,
 } from "../fs/initial-project";
 import { LanguageServerClient } from "../language-server/client";
 import { Logging } from "../logging/logging";
@@ -55,21 +55,21 @@ import TransferHexDialog, {
 } from "../workbench/connect-dialogs/TransferHexDialog";
 import WebUSBDialog from "../workbench/connect-dialogs/WebUSBDialog";
 import { WorkbenchSelection } from "../workbench/use-selection";
+import ChooseMainScriptQuestion from "./ChooseMainScriptQuestion";
+import NewFileNameQuestion from "./NewFileNameQuestion";
+import ProjectNameQuestion from "./ProjectNameQuestion";
 import {
   ClassifiedFileInput,
   FileChange,
   FileInput,
   FileOperation,
 } from "./changes";
-import ChooseMainScriptQuestion from "./ChooseMainScriptQuestion";
-import NewFileNameQuestion from "./NewFileNameQuestion";
 import { DefaultedProject } from "./project-hooks";
 import {
   ensurePythonExtension,
   isPythonFile,
   validateNewFilename,
 } from "./project-utils";
-import ProjectNameQuestion from "./ProjectNameQuestion";
 
 /**
  * Distinguishes the different ways to trigger the load action.
@@ -477,7 +477,7 @@ export class ProjectActions {
       if (chosenScript && chosenScript.main === input.name) {
         return {
           ...input,
-          name: "main.py",
+          name: "code.py",
         };
       }
       return input;

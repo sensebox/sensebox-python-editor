@@ -5,11 +5,11 @@
  *
  * @jest-environment node
  */
-import { validateNewFilename } from "./project-utils";
 import { stubIntl as intl } from "../messages/testing";
+import { validateNewFilename } from "./project-utils";
 
 describe("validateNewFilename", () => {
-  const exists = (filename: string) => filename === "main.py";
+  const exists = (filename: string) => filename === "code.py";
 
   it("requires non-empty name", () => {
     expect(validateNewFilename("", exists, intl)).toEqual({
@@ -56,7 +56,7 @@ describe("validateNewFilename", () => {
     });
   });
   it("errors for file clashes", () => {
-    expect(validateNewFilename("main", exists, intl)).toEqual({
+    expect(validateNewFilename("code", exists, intl)).toEqual({
       ok: false,
       message: "file-already-exists",
     });

@@ -86,12 +86,12 @@ const unknownParts: TraceLineParts = { line: undefined, file: undefined };
  */
 export const parseTraceLine = (line: string): TraceLineParts => {
   // E.g.
-  // File "main.py", line 5, in foo
+  // File "code.py", line 5, in foo
   // File "<stdin>", line 1, in <module>
   const match = /^File [<"]([^>"]+)[">], line (\d+)/.exec(line.trim());
   if (match) {
     const file: string | undefined =
-      match[1] === "__main__" ? "main.py" : match[1];
+      match[1] === "__main__" ? "code.py" : match[1];
     let line: number | undefined;
     const number = match[2];
     if (number) {

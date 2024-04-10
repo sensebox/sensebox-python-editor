@@ -940,7 +940,7 @@
       "children": [
         {
           "type": 0,
-          "value": "main.py"
+          "value": "code.py"
         }
       ],
       "type": 8,
@@ -1002,7 +1002,7 @@
   "multiple-files-title": [
     {
       "type": 0,
-      "value": "Avís: només s'ha descarregat main.py"
+      "value": "Avís: només s'ha descarregat code.py"
     }
   ],
   "name-project": [

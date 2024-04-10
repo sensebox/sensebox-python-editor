@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: MIT
  */
 import { render, screen } from "@testing-library/react";
-import { ClassifiedFileInput, FileOperation } from "./changes";
+import { MockedFunction, vi } from "vitest";
+import { InputValidationResult } from "../common/InputDialog";
+import FixedTranslationProvider from "../messages/FixedTranslationProvider";
+import { stubIntl as intl } from "../messages/testing";
 import ChooseMainScriptQuestion, {
   summarizeChange,
 } from "./ChooseMainScriptQuestion";
+import { ClassifiedFileInput, FileOperation } from "./changes";
 import { MainScriptChoice } from "./project-actions";
-import { stubIntl as intl } from "../messages/testing";
-import FixedTranslationProvider from "../messages/FixedTranslationProvider";
-import { InputValidationResult } from "../common/InputDialog";
-import { MockedFunction, vi } from "vitest";
 
 describe("ChooseMainScriptQuestion", () => {
   const data = () => Promise.resolve(new Uint8Array([0]));
@@ -24,7 +24,7 @@ describe("ChooseMainScriptQuestion", () => {
     const setValidationResult = vi.fn() as MockedFunction<
       (x: InputValidationResult) => void
     >;
-    const currentFiles = new Set(["main.py", "magic.py"]);
+    const currentFiles = new Set(["code.py", "magic.py"]);
 
     afterEach(() => {
       setValidationResult.mockClear();
@@ -50,13 +50,13 @@ describe("ChooseMainScriptQuestion", () => {
       );
     };
 
-    it("main.py replacement", async () => {
+    it("code.py replacement", async () => {
       const inputs: ClassifiedFileInput[] = [
         {
           data,
           module: false,
           script: true,
-          name: "main.py",
+          name: "code.py",
         },
       ];
       renderComponent(inputs, "samplefile.py");
@@ -64,12 +64,12 @@ describe("ChooseMainScriptQuestion", () => {
         (x) => x.textContent
       );
 
-      expect(items).toEqual(["Replace main code with main.py"]);
+      expect(items).toEqual(["Replace main code with code.py"]);
       // We don't use a list for simple cases.
       expect(screen.queryAllByRole("listitem")).toEqual([]);
     });
 
-    it("two options for main.py case", async () => {
+    it("two options for code.py case", async () => {
       const inputs: ClassifiedFileInput[] = [
         {
           data,
@@ -105,7 +105,7 @@ describe("ChooseMainScriptQuestion", () => {
           script: true,
           data,
           source: "somefile.py",
-          target: "main.py",
+          target: "code.py",
         })
       ).toEqual("choose-main-source-replace-main-code");
     });

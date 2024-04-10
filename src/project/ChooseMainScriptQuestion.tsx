@@ -76,7 +76,7 @@ const findProposedChanges = (
   main: string | undefined
 ): ProposedChange[] => {
   return inputs.map((f) => {
-    const target = f.name === main ? "main.py" : f.name;
+    const target = f.name === main ? "code.py" : f.name;
     return {
       source: f.name,
       data: f.data,

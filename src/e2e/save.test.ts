@@ -5,8 +5,8 @@
  */
 import { expect } from "@playwright/test";
 import fs from "fs";
-import { LoadDialogType } from "./app.js";
 import { test } from "./app-test-fixtures.js";
+import { LoadDialogType } from "./app.js";
 
 test.describe("save", () => {
   test("Download - save the default HEX asd", async ({ app }) => {
@@ -56,7 +56,7 @@ test.describe("save", () => {
     await app.expectDialog("Project saved");
   });
 
-  test("Shows the multiple files dialog after main.py save if there are multiple files in the project", async ({
+  test("Shows the multiple files dialog after code.py save if there are multiple files in the project", async ({
     app,
   }) => {
     await app.setProjectName("not default name");
@@ -64,6 +64,6 @@ test.describe("save", () => {
       acceptDialog: LoadDialogType.CONFIRM,
     });
     await app.savePythonScript();
-    await app.expectDialog("Warning: Only main.py downloaded");
+    await app.expectDialog("Warning: Only code.py downloaded");
   });
 });

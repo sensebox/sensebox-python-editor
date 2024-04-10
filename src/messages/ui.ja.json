@@ -970,7 +970,7 @@
       "children": [
         {
           "type": 0,
-          "value": "main.py"
+          "value": "code.py"
         }
       ],
       "type": 8,
@@ -1028,7 +1028,7 @@
   "multiple-files-title": [
     {
       "type": 0,
-      "value": "注意: main.pyのみダウンロードされました"
+      "value": "注意: code.pyのみダウンロードされました"
     }
   ],
   "name-project": [

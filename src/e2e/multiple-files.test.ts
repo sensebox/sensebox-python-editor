@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 import { expect } from "@playwright/test";
-import { LoadDialogType } from "./app.js";
 import { test } from "./app-test-fixtures.js";
+import { LoadDialogType } from "./app.js";
 
 test.describe("multiple-files", () => {
   test("Copes with hex with no Python files", async ({ app }) => {
@@ -22,11 +22,11 @@ test.describe("multiple-files", () => {
     await app.createNewFile("test");
 
     await app.expectEditorContainText(/Your new file/);
-    await app.expectProjectFiles(["main.py", "test.py"]);
+    await app.expectProjectFiles(["code.py", "test.py"]);
   });
 
-  test("Prevents deleting main.py", async ({ app }) => {
-    expect(await app.isDeleteFileOptionDisabled("main.py")).toEqual(true);
+  test("Prevents deleting code.py", async ({ app }) => {
+    expect(await app.isDeleteFileOptionDisabled("code.py")).toEqual(true);
   });
 
   test("Copes with non-main file being updated", async ({ app }) => {
@@ -72,7 +72,7 @@ test.describe("multiple-files", () => {
     await app.expectEditorContainText(/Hello/);
   });
 
-  test("Muddles through if given non-UTF-8 main.py", async ({ app }) => {
+  test("Muddles through if given non-UTF-8 code.py", async ({ app }) => {
     // We could start detect this on open but not sure it's worth it introducting the error cases.
     // If we need to recreate the hex then just fill the file with 0xff.
     await app.loadFiles("testData/invalid-utf-8.hex");

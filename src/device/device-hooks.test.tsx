@@ -17,45 +17,45 @@ Misc output
 >>> Other stuff
 Not a traceback
 Traceback (most recent call last):
-  File "main.py", line 7, in <module>
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
-  File "main.py", line 5, in foo
+  File "code.py", line 7, in <module>
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
+  File "code.py", line 5, in foo
 RuntimeError: maximum recursion depth exceeded
 
 >>> Other stuff
@@ -64,21 +64,21 @@ RuntimeError: maximum recursion depth exceeded
     expect(traceback.error).toEqual(
       "RuntimeError: maximum recursion depth exceeded"
     );
-    expect(traceback.trace[0]).toEqual('File "main.py", line 7, in <module>');
+    expect(traceback.trace[0]).toEqual('File "code.py", line 7, in <module>');
     expect(traceback.trace[traceback.trace.length - 1]).toEqual(
-      'File "main.py", line 5, in foo'
+      'File "code.py", line 5, in foo'
     );
     expect(traceback.line).toEqual(5);
-    expect(traceback.file).toEqual("main.py");
+    expect(traceback.file).toEqual("code.py");
   });
   it("finds the last one", () => {
     const tsb = new TracebackScrollback();
     const traceback = tsb.push(
       toCrLf(`Traceback (most recent call last):
-  File "main.py", line 5, in foo
+  File "code.py", line 5, in foo
 RuntimeError: 1
 Traceback (most recent call last):
-  File "main.py", line 5, in foo
+  File "code.py", line 5, in foo
 RuntimeError: 2
 `)
     )!;
@@ -91,7 +91,7 @@ RuntimeError: 2
       toCrLf(`>>> bar()
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
-  File "main.py", line 5, in bar
+  File "code.py", line 5, in bar
 ValueError: Wow!`)
     );
 
@@ -102,7 +102,7 @@ ValueError: Wow!`)
     const tsb = new TracebackScrollback();
     const traceback = tsb.push(
       toCrLf(`Traceback (most recent call last):
-  File "main.py", line 10, in <module>
+  File "code.py", line 10, in <module>
 KeyboardInterrupt:`)
     );
 
@@ -113,7 +113,7 @@ KeyboardInterrupt:`)
     const tsb = new TracebackScrollback();
     const traceback = tsb.push(
       toCrLf(`Traceback (most recent call last):
-  File "main.py", line 10, in <module>
+  File "code.py", line 10, in <module>
   File "foo.py", line 11, in <module>
   File "bar.py", line 12, in <module>
 InsufficientCaffine:`)
@@ -128,7 +128,7 @@ InsufficientCaffine:`)
     let traceback;
     traceback = tsb.push(
       toCrLf(`Traceback (most recent call last):
-  File "main.py", line 10, in <module>
+  File "code.py", line 10, in <module>
 SomeError:
 `)
     )!;
@@ -145,14 +145,14 @@ SomeError:
   File "__main__", line 6, in <module>
 NameError: name 'foo' is not defined`)
     )!;
-    expect(tracebackV1.file).toBe("main.py");
+    expect(tracebackV1.file).toBe("code.py");
 
-    // Entry/main file is main.py for V2 boards
+    // Entry/main file is code.py for V2 boards
     const tracebackV2 = tsb.push(
       toCrLf(`Traceback (most recent call last):
-  File "main.py", line 6, in <module>
+  File "code.py", line 6, in <module>
 NameError: name 'foo' is not defined`)
     )!;
-    expect(tracebackV2.file).toBe("main.py");
+    expect(tracebackV2.file).toBe("code.py");
   });
 });

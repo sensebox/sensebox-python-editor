@@ -10,6 +10,7 @@ import * as fs from "fs";
 import * as fsp from "fs/promises";
 import { NullLogging } from "../deployment/default/logging";
 import { BoardId } from "../device/board-id";
+import { MicroPythonSource } from "../micropython/micropython";
 import {
   diff,
   EVENT_PROJECT_UPDATED,
@@ -21,7 +22,6 @@ import {
 } from "./fs";
 import { DefaultHost } from "./host";
 import { defaultInitialProject } from "./initial-project";
-import { MicroPythonSource } from "../micropython/micropython";
 
 const hexes = Promise.all([
   fs.readFileSync("src/micropython/microbit-micropython-v1.hex", {
@@ -260,18 +260,18 @@ describe("fs - diff", () => {
   const main1: Project = {
     name: "foo",
     id: "asdf",
-    files: [{ name: "main.py", version: 1 }],
+    files: [{ name: "code.py", version: 1 }],
   };
   const main2: Project = {
     name: "foo",
     id: "asdf",
-    files: [{ name: "main.py", version: 2 }],
+    files: [{ name: "code.py", version: 2 }],
   };
   const other: Project = {
     name: "foo",
     id: "asdf",
     files: [
-      { name: "main.py", version: 1 },
+      { name: "code.py", version: 1 },
       { name: "other.py", version: 1 },
     ],
   };
@@ -280,15 +280,15 @@ describe("fs - diff", () => {
   });
   it("detects create", () => {
     // We're empty on start-up
-    expect(diff(empty, main1)).toEqual([{ name: "main.py", type: "create" }]);
+    expect(diff(empty, main1)).toEqual([{ name: "code.py", type: "create" }]);
     expect(diff(main1, other)).toEqual([{ name: "other.py", type: "create" }]);
   });
   it("detects delete", () => {
     expect(diff(other, main1)).toEqual([{ name: "other.py", type: "delete" }]);
   });
   it("detects edit", () => {
-    expect(diff(main1, main2)).toEqual([{ name: "main.py", type: "edit" }]);
-    expect(diff(main2, main1)).toEqual([{ name: "main.py", type: "edit" }]);
+    expect(diff(main1, main2)).toEqual([{ name: "code.py", type: "edit" }]);
+    expect(diff(main2, main1)).toEqual([{ name: "code.py", type: "edit" }]);
   });
 });
 

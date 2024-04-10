@@ -950,7 +950,7 @@
       "children": [
         {
           "type": 0,
-          "value": "main.py"
+          "value": "code.py"
         }
       ],
       "type": 8,
@@ -1012,7 +1012,7 @@
   "multiple-files-title": [
     {
       "type": 0,
-      "value": "Warning: Only main.py downloaded"
+      "value": "Warning: Only code.py downloaded"
     }
   ],
   "name-project": [

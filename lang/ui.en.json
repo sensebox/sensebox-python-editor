@@ -456,7 +456,7 @@
     "description": "Aria label for the additional actions menu to the right of the Save button"
   },
   "multiple-files-message-one": {
-    "defaultMessage": "This project contains {fileCount, plural, other {{fileCount} files}} but only <strong>main.py</strong> has been downloaded.",
+    "defaultMessage": "This project contains {fileCount, plural, other {{fileCount} files}} but only <strong>code.py</strong> has been downloaded.",
     "description": "Message in dialog shown when multiple files are available for download. Uses ICU syntax for pluralisation: https://formatjs.io/docs/core-concepts/icu-syntax/#plural-format. In practice, fileCount will always be two or more."
   },
   "multiple-files-message-two": {
@@ -464,7 +464,7 @@
     "description": "Message in dialog shown when multiple files are available for download"
   },
   "multiple-files-title": {
-    "defaultMessage": "Warning: Only main.py downloaded",
+    "defaultMessage": "Warning: Only code.py downloaded",
     "description": "Title of dialog shown when multiple files are available for download but only the main file downloaded."
   },
   "name-project": {

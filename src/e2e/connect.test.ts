@@ -3,11 +3,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { test } from "./app-test-fixtures.js";
 import { expect } from "@playwright/test";
+import { test } from "./app-test-fixtures.js";
 
 const traceback = `Traceback (most recent call last):
-  File "main.py", line 6
+  File "code.py", line 6
 SyntaxError: invalid syntax
 `; // Needs trailing newline!
 

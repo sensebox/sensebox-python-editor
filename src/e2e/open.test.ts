@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 import { expect } from "@playwright/test";
-import { LoadDialogType } from "./app.js";
 import { test } from "./app-test-fixtures.js";
+import { LoadDialogType } from "./app.js";
 
 test.describe("open", () => {
   test("Shows an alert when loading a MakeCode hex", async ({ app }) => {
@@ -22,7 +22,7 @@ test.describe("open", () => {
       acceptDialog: LoadDialogType.CONFIRM,
     });
 
-    await app.expectAlertText("Updated file main.py");
+    await app.expectAlertText("Updated file code.py");
     await app.expectProjectName("Untitled project");
   });
 
@@ -135,7 +135,7 @@ test.describe("open", () => {
     await app.typeInEditor("# Different text");
     await app.createNewFile("another");
     await app.savePythonScript();
-    await app.closeDialog("Warning: Only main.py downloaded");
+    await app.closeDialog("Warning: Only code.py downloaded");
 
     await app.loadFiles("testData/1.0.1.hex", {
       acceptDialog: LoadDialogType.REPLACE,

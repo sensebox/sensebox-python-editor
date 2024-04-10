@@ -954,7 +954,7 @@
       "children": [
         {
           "type": 0,
-          "value": "main.py"
+          "value": "code.py"
         }
       ],
       "type": 8,
@@ -1016,7 +1016,7 @@
   "multiple-files-title": [
     {
       "type": 0,
-      "value": "警告：只下载了 main.py"
+      "value": "警告：只下载了 code.py"
     }
   ],
   "name-project": [

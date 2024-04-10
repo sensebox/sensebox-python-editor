@@ -942,8 +942,7 @@
       "offset": 0,
       "options": {
         "one": {
-          "value": [
-          ]
+          "value": []
         },
         "other": {
           "value": [
@@ -970,7 +969,7 @@
       "children": [
         {
           "type": 0,
-          "value": "main.py"
+          "value": "code.py"
         }
       ],
       "type": 8,
@@ -1032,7 +1031,7 @@
   "multiple-files-title": [
     {
       "type": 0,
-      "value": "Waarschuwing: Alleen main.py gedownload"
+      "value": "Waarschuwing: Alleen code.py gedownload"
     }
   ],
   "name-project": [

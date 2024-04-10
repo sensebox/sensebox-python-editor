@@ -962,7 +962,7 @@
       "children": [
         {
           "type": 0,
-          "value": "main.py"
+          "value": "code.py"
         }
       ],
       "type": 8,
@@ -1024,7 +1024,7 @@
   "multiple-files-title": [
     {
       "type": 0,
-      "value": "경고: main.py만 다운로드됨"
+      "value": "경고: code.py만 다운로드됨"
     }
   ],
   "name-project": [
