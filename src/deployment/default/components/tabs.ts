@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 import { StyleFunctionProps, theme } from "@chakra-ui/react";
+import colors from "../colors";
 
 const Tabs = {
   variants: {
@@ -12,13 +13,13 @@ const Tabs = {
       return {
         ...base,
         tablist: {
-          background: "black",
+          background: colors.brand[500],
         },
         tab: {
           ...base.tab,
           transition: "none",
           ml: "6px",
-          borderRadius: "32px 0 0 32px",
+          borderRadius: "8px 0 0 8px",
           _selected: {
             color: "black",
             bg: "gray.50",
