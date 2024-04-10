@@ -33,14 +33,12 @@ export const projectFilesToBase64 = (
 };
 
 export const defaultMainFileContent = `# Imports go at the top
-from microbit import *
-
+import time
 
 # Code in a 'while True:' loop repeats forever
 while True:
-    display.show(Image.HEART)
-    sleep(1000)
-    display.scroll('Hello')
+    print("Hello World")
+    time.sleep(1)
 `;
 
 export const defaultInitialProject: PythonProject = {
