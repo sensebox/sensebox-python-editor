@@ -27,9 +27,9 @@ import { useResizeObserverContentRect } from "../common/use-resize-observer";
 import { zIndexSidebarHeader } from "../common/zIndex";
 import { useDeployment } from "../deployment";
 import { topBarHeight } from "../deployment/misc";
-import { supportedSearchLanguages } from "../documentation/search/search.worker";
-import { useSearch } from "../documentation/search/search-hooks";
 import SearchDialog from "../documentation/search/SearchDialog";
+import { useSearch } from "../documentation/search/search-hooks";
+import { supportedSearchLanguages } from "../documentation/search/search.worker";
 import { useLogging } from "../logging/logging-hooks";
 import { RouterState, useRouterState } from "../router-hooks";
 import { useSettings } from "../settings/settings";
@@ -179,7 +179,7 @@ const SideBarHeader = ({
           </ModalOverlay>
         </Modal>
       )}
-      <Container variant="sidebar-header">
+      <Container variant="sidebar-header" background={"white"}>
         <Flex
           ref={ref}
           boxShadow="0px 4px 16px #00000033"

@@ -8,29 +8,30 @@ import { useMediaQuery } from "@chakra-ui/react";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import {
-  hideSidebarMediaQuery,
-  sidebarToWidthRatio,
-  simulatorToWidthRatio,
-  widthToHideSidebar,
-} from "../common/screenWidthUtils";
-import {
   SplitView,
   SplitViewDivider,
   SplitViewRemainder,
   SplitViewSized,
 } from "../common/SplitView";
 import { SizedMode } from "../common/SplitView/SplitView";
+import {
+  hideSidebarMediaQuery,
+  sidebarToWidthRatio,
+  simulatorToWidthRatio,
+  widthToHideSidebar,
+} from "../common/screenWidthUtils";
 import { ConnectionStatus } from "../device/device";
 import { useConnectionStatus } from "../device/device-hooks";
 import EditorArea from "../editor/EditorArea";
 import { MAIN_FILE } from "../fs/fs";
-import { useProject } from "../project/project-hooks";
 import ProjectActionBar from "../project/ProjectActionBar";
+import { useProject } from "../project/project-hooks";
+import ReplWindow from "../repl";
 import SerialArea from "../serial/SerialArea";
 import { useSettings } from "../settings/settings";
 import Simulator from "../simulator/Simulator";
-import Overlay from "./connect-dialogs/Overlay";
 import SideBar from "./SideBar";
+import Overlay from "./connect-dialogs/Overlay";
 import { useSelection } from "./use-selection";
 
 const minimums: [number, number] = [380, 580];
@@ -66,6 +67,7 @@ const Workbench = () => {
     () => window.innerWidth > widthToHideSidebar
   );
   const [simulatorShown, setSimulatorShown] = useState<boolean>(true);
+  const [replShown, setReplShown] = useState<boolean>(true);
   const simulatorButtonRef = useRef<HTMLButtonElement>(null);
   const [tabIndex, setTabIndex] = useState<number>(() =>
     window.innerWidth > widthToHideSidebar ? 0 : -1
@@ -96,6 +98,16 @@ const Workbench = () => {
       handleSidebarCollapse();
     }
   }, [handleSidebarCollapse]);
+  const handleReplHide = useCallback(() => {
+    setReplShown(false);
+  }, []);
+  const handleReplExpand = useCallback(() => {
+    setReplShown(true);
+    // If there's not room for the sidebar then hide it.
+    if (window.innerWidth <= widthToHideSidebar) {
+      handleSidebarCollapse();
+    }
+  }, [handleSidebarCollapse]);
   const [hideSideBarMediaQueryValue] = useMediaQuery(hideSidebarMediaQuery, {
     ssr: false,
   });
@@ -114,6 +126,8 @@ const Workbench = () => {
           onSelectedFileChanged={setSelectedFile}
           onSimulatorExpand={handleSimulatorExpand}
           simulatorShown={simulatorShown}
+          onReplExpand={handleReplExpand}
+          replShown={replShown}
           ref={simulatorButtonRef}
         />
       )}
@@ -153,10 +167,10 @@ const Workbench = () => {
           </SplitViewSized>
           <SplitViewDivider />
           <SplitViewRemainder>
-            <EditorWithSimulator
+            <EditorWithRepl
               editor={editor}
-              onSimulatorHide={handleSimulatorHide}
-              simulatorShown={simulatorShown}
+              onSimulatorHide={handleReplHide}
+              simulatorShown={replShown}
               showSimulatorButtonRef={simulatorButtonRef}
               simFocus={simFocus}
             />
@@ -211,6 +225,42 @@ const EditorWithSimulator = ({
           showSimulatorButtonRef={showSimulatorButtonRef}
           minWidth={simulatorMinimums[0]}
           simFocus={simFocus}
+        />
+      </SplitViewSized>
+    </SplitView>
+  );
+};
+
+const EditorWithRepl = ({
+  editor,
+  simulatorShown,
+  showSimulatorButtonRef,
+  onSimulatorHide,
+}: EditorWithSimulatorProps) => {
+  return (
+    <SplitView
+      direction="row"
+      minimums={simulatorMinimums}
+      height="100%"
+      mode={simulatorShown ? "open" : "collapsed"}
+      initialSize={Math.min(
+        350,
+        Math.max(
+          simulatorMinimums[0],
+          Math.floor(window.innerWidth * simulatorToWidthRatio)
+        )
+      )}
+    >
+      <SplitViewRemainder>
+        <Editor editor={editor} />
+      </SplitViewRemainder>
+      <SplitViewDivider showBoxShadow={true} />
+      <SplitViewSized>
+        <ReplWindow
+          shown={simulatorShown}
+          onReplHide={onSimulatorHide}
+          showReplButtonRef={showSimulatorButtonRef}
+          minWidth={simulatorMinimums[0]}
         />
       </SplitViewSized>
     </SplitView>

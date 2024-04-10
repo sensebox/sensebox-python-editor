@@ -12,7 +12,18 @@ const gray = {
 };
 
 const colors = {
-  brand: gray,
+  brand: {
+    "50": "#f2f9f2",
+    "100": "#cce8c9",
+    "200": "#9ed39a",
+    "300": "#63b95d",
+    "400": "#4ba744",
+    "500": "#4eaf47",
+    "600": "#357730",
+    "700": "#2b6027",
+    "800": "#245121",
+    "900": "#1a3a18",
+  },
   gray,
   code: {
     blockBorder: theme.colors.gray[400],
