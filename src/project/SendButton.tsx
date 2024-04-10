@@ -14,7 +14,13 @@ import {
   ThemeTypings,
   Tooltip,
 } from "@chakra-ui/react";
-import React, { FocusEvent, ForwardedRef, useCallback, useRef } from "react";
+import React, {
+  FocusEvent,
+  ForwardedRef,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
 import { RiUsbLine } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
 import { zIndexAboveTerminal } from "../common/zIndex";
@@ -66,6 +72,23 @@ const SendButton = React.forwardRef(
         };
       }
     }, [flashing, actions, sendButtonRef]);
+    useEffect(() => {
+      const isMac = /Mac/.test(navigator.platform);
+      const keydown = (e: KeyboardEvent) => {
+        if (
+          (e.key === "S" || e.key === "s") &&
+          (isMac ? e.metaKey : e.ctrlKey) &&
+          !e.repeat
+        ) {
+          e.preventDefault();
+          handleSendToMicrobit();
+        }
+      };
+      document.addEventListener("keydown", keydown);
+      return () => {
+        document.removeEventListener("keydown", keydown);
+      };
+    }, [handleSendToMicrobit]);
     const handleFocus = useCallback(
       (e: FocusEvent<unknown>) => {
         const inProgress = flashing.current.flashing;
