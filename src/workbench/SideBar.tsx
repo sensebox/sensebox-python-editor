@@ -34,7 +34,7 @@ import ReleaseDialogs from "./ReleaseDialogs";
 import SideBarHeader from "./SideBarHeader";
 import SideBarTab from "./SideBarTab";
 
-export const cornerSize = 32;
+export const cornerSize = 8;
 
 export interface Pane {
   id: TabName;

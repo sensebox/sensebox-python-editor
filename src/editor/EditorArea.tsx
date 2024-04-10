@@ -6,8 +6,8 @@
 import { Box, BoxProps, Flex, useMediaQuery } from "@chakra-ui/react";
 import React, { ForwardedRef } from "react";
 import { useIntl } from "react-intl";
-import { widthXl } from "../common/media-queries";
 import HideSplitViewButton from "../common/SplitView/HideSplitViewButton";
+import { widthXl } from "../common/media-queries";
 import { topBarHeight } from "../deployment/misc";
 import ZoomControls from "../editor/ZoomControls";
 import ProjectNameEditable from "../project/ProjectNameEditable";
@@ -21,6 +21,8 @@ interface EditorAreaProps extends BoxProps {
   onSelectedFileChanged: (filename: string) => void;
   simulatorShown: boolean;
   onSimulatorExpand: () => void;
+  replShown: boolean;
+  onReplExpand: () => void;
 }
 
 /**
@@ -34,9 +36,12 @@ const EditorArea = React.forwardRef(
       onSelectedFileChanged,
       simulatorShown,
       onSimulatorExpand,
+      replShown,
+      onReplExpand,
       ...props
     }: EditorAreaProps,
-    simulatorButtonRef: ForwardedRef<HTMLButtonElement>
+    // _simulatorButtonRef: ForwardedRef<HTMLButtonElement>,
+    replButtonRef: ForwardedRef<HTMLButtonElement>
   ) => {
     const intl = useIntl();
     const [isWideScreen] = useMediaQuery(widthXl, { ssr: false });
@@ -71,18 +76,32 @@ const EditorArea = React.forwardRef(
           />
           <Flex alignItems="center">
             <ZoomControls display={["none", "none", "none", "flex"]} />
-            {!simulatorShown && (
-              <HideSplitViewButton
-                aria-label={intl.formatMessage({ id: "simulator-expand" })}
-                onClick={onSimulatorExpand}
-                splitViewShown={simulatorShown}
-                direction="expandLeft"
-                text={intl.formatMessage({ id: "simulator-title" })}
-                ml={5}
-                boxShadow="none"
-                ref={simulatorButtonRef}
-              />
-            )}
+            <Flex alignItems="end" direction="column">
+              {/* {!simulatorShown && (
+                <HideSplitViewButton
+                  aria-label={intl.formatMessage({ id: "simulator-expand" })}
+                  onClick={onSimulatorExpand}
+                  splitViewShown={simulatorShown}
+                  direction="expandLeft"
+                  text={intl.formatMessage({ id: "simulator-title" })}
+                  ml={5}
+                  boxShadow="none"
+                  ref={simulatorButtonRef}
+                />
+              )} */}
+              {!replShown && (
+                <HideSplitViewButton
+                  aria-label={"REPL Expand"}
+                  onClick={onReplExpand}
+                  splitViewShown={replShown}
+                  direction="expandLeft"
+                  text={"REPL"}
+                  ml={5}
+                  boxShadow="none"
+                  ref={replButtonRef}
+                />
+              )}
+            </Flex>
           </Flex>
         </Flex>
         {/* Just for the line */}

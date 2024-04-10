@@ -30,6 +30,17 @@ const defaultDeploymentFactory: DeploymentConfigFactory = () => ({
     consentContext: stubConsentContext,
     manageCookies: undefined,
   },
+  horizontalLogo: (
+    <img src="https://sensebox.de/images/logos/sensebox_wort_logo.svg" />
+  ),
+  squareLogo: (
+    <img
+      src="https://sensebox.de/images/pressekit/sensebox_logo.svg"
+      style={{
+        padding: ".7rem",
+      }}
+    />
+  ),
 });
 
 export default defaultDeploymentFactory;
