@@ -3,14 +3,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, HStack, Icon, Stack, Text } from "@chakra-ui/react";
+import { Text } from "@microbit/ui";
 import { ReactNode, useEffect, useRef } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import {
-  RangeSensor as RangeSensorType,
-  SensorStateKey,
-  SimulatorState,
-} from "../device/simulator";
+import { css } from "styled-system/css";
+import { Box, HStack, Stack, styled } from "styled-system/jsx";
+import { SensorStateKey, SimulatorState } from "../device/simulator";
 import Axis from "./Axis";
 import CompassHeadingIcon from "./icons/compass-heading.svg?react";
 import RangeSensor from "./RangeSensor";
@@ -28,7 +26,7 @@ const CompassModule = ({
   onValueChange,
   minimised,
 }: CompassModuleProps) => {
-  const ref = useRef<SVGSVGElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const intl = useIntl();
   const compassHeading = state["compassHeading"];
   useEffect(() => {
@@ -46,7 +44,7 @@ const CompassModule = ({
           id="compassHeading"
           icon={icon}
           title={intl.formatMessage({ id: "simulator-compass-heading-one" })}
-          sensor={compassHeading as RangeSensorType}
+          sensor={compassHeading}
           onSensorChange={onValueChange}
           minimised={minimised}
         />
@@ -55,24 +53,28 @@ const CompassModule = ({
           <Text as="h4" fontSize="sm">
             <FormattedMessage id="simulator-compass-heading-one" />
           </Text>
-          <HStack spacing={3} pl={4} width="100%">
+          <HStack gap="3" pl="4" width="100%">
             <RangeSensor
               id="compassHeading"
               title={intl.formatMessage({
                 id: "simulator-compass-heading-one",
               })}
-              sensor={compassHeading as RangeSensorType}
+              sensor={compassHeading}
               onSensorChange={onValueChange}
               minimised={minimised}
             />
-            <Icon
-              ref={ref}
-              as={CompassHeadingIcon}
-              color="blimpTeal.400"
-              boxSize="20"
-            />
+            {/* Ref on a wrapper: the svgr component doesn't forward refs. */}
+            <styled.span ref={ref} display="inline-flex" flexShrink={0}>
+              <CompassHeadingIcon
+                className={css({
+                  color: "blimpTeal.400",
+                  width: "20",
+                  height: "20",
+                })}
+              />
+            </styled.span>
           </HStack>
-          <Stack spacing={5} mt={5}>
+          <Stack gap="5" mt="5">
             <Text as="h4" fontSize="sm">
               <FormattedMessage id="simulator-compass-heading-two" />
             </Text>

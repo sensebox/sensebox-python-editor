@@ -5,17 +5,9 @@
  *
  * @vitest-environment jsdom
  */
-import { ImageProps } from "@chakra-ui/react";
 import { render } from "@testing-library/react";
-import { vi } from "vitest";
 import { PortableText } from "../../common/sanity";
 import DocumentationContent from "./DocumentationContent";
-
-vi.mock("@chakra-ui/image", () => ({
-  Image: ({ src, w, h }: ImageProps) => (
-    <img src={src} width={w as string} height={h as string} />
-  ),
-}));
 
 describe("DocumentationContent", () => {
   it("renders external links", () => {
@@ -47,9 +39,9 @@ describe("DocumentationContent", () => {
         style: "normal",
       },
     ];
-    const view = render(<DocumentationContent content={content} />);
+    const view = render(<DocumentationContent blocks={content} />);
     expect(view.container.innerHTML).toMatchInlineSnapshot(
-      `"<div class="chakra-stack css-iewcov"><p><a target="_blank" rel="nofollow noopener" class="chakra-link css-1w3ukj" href="https://www.bbc.co.uk/bitesize/guides/zscvxfr/revision/4">Read more about ASCII<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" focusable="false" class="chakra-icon css-q1kx43" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M10 6V8H5V19H16V14H18V20C18 20.5523 17.5523 21 17 21H4C3.44772 21 3 20.5523 3 20V7C3 6.44772 3.44772 6 4 6H10ZM21 3V11H19L18.9999 6.413L11.2071 14.2071L9.79289 12.7929L17.5849 5H13V3H21Z"></path></svg></a>.</p></div>"`
+      `"<div class="d_flex flex-d_column gap_3 mt_3"><p><a href="https://www.bbc.co.uk/bitesize/guides/zscvxfr/revision/4" target="_blank" rel="nofollow noopener" class="link c_brand.600">Read more about ASCII<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" class="w_1em h_1em d_inline-block lh_1em flex-sh_0 fill_currentColor va_middle mb_0.333em ml_1" focusable="false" aria-hidden="true" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M10 6V8H5V19H16V14H18V20C18 20.5523 17.5523 21 17 21H4C3.44772 21 3 20.5523 3 20V7C3 6.44772 3.44772 6 4 6H10ZM21 3V11H19L18.9999 6.413L11.2071 14.2071L9.79289 12.7929L17.5849 5H13V3H21Z"></path></svg></a>.</p></div>"`
     );
   });
 
@@ -64,10 +56,9 @@ describe("DocumentationContent", () => {
         },
       },
     ];
-    const view = render(<DocumentationContent content={content} />);
-    // This relies on the mock above because Chakra UI's images have the src added later.
+    const view = render(<DocumentationContent blocks={content} />);
     expect(view.container.innerHTML).toMatchInlineSnapshot(
-      `"<div class="chakra-stack css-iewcov"><img src="https://cdn.sanity.io/images/project/dataset/9fccaf51a164fedc98662188593de19bfb9be8ad-435x512.png?w=300&amp;q=80&amp;fit=max&amp;auto=format"></div>"`
+      `"<div class="d_flex flex-d_column gap_3 mt_3"><div class="w_300px max-w_100% pos_relative before:content_&quot;&quot; before:d_block before:h_0 before:pb_var(--aspect-ratio-padding) [&amp;_>_*]:pos_absolute [&amp;_>_*]:inset_0 [&amp;_>_*]:w_100% [&amp;_>_*]:h_100%" style="--aspect-ratio-padding: 117.70114942528735%;"><img src="https://cdn.sanity.io/images/project/dataset/9fccaf51a164fedc98662188593de19bfb9be8ad-435x512.png?w=300&amp;q=80&amp;fit=max&amp;auto=format" alt="micro:bit showing X axis going across the front, Y axis going down and up, Z axis going back to front" class="max-w_100% bdr_lg bd_solid_1px bd-c_gray.300"></div></div>"`
     );
   });
 });

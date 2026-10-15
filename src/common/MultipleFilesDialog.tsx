@@ -3,9 +3,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Text, VStack } from "@chakra-ui/react";
+import { Text } from "@microbit/ui";
+import { VStack } from "styled-system/jsx";
 import { ReactNode } from "react";
 import { FormattedMessage } from "react-intl";
+import DialogHeading from "../common/DialogHeading";
 import { GenericDialog, GenericDialogFooter } from "../common/GenericDialog";
 import { useProject } from "../project/project-hooks";
 
@@ -49,14 +51,14 @@ const MultipleFilesDialogBody = () => {
       width="auto"
       ml="auto"
       mr="auto"
-      p={5}
-      pb={0}
-      spacing={5}
+      p="5"
+      pb="0"
+      gap="5"
       alignItems="flex-start"
     >
-      <Text as="h2" fontSize="xl" fontWeight="semibold">
+      <DialogHeading>
         <FormattedMessage id="multiple-files-title" />
-      </Text>
+      </DialogHeading>
       <Text>
         <FormattedMessage
           id="multiple-files-message-one"

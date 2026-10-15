@@ -40,6 +40,8 @@ import { languageServer } from "./language-server/view";
 import { lintGutter } from "./lint/lint";
 import { codeStructure } from "./structure-highlighting";
 import themeExtensions from "./themeExtensions";
+import { ViewErrorReporting } from "./view-error-reporting";
+import { useDevice } from "../../device/device-hooks";
 
 interface CodeMirrorProps {
   className?: string;
@@ -50,6 +52,8 @@ interface CodeMirrorProps {
   fontSize: number;
   codeStructureOption: CodeStructureOption;
   parameterHelpOption: ParameterHelpOption;
+  warnOnV2OnlyFeatures: boolean;
+  disableV2OnlyFeaturesWarning: () => void;
 }
 
 /**
@@ -68,6 +72,8 @@ const CodeMirror = ({
   fontSize,
   codeStructureOption,
   parameterHelpOption,
+  warnOnV2OnlyFeatures,
+  disableV2OnlyFeaturesWarning,
 }: CodeMirrorProps) => {
   // Really simple model for now as we only have one editor at a time.
   const [, setActiveEditor] = useActiveEditorActionsState();
@@ -81,6 +87,7 @@ const CodeMirror = ({
   const actionFeedback = useActionFeedback();
   const [sessionSettings, setSessionSettings] = useSessionSettings();
   const { apiReferenceMap } = useDocumentation();
+  const device = useDevice();
 
   // Reset undo/redo events on file change.
   useEffect(() => {
@@ -96,8 +103,9 @@ const CodeMirror = ({
       fontSize,
       codeStructureOption,
       parameterHelpOption,
+      warnOnV2OnlyFeatures,
     }),
-    [fontSize, codeStructureOption, parameterHelpOption]
+    [fontSize, codeStructureOption, parameterHelpOption, warnOnV2OnlyFeatures]
   );
 
   useEffect(() => {
@@ -113,10 +121,12 @@ const CodeMirror = ({
           logPastedLineCount(logging, update);
         }
       });
+      const errorReporting = new ViewErrorReporting(logging);
       const state = EditorState.create({
         doc: defaultValue,
         extensions: [
           notify,
+          errorReporting.extension(),
           editorConfig,
           // Extension requires external state.
           dndSupport({ sessionSettings, setSessionSettings }),
@@ -131,6 +141,7 @@ const CodeMirror = ({
             client
               ? languageServer(
                   client,
+                  device,
                   uri,
                   intl,
                   logging,
@@ -141,6 +152,10 @@ const CodeMirror = ({
                     signatureHelp: {
                       automatic: parameterHelpOption === "automatic",
                     },
+                    warnOnV2OnlyFeatures: options.warnOnV2OnlyFeatures,
+                  },
+                  {
+                    disableV2OnlyFeaturesWarning,
                   }
                 )
               : [],
@@ -152,10 +167,11 @@ const CodeMirror = ({
       const view = new EditorView({
         state,
         parent: elementRef.current!,
+        dispatchTransactions: errorReporting.dispatchTransactions,
       });
 
       viewRef.current = view;
-      setActiveEditor(new EditorActions(view, logging, actionFeedback));
+      setActiveEditor(new EditorActions(view, logging, actionFeedback, intl));
     }
   }, [
     actionFeedback,
@@ -172,6 +188,8 @@ const CodeMirror = ({
     parameterHelpOption,
     uri,
     apiReferenceMap,
+    device,
+    disableV2OnlyFeaturesWarning,
   ]);
   useEffect(() => {
     // Do this separately as we don't want to destroy the view whenever options needed for initialization change.
@@ -191,6 +209,7 @@ const CodeMirror = ({
           client
             ? languageServer(
                 client,
+                device,
                 uri,
                 intl,
                 logging,
@@ -199,6 +218,10 @@ const CodeMirror = ({
                   signatureHelp: {
                     automatic: parameterHelpOption === "automatic",
                   },
+                  warnOnV2OnlyFeatures: options.warnOnV2OnlyFeatures,
+                },
+                {
+                  disableV2OnlyFeaturesWarning,
                 }
               )
             : [],
@@ -215,6 +238,8 @@ const CodeMirror = ({
     logging,
     uri,
     apiReferenceMap,
+    device,
+    disableV2OnlyFeaturesWarning,
   ]);
 
   const { location } = selection;
@@ -225,7 +250,7 @@ const CodeMirror = ({
       let line;
       try {
         line = view.state.doc.line(location.line);
-      } catch (e) {
+      } catch {
         // Document doesn't have that line, e.g. link from stale error
         // after a code edit.
         return;
@@ -247,7 +272,7 @@ const CodeMirror = ({
           tab,
           slug: { id },
         },
-        "documentation-from-code"
+        "code"
       );
       const view = viewRef.current!;
       // Put the focus back in the text editor so the docs are immediately useful.
@@ -285,8 +310,8 @@ const logPastedLineCount = (logging: Logging, update: ViewUpdate) => {
             new TextEncoder().encode(inserted.toString().trim())
           );
           logging.event({
-            type: "paste",
-            value: lineCount,
+            type: "editor_paste",
+            detail: { count: lineCount },
           });
         }
       )

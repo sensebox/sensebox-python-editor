@@ -3,10 +3,19 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Divider, Link, Stack, Text, TextProps } from "@chakra-ui/react";
+import { Divider, styled, Text } from "@microbit/ui";
+import { ComponentProps } from "react";
 import { FormattedMessage } from "react-intl";
-import { RouterState, toUrl } from "../../router-hooks";
+import { Link as RouterLink } from "react-router";
+import { Stack } from "styled-system/jsx";
+import { link } from "styled-system/recipes";
+import { RouterState } from "../../router-hooks";
+import { createEditorUrl } from "../../urls";
 import { Extract, Result } from "./common";
+
+// @microbit/ui's Link with react-router underneath, so the href respects the
+// basename and a modifier-click opens the result in a new tab.
+const Link = styled(RouterLink, link);
 
 interface SearchResultListProps {
   title: string;
@@ -22,8 +31,8 @@ const SearchResultList = ({
   onViewResult,
 }: SearchResultListProps) => {
   return (
-    <Stack spacing={2}>
-      <Text as="h2" fontSize="sm" px={3} color="gray.600" fontWeight="bold">
+    <Stack gap="2">
+      <Text as="h2" fontSize="sm" px="3" color="gray.500" fontWeight="bold">
         {title}
       </Text>
       {results.map((result) => (
@@ -35,7 +44,7 @@ const SearchResultList = ({
         />
       ))}
       {results.length === 0 && (
-        <Text fontSize="sm" px={8}>
+        <Text fontSize="sm" px="8">
           <FormattedMessage
             id="results-count"
             values={{
@@ -59,24 +68,23 @@ const SearchResultItem = ({
   viewedResults,
   onViewResult,
 }: SearchResultItemProps) => {
-  const url = toUrl(navigation);
-
   return (
     <Stack pl="3px" pr="3px">
       <Link
+        variant="standalone"
         bgColor={viewedResults.includes(id) ? "#efedf5" : "unset"}
         borderRadius="md"
-        href={url}
+        to={createEditorUrl(navigation)}
         onClick={(e) => {
           e.preventDefault();
           onViewResult(id, navigation);
         }}
-        _hover={{ textDecor: "none", bgColor: "brand.100" }}
+        _hover={{ textDecoration: "none", bgColor: "brand.100" }}
         _focus={{ bgColor: "brand.100" }}
       >
-        <Stack px={8} py={2} spacing={0}>
+        <Stack px="8" py="2" gap="0">
           {title !== containerTitle && (
-            <Text fontSize="sm" color="gray.600" fontWeight="bold">
+            <Text fontSize="sm" color="gray.500" fontWeight="bold">
               {containerTitle}
             </Text>
           )}
@@ -89,12 +97,12 @@ const SearchResultItem = ({
           <ExtractText extract={extract.content} />
         </Stack>
       </Link>
-      <Divider borderWidth="1px" color="gray.400" />
+      <Divider thickness="thick" />
     </Stack>
   );
 };
 
-interface ExtractTextProps extends TextProps {
+interface ExtractTextProps extends ComponentProps<typeof Text> {
   extract: Extract[];
 }
 
@@ -103,11 +111,13 @@ const ExtractText = ({ extract, title, ...props }: ExtractTextProps) => {
     <Text {...props}>
       {extract.map((t, i) =>
         t.type === "text" ? (
+          // eslint-disable-next-line @eslint-react/no-array-index-key -- position is the only identity here
           <Text key={i} as="span">
             {t.extract}
           </Text>
         ) : (
-          <Text key={i} as="span" bgColor="#6C4BC14D" borderRadius="md" p={0.5}>
+          // eslint-disable-next-line @eslint-react/no-array-index-key -- position is the only identity here
+          <Text key={i} as="span" bgColor="#6C4BC14D" borderRadius="md" p="0.5">
             {t.extract}
           </Text>
         )

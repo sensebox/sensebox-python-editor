@@ -3,21 +3,22 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Button } from "@chakra-ui/button";
-import { HStack, Link, Stack, Text, VStack } from "@chakra-ui/layout";
 import {
+  Button,
+  Icon,
+  Link,
   Modal,
   ModalBody,
-  ModalContent,
+  ModalCloseButton,
   ModalFooter,
-  ModalOverlay,
-} from "@chakra-ui/modal";
-import { Icon } from "@chakra-ui/react";
+  Text,
+} from "@microbit/ui";
+import { YoutubeVideoEmbed } from "@microbit/ui-patterns";
 import { ReactNode } from "react";
 import { RiExternalLinkLine } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
-import ModalCloseButton from "../common/ModalCloseButton";
-import YoutubeVideoEmbed from "../common/YoutubeVideoEmbed";
+import { HStack, Stack, VStack } from "styled-system/jsx";
+import DialogHeading from "../common/DialogHeading";
 import { useDeployment } from "../deployment";
 
 interface WelcomeDialogProps {
@@ -29,63 +30,62 @@ interface WelcomeDialogProps {
 const WelcomeDialog = ({ youtubeId, isOpen, onClose }: WelcomeDialogProps) => {
   const { guideLink } = useDeployment();
   const intl = useIntl();
-  const welcomeVideoAltText = intl.formatMessage({ id: "welcome-video-alt" });
+  const welcomeVideoTitle = intl.formatMessage({ id: "welcome-video-alt" });
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
-      <ModalOverlay>
-        <ModalContent>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack
-              width="auto"
-              ml="auto"
-              mr="auto"
-              p={5}
-              pb={0}
-              spacing={5}
-              alignItems="stretch"
-            >
-              <Stack spacing={3}>
-                <Text as="h2" fontSize="xl" fontWeight="semibold">
-                  <FormattedMessage id="welcome-title" />
-                </Text>
-                <YoutubeVideoEmbed
-                  youtubeId={youtubeId}
-                  alt={welcomeVideoAltText}
-                />
-              </Stack>
-              <Text>
-                <FormattedMessage id="welcome-message" />
-              </Text>
-              <Text>
-                <FormattedMessage
-                  id="guide-link"
-                  values={{
-                    link: (chunks: ReactNode) => (
-                      <Link
-                        color="brand.500"
-                        target="_blank"
-                        rel="noreferrer"
-                        href={guideLink}
-                      >
-                        {chunks}{" "}
-                        <Icon as={RiExternalLinkLine} verticalAlign="middle" />
-                      </Link>
-                    ),
-                  }}
-                />
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack spacing={2.5}>
-              <Button size="lg" variant="solid" onClick={onClose}>
-                <FormattedMessage id="start-coding-action" />
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </ModalOverlay>
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+      <ModalCloseButton />
+      <ModalBody>
+        <VStack
+          width="auto"
+          ml="auto"
+          mr="auto"
+          p="5"
+          pb="0"
+          gap="5"
+          alignItems="stretch"
+        >
+          <Stack gap="3">
+            <DialogHeading>
+              <FormattedMessage id="welcome-title" />
+            </DialogHeading>
+            <YoutubeVideoEmbed
+              youtubeId={youtubeId}
+              title={welcomeVideoTitle}
+            />
+          </Stack>
+          <Text>
+            <FormattedMessage id="welcome-message" />
+          </Text>
+          <Text>
+            <FormattedMessage
+              id="guide-link"
+              values={{
+                link: (chunks: ReactNode) => (
+                  <Link
+                    color="brand.500"
+                    target="_blank"
+                    rel="noreferrer"
+                    href={guideLink}
+                  >
+                    {chunks}{" "}
+                    <Icon
+                      as={RiExternalLinkLine}
+                      css={{ verticalAlign: "middle" }}
+                    />
+                  </Link>
+                ),
+              }}
+            />
+          </Text>
+        </VStack>
+      </ModalBody>
+      <ModalFooter>
+        <HStack gap="2.5">
+          <Button size="lg" variant="primary" onPress={onClose}>
+            <FormattedMessage id="start-coding-action" />
+          </Button>
+        </HStack>
+      </ModalFooter>
     </Modal>
   );
 };

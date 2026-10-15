@@ -10,9 +10,11 @@ import {
 } from "vscode-jsonrpc/browser";
 import { baseUrl } from "../base";
 import { createUri, LanguageServerClient } from "./client";
+import { supportedLanguages } from "../settings/settings";
+import { ToastFn } from "@microbit/ui";
 
 // This is modified by bin/update-pyright.sh
-const workerScriptName = "pyright-main-46e9f54371eb3b42b37c.worker.js";
+const workerScriptName = "pyright-main-3b23940fec1360f4ae85.worker.js";
 
 // Very simple cache to avoid React re-creating pointlessly in development.
 let counter = 0;
@@ -29,8 +31,15 @@ let cache:
  * These are recreated when the language changes.
  */
 export const pyright = async (
-  language: string
+  language: string,
+  toast: ToastFn
 ): Promise<LanguageServerClient | undefined> => {
+  // Stored settings and ?l= links predate canonical id casing, so resolve
+  // the canonical id; the typeshed.<locale>.json files are named by it.
+  language =
+    supportedLanguages.find(
+      (l) => l.id.toLowerCase() === language.toLowerCase()
+    )?.id ?? language;
   // For jsdom.
   if (!window.Worker) {
     return undefined;
@@ -91,7 +100,12 @@ export const pyright = async (
   });
   connection.listen();
 
-  const client = new LanguageServerClient(connection, language, createUri(""));
+  const client = new LanguageServerClient(
+    connection,
+    language,
+    createUri(""),
+    toast
+  );
   // Must assign before any async step so we reuse or dispose this client
   // if another call to pyright is made (language change or React 18 dev mode
   // in practice).

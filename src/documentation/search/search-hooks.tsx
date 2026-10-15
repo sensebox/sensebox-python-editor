@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import debounce from "lodash.debounce";
+import { debounce } from "../../common/debounce-util";
 import {
   createContext,
   ReactNode,
@@ -73,7 +73,7 @@ const SearchProvider = ({ children }: { children: ReactNode }) => {
           if (!isUnmounted()) {
             setResults((prevResults) => {
               if (!prevResults) {
-                logging.event({ type: "search" });
+                logging.event({ type: "docs_search" });
               }
               return results;
             });

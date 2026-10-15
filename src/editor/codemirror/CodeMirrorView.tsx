@@ -3,17 +3,19 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, BoxProps } from "@chakra-ui/layout";
-import { useToken } from "@chakra-ui/system";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import React, { useEffect, useRef } from "react";
+import { Box } from "styled-system/jsx";
+import { token } from "styled-system/tokens";
+import { SystemStyleObject } from "styled-system/types";
 import "./CodeMirror.css";
 import { editorConfig } from "./config";
 import themeExtensions from "./themeExtensions";
 
-interface CodeMirrorViewProps extends BoxProps {
+interface CodeMirrorViewProps {
   value: string;
+  css?: SystemStyleObject;
 }
 
 /**
@@ -21,10 +23,10 @@ interface CodeMirrorViewProps extends BoxProps {
  *
  * This is a controlled component.
  */
-const CodeMirrorView = ({ value, ...props }: CodeMirrorViewProps) => {
+const CodeMirrorView = ({ value, css: cssProp }: CodeMirrorViewProps) => {
   const elementRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const fontSize = useToken("fontSizes", "md");
+  const fontSize = token("fontSizes.md");
 
   useEffect(() => {
     // We recreate everything if the value changes. We could optimise this.
@@ -59,7 +61,7 @@ const CodeMirrorView = ({ value, ...props }: CodeMirrorViewProps) => {
     };
   }, [value, fontSize]);
 
-  return <Box {...props} ref={elementRef} />;
+  return <Box css={cssProp} ref={elementRef} />;
 };
 
 export default React.memo(CodeMirrorView);

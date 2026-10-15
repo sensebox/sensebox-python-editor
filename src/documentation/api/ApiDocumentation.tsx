@@ -3,13 +3,13 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { BoxProps, Divider, List, ListItem } from "@chakra-ui/layout";
-import { Link } from "@chakra-ui/react";
-import sortBy from "lodash.sortby";
+import { Divider, Link, List, ListItem } from "@microbit/ui";
+import { sortBy } from "../../common/sort-util";
 import { ReactNode, useCallback } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
+import { SystemStyleObject } from "styled-system/types";
 import AreaHeading from "../../common/AreaHeading";
-import { docStyles } from "../../common/documentation-styles";
+import { docStylesClass } from "../../common/documentation-styles";
 import HeadedScrollablePanel from "../../common/HeadedScrollablePanel";
 import { splitDocString } from "../../editor/codemirror/language-server/docstrings";
 import { ApiDocsEntry, ApiDocsResponse } from "../../language-server/apidocs";
@@ -30,7 +30,7 @@ export const ApiDocumentation = ({ docs }: ApiDocumentationProps) => {
   const [anchor, setAnchor] = useRouterTabSlug("api");
   const handleNavigate = useCallback(
     (id: string | undefined) => {
-      setAnchor(id ? { id } : undefined, "documentation-user");
+      setAnchor(id ? { id } : undefined, "user");
     },
     [setAnchor]
   );
@@ -83,17 +83,10 @@ const ActiveLevel = ({
           />
         }
       >
-        <List flex="1 1 auto">
+        <List flex="1 1 auto" className={docStylesClass}>
           {(module.children ?? []).map((child) => (
             <ListItem key={child.id}>
-              <ApiNode
-                docs={child}
-                width="100%"
-                anchor={anchor}
-                sx={{
-                  ...docStyles,
-                }}
-              />
+              <ApiNode docs={child} css={{ width: "100%" }} anchor={anchor} />
               <Divider />
             </ListItem>
           ))}
@@ -122,7 +115,7 @@ const ActiveLevel = ({
         />
       }
     >
-      <List flex="1 1 auto" m={3}>
+      <List flex="1 1 auto" m="3">
         {sortBy(Object.values(docs), (m) => m.fullName).map((module) => (
           <DocumentationTopLevelItem
             key={module.id}
@@ -137,17 +130,21 @@ const ActiveLevel = ({
   );
 };
 
-interface ShortModuleDescriptionProps extends BoxProps {
+interface ShortModuleDescriptionProps {
   value: ApiDocsEntry;
+  as?: "div" | "span";
+  css?: SystemStyleObject;
 }
 
 const ShortModuleDescription = ({
   value,
-  ...props
+  as,
+  css: cssProp,
 }: ShortModuleDescriptionProps) =>
   value.docString ? (
     <DocString
       value={splitDocString(value.docString).summary.trim().replace(/\.$/, "")}
-      {...props}
+      as={as}
+      css={cssProp}
     />
   ) : null;

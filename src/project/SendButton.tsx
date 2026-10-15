@@ -6,31 +6,28 @@
 import {
   Button,
   ButtonGroup,
-  HStack,
-  Menu,
   MenuItem,
   MenuList,
-  Portal,
-  ThemeTypings,
+  MenuTrigger,
+  MoreMenuButton,
   Tooltip,
-} from "@chakra-ui/react";
-import React, {
-  FocusEvent,
-  ForwardedRef,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+} from "@microbit/ui";
+import React, { ForwardedRef, useCallback, useRef } from "react";
 import { RiUsbLine } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
-import { zIndexAboveTerminal } from "../common/zIndex";
-import { ConnectionAction, ConnectionStatus } from "../device/device";
+import { HStack } from "styled-system/jsx";
+import { ConnectionStatus } from "@microbit/microbit-connection";
 import { useConnectionStatus } from "../device/device-hooks";
-import MoreMenuButton from "./MoreMenuButton";
 import { useProjectActions } from "./project-hooks";
+import { useHotkeys } from "react-hotkeys-hook";
+import {
+  globalShortcutConfig,
+  keyboardShortcuts,
+} from "../common/keyboard-shortcuts";
+import { ConnectionAction, FinalFocusRef } from "./project-actions";
 
 interface SendButtonProps {
-  size?: ThemeTypings["components"]["Button"]["sizes"];
+  size?: "lg" | "md" | "sm" | "xs";
   sendButtonRef: React.RefObject<HTMLButtonElement>;
 }
 
@@ -40,7 +37,7 @@ const SendButton = React.forwardRef(
     ref: ForwardedRef<HTMLButtonElement>
   ) => {
     const status = useConnectionStatus();
-    const connected = status === ConnectionStatus.CONNECTED;
+    const connected = status === ConnectionStatus.Connected;
     const actions = useProjectActions();
     const handleToggleConnected = useCallback(async () => {
       if (connected) {
@@ -54,94 +51,75 @@ const SendButton = React.forwardRef(
       flashing: false,
       lastCompleteFlash: 0,
     });
-    const handleSendToMicrobit = useCallback(async () => {
-      if (flashing.current.flashing) {
-        // Ignore repeated clicks.
-        return;
-      }
-      flashing.current = {
-        flashing: true,
-        lastCompleteFlash: flashing.current.lastCompleteFlash,
-      };
-      try {
-        await actions.flash(sendButtonRef);
-      } finally {
-        flashing.current = {
-          flashing: false,
-          lastCompleteFlash: new Date().getTime(),
-        };
-      }
-    }, [flashing, actions, sendButtonRef]);
-    useEffect(() => {
-      const isMac = /Mac/.test(navigator.platform);
-      const keydown = (e: KeyboardEvent) => {
-        if (
-          (e.key === "S" || e.key === "s") &&
-          (isMac ? e.metaKey : e.ctrlKey) &&
-          !e.repeat
-        ) {
-          e.preventDefault();
-          handleSendToMicrobit();
+    const handleSendToMicrobit = useCallback(
+      async (finalFocusRef: FinalFocusRef) => {
+        if (flashing.current.flashing) {
+          // Ignore repeated clicks.
+          return;
         }
-      };
-      document.addEventListener("keydown", keydown);
-      return () => {
-        document.removeEventListener("keydown", keydown);
-      };
-    }, [handleSendToMicrobit]);
-    const handleFocus = useCallback(
-      (e: FocusEvent<unknown>) => {
-        const inProgress = flashing.current.flashing;
-        const delta = new Date().getTime() - flashing.current.lastCompleteFlash;
-        if (inProgress || delta < 200) {
-          // Avoid the tooltip obscuring the "micro:bit flashed" text just above the button.
-          // This does not prevent focus, just the Tooltip's handler running.
-          e.preventDefault();
+        flashing.current = {
+          flashing: true,
+          lastCompleteFlash: flashing.current.lastCompleteFlash,
+        };
+        try {
+          await actions.flash(finalFocusRef);
+        } finally {
+          flashing.current = {
+            flashing: false,
+            lastCompleteFlash: new Date().getTime(),
+          };
         }
       },
-      [flashing]
+      [flashing, actions]
     );
     const menuButtonRef = useRef<HTMLButtonElement>(null);
+    const activeElementRef = useRef<HTMLElement | null>(null);
+    const handleSendToMicrobitShortcut = useCallback(() => {
+      activeElementRef.current = document.activeElement as HTMLElement;
+      handleSendToMicrobit(activeElementRef);
+    }, [handleSendToMicrobit]);
+    useHotkeys(
+      keyboardShortcuts.sendToMicrobit,
+      handleSendToMicrobitShortcut,
+      globalShortcutConfig
+    );
     return (
       <HStack>
-        <Menu>
-          <ButtonGroup isAttached>
-            <Tooltip
-              hasArrow
-              placement="top-start"
-              label={intl.formatMessage({
-                id: "send-hover",
-              })}
+        <ButtonGroup isAttached>
+          <Tooltip
+            hasArrow
+            placement="top start"
+            label={intl.formatMessage({
+              id: "send-hover",
+            })}
+          >
+            <Button
+              ref={ref}
+              size={size}
+              variant="primary"
+              startIcon={<RiUsbLine />}
+              onPress={() => handleSendToMicrobit(sendButtonRef)}
             >
-              <Button
-                ref={ref}
-                onFocus={handleFocus}
-                size={size}
-                variant="solid"
-                leftIcon={<RiUsbLine />}
-                onClick={handleSendToMicrobit}
-              >
-                <FormattedMessage id="send-action" />
-              </Button>
-            </Tooltip>
+              <FormattedMessage id="send-action" />
+            </Button>
+          </Tooltip>
+          <MenuTrigger>
             <MoreMenuButton
               ref={menuButtonRef}
-              variant="solid"
+              variant="primary"
               aria-label={intl.formatMessage({ id: "more-connect-options" })}
               data-testid="more-connect-options"
               size={size}
             />
-            <Portal>
-              <MenuList zIndex={zIndexAboveTerminal}>
-                <MenuItem icon={<RiUsbLine />} onClick={handleToggleConnected}>
-                  <FormattedMessage
-                    id={connected ? "disconnect-action" : "connect-action"}
-                  />
-                </MenuItem>
-              </MenuList>
-            </Portal>
-          </ButtonGroup>
-        </Menu>
+            <MenuList>
+              <MenuItem icon={<RiUsbLine />} onAction={handleToggleConnected}>
+                <FormattedMessage
+                  id={connected ? "disconnect-action" : "connect-action"}
+                />
+              </MenuItem>
+            </MenuList>
+          </MenuTrigger>
+        </ButtonGroup>
       </HStack>
     );
   }

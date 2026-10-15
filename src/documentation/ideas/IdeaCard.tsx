@@ -3,11 +3,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { VStack } from "@chakra-ui/layout";
-import { Image } from "@chakra-ui/react";
+import { styled } from "styled-system/jsx";
 import { imageUrlBuilder } from "../../common/imageUrlBuilder";
 import { SimpleImage } from "../../common/sanity";
 import DocumentationHeading from "../common/DocumentationHeading";
+import ImageWithFallback from "../common/ImageWithFallback";
+import OfflineImageFallback from "../OfflineImageFallback";
 
 interface IdeaCardProps {
   name: string;
@@ -17,37 +18,37 @@ interface IdeaCardProps {
 }
 
 const IdeaCard = ({ name, image, isV2Only, onClick }: IdeaCardProps) => {
-  const focusStyles = {
-    outline: "none",
-    boxShadow: "var(--chakra-shadows-outline)",
-  };
   return (
-    <VStack
-      as="button"
+    <styled.button
       onClick={onClick}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      gap="2"
       cursor="pointer"
       background="white"
       borderRadius="lg"
       overflow="hidden"
       boxShadow="md"
-      spacing={2}
-      _focusVisible={focusStyles}
-      _focus={focusStyles}
+      _focusVisible={{ focusRing: "outline" }}
     >
-      <Image
-        borderTopRadius="lg"
+      <ImageWithFallback
         src={imageUrlBuilder.image(image.asset).width(550).url()}
+        ignoreFallback={navigator.onLine}
+        fallback={<OfflineImageFallback useIcon width={500} />}
         alt=""
+        borderTopRadius="lg"
+        width="500px"
       />
       <DocumentationHeading
         alignSelf="flex-start"
         textAlign="left"
-        px={2.5}
-        pb={2}
+        px="2.5"
+        pb="2"
         name={name}
         isV2Only={!!isV2Only}
       />
-    </VStack>
+    </styled.button>
   );
 };
 

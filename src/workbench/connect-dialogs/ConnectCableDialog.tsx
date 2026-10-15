@@ -3,8 +3,10 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Flex, Image, Text, VStack } from "@chakra-ui/react";
+import { Image } from "@microbit/ui";
 import { FormattedMessage } from "react-intl";
+import { Flex, VStack } from "styled-system/jsx";
+import DialogHeading from "../../common/DialogHeading";
 import connectCable from "./connect-cable.gif";
 
 const ConnectCableDialogBody = () => {
@@ -13,14 +15,14 @@ const ConnectCableDialogBody = () => {
       width="auto"
       ml="auto"
       mr="auto"
-      p={5}
-      pb={0}
-      spacing={5}
+      p="5"
+      pb="0"
+      gap="5"
       alignItems="flex-start"
     >
-      <Text as="h2" fontSize="xl" fontWeight="semibold">
+      <DialogHeading>
         <FormattedMessage id="connect-cable-title" />
-      </Text>
+      </DialogHeading>
 
       <Flex justifyContent="center" width="100%">
         <Image height="372px" width="400px" src={connectCable} alt="" />

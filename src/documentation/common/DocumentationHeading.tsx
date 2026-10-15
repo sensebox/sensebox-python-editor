@@ -3,11 +3,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Text, TextProps } from "@chakra-ui/layout";
-import { Flex } from "@chakra-ui/react";
+import { Text } from "@microbit/ui";
+import { ComponentProps } from "react";
+import { Flex } from "styled-system/jsx";
 import V2Tag from "../common/V2Tag";
 
-interface DocumentationHeadingProps extends TextProps {
+interface DocumentationHeadingProps extends ComponentProps<typeof Text> {
   name: string;
   isV2Only: boolean;
 }

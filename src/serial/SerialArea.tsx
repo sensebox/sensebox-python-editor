@@ -3,15 +3,16 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, BoxProps, Flex } from "@chakra-ui/react";
+import { darkSurface } from "@microbit/ui";
+import { Box, styled } from "styled-system/jsx";
 import { backgroundColorTerm } from "../deployment/misc";
-import { ConnectionStatus } from "../device/device";
+import { ConnectionStatus } from "@microbit/microbit-connection";
 import { useConnectionStatus } from "../device/device-hooks";
 import { TerminalContext } from "./serial-hooks";
 import SerialBar from "./SerialBar";
 import XTerm from "./XTerm";
 
-interface SerialAreaProps extends BoxProps {
+interface SerialAreaProps {
   compact?: boolean;
   expandDirection: "up" | "down";
   onSizeChange: (size: "compact" | "open") => void;
@@ -20,6 +21,7 @@ interface SerialAreaProps extends BoxProps {
   hideExpandTextOnTraceback?: boolean;
   showHintsAndTips?: boolean;
   tabOutRef: HTMLElement;
+  "aria-label"?: string;
 }
 
 /**
@@ -42,11 +44,13 @@ const SerialArea = ({
   ...props
 }: SerialAreaProps) => {
   const status = useConnectionStatus();
-  const connected = status === ConnectionStatus.CONNECTED;
+  const connected =
+    status === ConnectionStatus.Connected || status === ConnectionStatus.Paused;
   return (
     <TerminalContext>
-      <Flex
+      <styled.section
         {...props}
+        display="flex"
         flexDirection="column"
         alignItems="stretch"
         height="100%"
@@ -56,11 +60,12 @@ const SerialArea = ({
         {!connected ? null : (
           <Box
             alignItems="stretch"
-            backgroundColor={backgroundColorTerm}
+            style={{ backgroundColor: backgroundColorTerm }}
             height="100%"
+            {...darkSurface}
           >
             <SerialBar
-              height={12}
+              css={{ height: "12" }}
               compact={compact}
               onSizeChange={onSizeChange}
               showSyncStatus={showSyncStatus}
@@ -69,16 +74,16 @@ const SerialArea = ({
               showHintsAndTips={showHintsAndTips}
             />
             <XTerm
-              visibility={compact ? "hidden" : undefined}
-              height={`calc(100% - ${SerialArea.compactSize}px)`}
-              ml={1}
-              mr={1}
+              css={{ visibility: compact ? "hidden" : undefined, mx: "1" }}
+              style={{
+                height: `calc(100% - ${SerialArea.compactSize}px)`,
+              }}
               fontSizePt={terminalFontSizePt}
               tabOutRef={tabOutRef}
             />
           </Box>
         )}
-      </Flex>
+      </styled.section>
     </TerminalContext>
   );
 };

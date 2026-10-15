@@ -3,16 +3,9 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, BoxProps, HStack } from "@chakra-ui/layout";
-import { Portal } from "@chakra-ui/portal";
-import {
-  Tooltip,
-  useClipboard,
-  useDisclosure,
-  VisuallyHidden,
-} from "@chakra-ui/react";
-import { forwardRef } from "@chakra-ui/system";
+import { Tooltip, VisuallyHidden } from "@microbit/ui";
 import React, {
+  CSSProperties,
   Ref,
   useCallback,
   useEffect,
@@ -20,19 +13,24 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
+import { Focusable } from "react-aria-components";
 import { FormattedMessage, useIntl } from "react-intl";
+import { Box, HStack } from "styled-system/jsx";
 import { pythonSnippetMediaType } from "../../common/mediaTypes";
 import { useScrollablePanelAncestor } from "../../common/ScrollablePanel";
-import { zIndexCode, zIndexCodePopUp } from "../../common/zIndex";
 import { useActiveEditorActions } from "../../editor/active-editor-hooks";
 import CodeMirrorView from "../../editor/codemirror/CodeMirrorView";
 import { debug as dndDebug, setDragContext } from "../../editor/codemirror/dnd";
 import { useLogging } from "../../logging/logging-hooks";
 import { useProjectActions } from "../../project/project-hooks";
 import { useSessionSettings } from "../../settings/session-settings";
+import { useClipboard } from "@microbit/ui";
 import DragHandle from "../common/DragHandle";
 import { useCodeDragImage } from "../documentation-hooks";
 import CodeActionButton from "./CodeActionButton";
+import { useHotkeys } from "react-hotkeys-hook";
+import { keyboardShortcuts } from "../../common/keyboard-shortcuts";
 
 interface CodeEmbedProps {
   code: string;
@@ -61,7 +59,7 @@ const CodeEmbed = ({
   parentSlug,
   title,
 }: CodeEmbedProps) => {
-  const copyCodeButton = useDisclosure();
+  const [copyCodeOpen, setCopyCodeOpen] = useState(false);
   const [state, originalSetState] = useState<CodeEmbedState>("default");
   // We want to debounce raising so that we don't raise very briefly during scroll.
   // We don't ever want to delay other actions.
@@ -120,7 +118,8 @@ const CodeEmbed = ({
       code,
       codeWithImports,
       "example",
-      `${toolkitType}-${parentSlug}`
+      parentSlug,
+      toolkitType
     );
   }, [actions, code, codeWithImports, onCopy, parentSlug, toolkitType]);
   const projectActions = useProjectActions();
@@ -130,70 +129,49 @@ const CodeEmbed = ({
   const lineCount = code.trim().split("\n").length;
   const codeRef = useRef<HTMLDivElement>(null);
   const textHeight = lineCount * 1.375 + "em";
-  const codeHeight = `calc(${textHeight} + var(--chakra-space-2) + var(--chakra-space-2))`;
+  const codeHeight = `calc(${textHeight} + var(--spacing-2) + var(--spacing-2))`;
   const codePopUpHeight = `calc(${codeHeight} + 2px)`; // Account for border.
-  const isMac = /Mac/.test(navigator.platform);
-  const handleKeyDown = useCallback(
-    async (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleCopyCode();
-      }
-      if ((e.key === "c" || e.key === "C") && (isMac ? e.metaKey : e.ctrlKey)) {
-        e.preventDefault();
-        handleCopyCode();
-      }
-    },
-    [handleCopyCode, isMac]
-  );
-  const determineBackground = () => {
-    if (
-      (toolkitType === "ideas" && state === "highlighted") ||
-      (toolkitType !== "ideas" && state !== "default")
-    ) {
-      return "blimpTeal.50";
-    }
-    return "white";
-  };
+  const hotKeysRef = useHotkeys(keyboardShortcuts.copyCode, handleCopyCode, {
+    preventDefault: true,
+  }) as Ref<HTMLDivElement>;
+  const raisedLook =
+    toolkitType === "ideas" ? state === "highlighted" : state !== "default";
   return (
     <Box position="relative">
-      <Box height={codeHeight} fontSize="md">
+      <Box
+        fontSize="md"
+        ref={hotKeysRef}
+        tabIndex={-1}
+        // Runtime value from the line count.
+        style={{ height: codeHeight }}
+      >
         <Code
           onMouseEnter={toRaised}
           onMouseLeave={handleMouseLeave}
           onCodeDragEnd={toDefault}
-          onCopyCode={handleCopyCode}
-          isOpen={copyCodeButton.isOpen}
-          onToggle={copyCodeButton.onToggle}
+          isOpen={copyCodeOpen}
+          onToggle={setCopyCodeOpen}
           concise={code}
           full={codeWithImports}
-          position="absolute"
           ref={codeRef}
-          background={determineBackground()}
+          raisedLook={raisedLook}
           highlightDragHandle={state === "raised"}
           parentSlug={parentSlug}
           toolkitType={toolkitType}
-          tabIndex={0}
-          _focus={{
-            boxShadow: "var(--chakra-shadows-outline);",
-          }}
-          _focusVisible={{
-            outline: "none",
-          }}
-          onKeyDown={handleKeyDown}
-          zIndex={zIndexCode}
+          isPopUp={false}
         />
         {state === "raised" && (
           <CodePopUp
             onMouseLeave={toDefault}
             onCodeDragEnd={toDefault}
-            onCopyCode={handleCopyCode}
-            isOpen={copyCodeButton.isOpen}
-            onToggle={copyCodeButton.onToggle}
-            height={codePopUpHeight}
-            top={codeRef.current!.getBoundingClientRect().top + "px"}
-            left={codeRef.current!.getBoundingClientRect().left + "px"}
-            width={codeRef.current!.offsetWidth}
+            isOpen={copyCodeOpen}
+            onToggle={setCopyCodeOpen}
+            style={{
+              height: codePopUpHeight,
+              top: codeRef.current!.getBoundingClientRect().top + "px",
+              left: codeRef.current!.getBoundingClientRect().left + "px",
+              width: codeRef.current!.offsetWidth + "px",
+            }}
             concise={code}
             full={codeWithImports}
             toolkitType={toolkitType}
@@ -202,7 +180,7 @@ const CodeEmbed = ({
         )}
       </Box>
       <CodeActionButton
-        isOpen={toolkitType === "ideas" ? true : copyCodeButton.isOpen}
+        isOpen={toolkitType === "ideas" ? true : copyCodeOpen}
         toHighlighted={toHighlighted}
         toDefault={toDefault}
         codeAction={toolkitType === "ideas" ? handleOpenIdea : handleCopyCode}
@@ -213,15 +191,16 @@ const CodeEmbed = ({
   );
 };
 
-interface CodePopUpProps extends BoxProps {
+interface CodePopUpProps {
   concise: string;
   full: string;
   toolkitType?: string;
   parentSlug?: string;
   onCodeDragEnd: () => void;
-  onCopyCode: () => void;
+  onMouseLeave: React.MouseEventHandler<HTMLElement>;
   isOpen: boolean;
   onToggle: React.Dispatch<React.SetStateAction<boolean>>;
+  style?: CSSProperties;
 }
 
 // We draw the same code over the top in a portal so we can draw it
@@ -235,40 +214,40 @@ const CodePopUp = ({
   parentSlug,
   ...props
 }: CodePopUpProps) => {
-  return (
-    <Portal>
-      <Code
-        fontSize="md"
-        zIndex={zIndexCodePopUp}
-        concise={concise}
-        full={full}
-        position="absolute"
-        // We're always "raised" as this is the pop-up.
-        background={toolkitType === "ideas" ? "white" : "blimpTeal.50"}
-        boxShadow="rgba(0, 0, 0, 0.18) 0px 2px 6px"
-        highlightDragHandle
-        toolkitType={toolkitType}
-        parentSlug={parentSlug}
-        {...props}
-      />
-    </Portal>
+  return createPortal(
+    <Code
+      concise={concise}
+      full={full}
+      // We're always "raised" as this is the pop-up.
+      raisedLook={toolkitType !== "ideas"}
+      highlightDragHandle
+      toolkitType={toolkitType}
+      parentSlug={parentSlug}
+      isPopUp
+      {...props}
+    />,
+    document.body
   );
 };
 
-interface CodeProps extends BoxProps {
+interface CodeProps {
   concise: string;
   full: string;
-  ref?: Ref<HTMLDivElement>;
   highlightDragHandle: boolean;
   toolkitType?: string;
   parentSlug?: string;
   onCodeDragEnd: () => void;
-  onCopyCode: () => void;
+  onMouseEnter?: React.MouseEventHandler<HTMLElement>;
+  onMouseLeave?: React.MouseEventHandler<HTMLElement>;
   isOpen: boolean;
   onToggle: React.Dispatch<React.SetStateAction<boolean>>;
+  raisedLook: boolean;
+  /** The portalled copy: absolute at runtime coordinates, above scrollbars. */
+  isPopUp: boolean;
+  style?: CSSProperties;
 }
 
-const Code = forwardRef<CodeProps, "pre">(
+const Code = React.forwardRef<HTMLDivElement, CodeProps>(
   (
     {
       concise,
@@ -277,9 +256,11 @@ const Code = forwardRef<CodeProps, "pre">(
       toolkitType,
       parentSlug,
       onCodeDragEnd,
-      onCopyCode,
       isOpen,
       onToggle,
+      raisedLook,
+      isPopUp,
+      style,
       ...props
     }: CodeProps,
     ref
@@ -289,15 +270,16 @@ const Code = forwardRef<CodeProps, "pre">(
     const handleDragStart = useCallback(
       (event: React.DragEvent) => {
         logging.event({
-          type: "code-drag",
-          message: `${toolkitType}-${parentSlug}`,
+          type: "code_drag",
+          detail: { surface: toolkitType, id: parentSlug },
         });
         dndDebug("dragstart");
         event.dataTransfer.dropEffect = "copy";
         setDragContext({
           code: full,
           type: "example",
-          id: `${toolkitType}-${parentSlug}`,
+          tab: toolkitType,
+          id: parentSlug,
         });
         event.dataTransfer.setData(pythonSnippetMediaType, full);
         if (dragImage.current) {
@@ -316,55 +298,72 @@ const Code = forwardRef<CodeProps, "pre">(
     );
     const intl = useIntl();
     const [{ dragDropSuccess }] = useSessionSettings();
-    return (
+    const tooltipDisabled =
+      toolkitType === "ideas" ? true : Boolean(dragDropSuccess);
+    const content = (
+      <HStack
+        // Interactive: click toggles the action button, drag inserts code
+        // (also required by react-aria's Focusable tooltip trigger).
+        role="button"
+        draggable={toolkitType === "ideas" ? false : true}
+        transition="background .2s, box-shadow .2s"
+        borderWidth="1px"
+        borderColor="blimpTeal.300"
+        borderRadius="lg"
+        fontFamily="code"
+        overflow="hidden"
+        ref={ref}
+        gap="0"
+        onClick={() => onToggle(!isOpen)}
+        onDragStart={toolkitType === "ideas" ? () => {} : handleDragStart}
+        onDragEnd={handleDragEnd}
+        cursor={toolkitType === "ideas" ? "default" : "grab"}
+        position="absolute"
+        fontSize={isPopUp ? "md" : undefined}
+        zIndex={isPopUp ? "codePopUp" : "code"}
+        bgColor={raisedLook ? "blimpTeal.50" : "white"}
+        boxShadow={isPopUp ? "rgba(0, 0, 0, 0.18) 0px 2px 6px" : undefined}
+        tabIndex={isPopUp ? undefined : 0}
+        _focusVisible={{ focusRing: "outline" }}
+        // Pop-up position/size at runtime coordinates.
+        style={style}
+        {...props}
+      >
+        <VisuallyHidden>
+          <FormattedMessage id="code-example" />
+        </VisuallyHidden>
+        {toolkitType !== "ideas" && (
+          <DragHandle
+            css={{ borderTopLeftRadius: "lg", p: "1", alignSelf: "stretch" }}
+            highlight={highlightDragHandle}
+          />
+        )}
+
+        <CodeMirrorView
+          css={{
+            // If we fix copy and deal with selection sync then we should
+            // probably remove this, though it'll make it harder to drag.
+            pointerEvents: "none",
+            flex: "1 0 auto",
+            p: "5",
+            pl: "1",
+            pt: "2",
+            pb: "2",
+            minW: "40",
+          }}
+          value={concise}
+        />
+      </HStack>
+    );
+    return tooltipDisabled ? (
+      content
+    ) : (
       <Tooltip
         hasArrow
-        placement="top-start"
+        placement="top start"
         label={intl.formatMessage({ id: "drag-hover" })}
-        closeOnClick={false}
-        isDisabled={toolkitType === "ideas" ? true : dragDropSuccess}
       >
-        <HStack
-          draggable={toolkitType === "ideas" ? false : true}
-          transition="background .2s, box-shadow .2s"
-          borderWidth="1px"
-          borderColor="blimpTeal.300"
-          borderRadius="lg"
-          fontFamily="code"
-          overflow="hidden"
-          ref={ref}
-          spacing={0}
-          onClick={() => onToggle(!isOpen)}
-          onDragStart={toolkitType === "ideas" ? () => {} : handleDragStart}
-          onDragEnd={handleDragEnd}
-          cursor={toolkitType === "ideas" ? "default" : "grab"}
-          {...props}
-        >
-          <VisuallyHidden>
-            <FormattedMessage id="code-example" />
-          </VisuallyHidden>
-          {toolkitType !== "ideas" && (
-            <DragHandle
-              borderTopLeftRadius="lg"
-              p={1}
-              alignSelf="stretch"
-              highlight={highlightDragHandle}
-            />
-          )}
-
-          <CodeMirrorView
-            // If we fix copy and deal with selection sync then we should probably remove this,
-            // though it'll make it harder to drag.
-            pointerEvents="none"
-            value={concise}
-            flex="1 0 auto"
-            p={5}
-            pl={1}
-            pt={2}
-            pb={2}
-            minW={40}
-          />
-        </HStack>
+        <Focusable>{content}</Focusable>
       </Tooltip>
     );
   }

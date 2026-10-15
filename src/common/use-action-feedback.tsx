@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { useToast, ToastPosition } from "@chakra-ui/toast";
+import { ToastFn, useToast } from "@microbit/ui";
 import { ReactNode, useMemo } from "react";
 import { IntlShape, useIntl } from "react-intl";
 import { deployment } from "../deployment";
@@ -13,7 +13,7 @@ import MaybeLink from "./MaybeLink";
 
 export class ActionFeedback {
   constructor(
-    private toast: ReturnType<typeof useToast>,
+    private toast: ToastFn,
     private logging: Logging,
     private intl: IntlShape
   ) {}
@@ -36,9 +36,7 @@ export class ActionFeedback {
       title,
       status: "error",
       description,
-      position: "top",
       isClosable: true,
-      variant: "toast",
     });
   }
 
@@ -50,9 +48,7 @@ export class ActionFeedback {
       title,
       status: "warning",
       description,
-      position: "top",
       isClosable: true,
-      variant: "toast",
     });
   }
 
@@ -64,33 +60,21 @@ export class ActionFeedback {
       title,
       status: "success",
       description,
-      position: "top",
       isClosable: false,
       duration: 2000, // Quicker than for errors,
-      variant: "toast",
     });
   }
 
   /**
    * Info, not a success/error message.
    */
-  info({
-    title,
-    description,
-    position = "top",
-  }: {
-    title: string;
-    description?: ReactNode;
-    position?: ToastPosition;
-  }) {
+  info({ title, description }: { title: string; description?: ReactNode }) {
     this.toast({
       title,
       status: "info",
       description,
-      position,
       isClosable: false,
       duration: 2000, // Quicker than for errors,
-      variant: "toast",
     });
   }
 
@@ -99,7 +83,7 @@ export class ActionFeedback {
    * @param error the error thrown.
    */
   unexpectedError(error: any) {
-    this.logging.error(error);
+    this.logging.error("Unexpected error", error);
     this.toast({
       title: this.intl.formatMessage({ id: "unexpected-error-description" }),
       status: "error",
@@ -113,7 +97,6 @@ export class ActionFeedback {
                   href={deployment.supportLink}
                   target="_blank"
                   rel="noopener"
-                  textDecoration="underline"
                 >
                   {chunks}
                 </MaybeLink>
@@ -122,7 +105,6 @@ export class ActionFeedback {
           )}
         </>
       ),
-      position: "top",
       isClosable: true,
     });
   }

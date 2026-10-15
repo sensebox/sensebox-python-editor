@@ -16,13 +16,15 @@ afterEach(() => {
 vi.stubEnv("VITE_SANITY_PROJECT", "project");
 vi.stubEnv("VITE_SANITY_DATASET", "dataset");
 
-global.matchMedia =
-  global.matchMedia ||
+globalThis.matchMedia =
+  globalThis.matchMedia ||
   function () {
     return {
       matches: false,
       addListener: vi.fn(),
       removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     };
   };
 
@@ -32,4 +34,4 @@ class MockResizeObserver {
   disconnect = vi.fn();
 }
 
-global.ResizeObserver = global.ResizeObserver || MockResizeObserver;
+globalThis.ResizeObserver = globalThis.ResizeObserver || MockResizeObserver;

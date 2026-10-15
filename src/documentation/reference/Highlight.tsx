@@ -3,22 +3,28 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, BoxProps } from "@chakra-ui/layout";
-import {
-  UseDisclosureReturn,
-  usePrefersReducedMotion,
-  usePrevious,
-} from "@chakra-ui/react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useMediaQuery, usePrevious } from "@microbit/ui";
+import { ReactNode, useEffect, useRef, useState, useCallback } from "react";
+import { Box } from "styled-system/jsx";
 import { Anchor } from "../../router-hooks";
 import { useLogging } from "../../logging/logging-hooks";
 import { useScrollablePanelAncestor } from "../../common/ScrollablePanel";
 
-interface HighlightProps extends BoxProps {
+/**
+ * Disclosure state for the highlight, implemented with useState by callers.
+ */
+export interface HighlightDisclosure {
+  isOpen: boolean;
+  onOpen: () => void;
+  onToggle: () => void;
+}
+
+interface HighlightProps {
+  children: ReactNode;
   anchor?: Anchor;
   id: string;
   active: boolean | undefined;
-  disclosure: UseDisclosureReturn;
+  disclosure: HighlightDisclosure;
 }
 
 const Highlight = ({
@@ -27,12 +33,13 @@ const Highlight = ({
   anchor,
   id,
   disclosure,
-  ...props
 }: HighlightProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const previousAnchor = usePrevious(anchor);
   const scrollable = useScrollablePanelAncestor();
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = useMediaQuery(
+    "(prefers-reduced-motion: reduce)"
+  );
   const logging = useLogging();
   const [highlighting, setHighlighting] = useState(false);
   useEffect(() => {
@@ -40,6 +47,7 @@ const Highlight = ({
       logging.log("Activating " + id);
       disclosure.onOpen();
       // Delay until after the opening animation so the full container height is known for the scroll.
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot scroll and highlight sequence
       window.setTimeout(() => {
         if (ref.current && scrollable.current) {
           const stickyHeaderHeight = scrollable.current
@@ -51,8 +59,10 @@ const Highlight = ({
             behavior: prefersReducedMotion ? "auto" : "smooth",
           });
         }
+        // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot scroll and highlight sequence
         setTimeout(() => {
           setHighlighting(true);
+          // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot scroll and highlight sequence
           setTimeout(() => {
             setHighlighting(false);
           }, 3000);
@@ -74,19 +84,17 @@ const Highlight = ({
     setHighlighting(false);
   }, [setHighlighting]);
 
-  const style = highlighting
-    ? {
-        backgroundColor: "brand.100",
-        transition: "background-color ease-out 0.2s",
-      }
-    : { transition: "background-color ease-in 0.6s" };
   return (
     <Box
       onClick={handleHighlightClick}
       borderLeftRadius="md"
       ref={ref}
-      {...props}
-      {...style}
+      backgroundColor={highlighting ? "brand.100" : undefined}
+      transition={
+        highlighting
+          ? "background-color ease-out 0.2s"
+          : "background-color ease-in 0.6s"
+      }
     >
       {children}
     </Box>

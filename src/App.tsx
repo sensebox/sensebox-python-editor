@@ -3,13 +3,15 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { ChakraProvider } from "@chakra-ui/react";
+import { SharedUIProvider, ToastProvider } from "@microbit/ui";
 import { polyfill } from "mobile-drag-drop";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import "./App.css";
-import VisualViewPortCSSVariables from "./common/VisualViewportCSSVariables";
 import { DialogProvider } from "./common/use-dialogs";
+import VisualViewPortCSSVariables from "./common/VisualViewportCSSVariables";
 import { deployment, useDeployment } from "./deployment";
+import { ConnectionStatusChange } from "@microbit/microbit-connection";
+import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 import { DeviceContextProvider } from "./device/device-hooks";
 import { MockDeviceConnection } from "./device/mock";
 import { WebFileSystemConnection } from "./device/web-file-system-device";
@@ -19,16 +21,17 @@ import { ActiveEditorProvider } from "./editor/active-editor-hooks";
 import { FileSystem } from "./fs/fs";
 import { FileSystemProvider } from "./fs/fs-hooks";
 import { createHost } from "./fs/host";
+import { fetchMicroPython } from "./micropython/micropython";
 import { LanguageServerClientProvider } from "./language-server/language-server-hooks";
+import { logDeviceStatusChange } from "./logging/analytics";
 import { LoggingProvider } from "./logging/logging-hooks";
 import TranslationProvider from "./messages/TranslationProvider";
-import { fetchMicroPython } from "./micropython/micropython";
 import ProjectDropTarget from "./project/ProjectDropTarget";
-import { RouterProvider } from "./router-hooks";
+import { RouterProvider } from "react-router/dom";
+import { createRouter } from "./router";
 import SessionSettingsProvider from "./settings/session-settings";
 import SettingsProvider from "./settings/settings";
 import BeforeUnloadDirtyCheck from "./workbench/BeforeUnloadDirtyCheck";
-import Workbench from "./workbench/Workbench";
 import { SelectionProvider } from "./workbench/use-selection";
 
 const isMockDeviceMode = () =>
@@ -38,21 +41,28 @@ const isMockDeviceMode = () =>
   );
 
 const logging = deployment.logging;
-const device = isMockDeviceMode()
-  ? new MockDeviceConnection()
-  : new WebFileSystemConnection({ logging });
-
 const host = createHost(logging);
 const fs = new FileSystem(logging, host, fetchMicroPython);
+
+const device: MicrobitUSBConnection = isMockDeviceMode()
+  ? new MockDeviceConnection()
+  : new WebFileSystemConnection({ logging, files: () => fs.files() });
 
 // If this fails then we retry on access.
 fs.initializeInBackground();
 
 const App = () => {
   useEffect(() => {
-    logging.event({ type: "boot" });
+    logging.setUserProperty(
+      "webusb_available",
+      "usb" in navigator ? "yes" : "no"
+    );
+    const statusListener = (event: ConnectionStatusChange) =>
+      logDeviceStatusChange(logging, event);
+    device.addEventListener("status", statusListener);
     device.initialize();
     return () => {
+      device.removeEventListener("status", statusListener);
       device.dispose();
     };
   }, []);
@@ -63,14 +73,20 @@ const App = () => {
 
   const deployment = useDeployment();
   const { ConsentProvider } = deployment.compliance;
+  const router = useMemo(() => createRouter(), []);
   return (
     <>
       <VisualViewPortCSSVariables />
-      <ChakraProvider theme={deployment.chakraTheme}>
-        <LoggingProvider value={logging}>
-          <SettingsProvider>
-            <SessionSettingsProvider>
-              <TranslationProvider>
+      <LoggingProvider value={logging}>
+        <SettingsProvider>
+          <SessionSettingsProvider>
+            <TranslationProvider>
+              {/* Inside TranslationProvider: SharedUIProvider passes the app
+                    locale to react-aria for its built-in strings, and the
+                    toast region's close label and status announcements are
+                    react-intl messages. */}
+              <SharedUIProvider>
+                <ToastProvider />
                 <FileSystemProvider value={fs}>
                   <DeviceContextProvider value={device}>
                     <LanguageServerClientProvider>
@@ -79,15 +95,13 @@ const App = () => {
                         <SearchProvider>
                           <SelectionProvider>
                             <DialogProvider>
-                              <RouterProvider>
-                                <ConsentProvider>
-                                  <ProjectDropTarget>
-                                    <ActiveEditorProvider>
-                                      <Workbench />
-                                    </ActiveEditorProvider>
-                                  </ProjectDropTarget>
-                                </ConsentProvider>
-                              </RouterProvider>
+                              <ConsentProvider>
+                                <ProjectDropTarget>
+                                  <ActiveEditorProvider>
+                                    <RouterProvider router={router} />
+                                  </ActiveEditorProvider>
+                                </ProjectDropTarget>
+                              </ConsentProvider>
                             </DialogProvider>
                           </SelectionProvider>
                         </SearchProvider>
@@ -95,11 +109,11 @@ const App = () => {
                     </LanguageServerClientProvider>
                   </DeviceContextProvider>
                 </FileSystemProvider>
-              </TranslationProvider>
-            </SessionSettingsProvider>
-          </SettingsProvider>
-        </LoggingProvider>
-      </ChakraProvider>
+              </SharedUIProvider>
+            </TranslationProvider>
+          </SessionSettingsProvider>
+        </SettingsProvider>
+      </LoggingProvider>
     </>
   );
 };

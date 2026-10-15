@@ -18,6 +18,7 @@ import { ActionFeedback } from "../common/use-action-feedback";
 import { Logging } from "../logging/logging";
 import { copyCodeSnippet } from "./codemirror/copypaste";
 import { CodeInsertType } from "./codemirror/dnd";
+import { IntlShape } from "react-intl";
 
 /**
  * Actions that operate on a CM editor.
@@ -26,39 +27,42 @@ export class EditorActions {
   constructor(
     private view: EditorView,
     private logging: Logging,
-    private actionFeedback: ActionFeedback
+    private actionFeedback: ActionFeedback,
+    private intl: IntlShape
   ) {}
 
   copyCode = async (
     code: string,
     codeWithImports: string,
     type: CodeInsertType,
-    id?: string
+    id?: string,
+    tab?: string
   ): Promise<void> => {
     this.logging.event({
-      type: "code-copy",
-      message: id,
+      type: "code_copy",
+      detail: { surface: tab, id },
     });
     copyCodeSnippet({
       code,
       codeWithImports,
       type,
+      tab,
       id,
     });
     this.actionFeedback.success({
-      title: "Code copied, use paste to insert it.",
+      title: this.intl.formatMessage({ id: "copy-snippet-advice" }),
     });
   };
   undo = (): void => {
     this.logging.event({
-      type: "undo",
+      type: "editor_undo",
     });
     undo(this.view);
     this.view.focus();
   };
   redo = (): void => {
     this.logging.event({
-      type: "redo",
+      type: "editor_redo",
     });
     redo(this.view);
     this.view.focus();
@@ -100,6 +104,7 @@ const ActiveEditorStateContext = React.createContext<
 >(undefined);
 
 const ActiveEditorStateProvider = ({ children }: { children: ReactNode }) => {
+  // eslint-disable-next-line @eslint-react/use-state -- the tuple is handed to context as-is
   const value = useState<EditorInfo>(defaultEditorInfo);
   return (
     <ActiveEditorStateContext.Provider value={value}>
@@ -114,6 +119,7 @@ interface ActiveEditorProviderProps {
 export const ActiveEditorProvider = ({
   children,
 }: ActiveEditorProviderProps) => {
+  // eslint-disable-next-line @eslint-react/use-state -- the tuple is handed to context as-is
   const actions = useState<EditorActions>();
   return (
     <ActiveEditorActionsContext.Provider value={actions}>

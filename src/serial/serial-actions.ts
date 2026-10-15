@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 import { Terminal } from "xterm";
-import { DeviceConnection } from "../device/device";
 import { Logging } from "../logging/logging";
 
 /**
@@ -13,17 +13,17 @@ import { Logging } from "../logging/logging";
 export class SerialActions {
   constructor(
     private terminal: React.RefObject<Terminal | undefined>,
-    private device: DeviceConnection,
+    private device: MicrobitUSBConnection,
     private onSerialSizeChange: (size: "compact" | "open") => void,
     private logging: Logging
   ) {}
 
   interrupt = (): void => {
-    this.logging.event({ type: "serial-interrupt" });
+    this.logging.event({ type: "serial_interrupt" });
     this.sendCommand("\x03");
   };
   reset = (): void => {
-    this.logging.event({ type: "serial-reset" });
+    this.logging.event({ type: "serial_reset" });
     this.sendCommand("\x04");
   };
 

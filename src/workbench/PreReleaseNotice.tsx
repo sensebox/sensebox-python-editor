@@ -3,10 +3,10 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Button } from "@chakra-ui/button";
-import { Flex, HStack, Text } from "@chakra-ui/layout";
+import { Button, darkSurface, Text } from "@microbit/ui";
 import { useCallback, useEffect, useState } from "react";
 import { RiFeedbackFill, RiInformationFill } from "react-icons/ri";
+import { HStack, styled } from "styled-system/jsx";
 import { useStorage } from "../common/use-storage";
 import { useCookieConsent, useDeployment } from "../deployment";
 import { flags } from "../flags";
@@ -64,47 +64,44 @@ const PreReleaseNotice = ({ onDialogChange }: PreReleaseNoticeProps) => {
     onDialogChange("feedback");
   }, [onDialogChange]);
   return (
-    <Flex
+    <styled.section
+      display="flex"
+      {...darkSurface}
       bgColor="gray.800"
       color="white"
-      p={1}
-      pl={3}
-      pr={3}
+      p="1"
+      pl="3"
+      pr="3"
       justifyContent="space-between"
-      as="section"
       aria-label="Release information"
       role="region"
     >
-      <Text fontSize="sm" textAlign="center" fontWeight="semibold" p={1}>
+      <Text fontSize="sm" textAlign="center" fontWeight="semibold" p="1">
         Beta release
       </Text>
       <HStack>
         {hasInfoDialog && (
           <Button
-            leftIcon={<RiInformationFill />}
+            startIcon={<RiInformationFill />}
             variant="link"
-            color="white"
-            colorScheme="whiteAlpha"
             size="xs"
-            p={1}
-            onClick={openInfoDialog}
+            css={{ color: "white", p: "1", fontWeight: "semibold" }}
+            onPress={openInfoDialog}
           >
             More
           </Button>
         )}
         <Button
-          leftIcon={<RiFeedbackFill />}
+          startIcon={<RiFeedbackFill />}
           variant="link"
-          color="white"
-          colorScheme="whiteAlpha"
           size="xs"
-          p={1}
-          onClick={openFeedbackDialog}
+          css={{ color: "white", p: "1", fontWeight: "semibold" }}
+          onPress={openFeedbackDialog}
         >
           Feedback
         </Button>
       </HStack>
-    </Flex>
+    </styled.section>
   );
 };
 

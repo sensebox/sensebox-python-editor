@@ -5,8 +5,13 @@
  */
 import { Text } from "@codemirror/state";
 import * as LSP from "vscode-languageserver-protocol";
-import { Diagnostic } from "../lint/lint";
+import { Action, Diagnostic } from "../lint/lint";
 import { positionToOffset } from "./positions";
+import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
+import { ConnectionStatus } from "@microbit/microbit-connection";
+
+const reportMicrobitVersionApiUnsupported =
+  "reportMicrobitVersionApiUnsupported";
 
 const severityMapping = {
   [LSP.DiagnosticSeverity.Error]: "error",
@@ -17,12 +22,26 @@ const severityMapping = {
 
 export const diagnosticsMapping = (
   document: Text,
-  lspDiagnostics: LSP.Diagnostic[]
+  lspDiagnostics: LSP.Diagnostic[],
+  device: MicrobitUSBConnection,
+  warnOnV2OnlyFeatures: boolean,
+  warnOnV2OnlyFeaturesAction: () => Action
 ): Diagnostic[] =>
   lspDiagnostics
-    .map(({ range, message, severity, tags }): Diagnostic | undefined => {
-      let from = positionToOffset(document, range.start);
-      let to = positionToOffset(document, range.end);
+    .map(({ range, message, severity, tags, code }): Diagnostic | undefined => {
+      // Only show warnings for using V2 API features if a V1 board is connected
+      // and warnOnV2OnlyFeatures setting is on.
+      if (
+        code === reportMicrobitVersionApiUnsupported &&
+        (!warnOnV2OnlyFeatures ||
+          device.status !== ConnectionStatus.Connected ||
+          device.getBoardVersion() !== "V1")
+      ) {
+        return undefined;
+      }
+
+      const from = positionToOffset(document, range.start);
+      const to = positionToOffset(document, range.end);
       // Skip if we can't map to the current document.
       if (from !== undefined && to !== undefined && to >= from) {
         return {
@@ -30,8 +49,12 @@ export const diagnosticsMapping = (
           to,
           // Missing severity is client defined. Warn for now.
           severity: severityMapping[severity ?? LSP.DiagnosticSeverity.Warning],
-          message,
+          message: typeof message === "string" ? message : message.value,
           tags: tags ? tags.map(convertTag) : undefined,
+          actions:
+            code === reportMicrobitVersionApiUnsupported
+              ? [warnOnV2OnlyFeaturesAction()]
+              : [],
         };
       }
       return undefined;

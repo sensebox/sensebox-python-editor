@@ -5,20 +5,20 @@
  */
 import {
   getIntelHexAppendedScript,
+  microbitBoardId,
   MicropythonFsHex,
 } from "@microbit/microbit-fs";
 import { fromByteArray, toByteArray } from "base64-js";
-import EventEmitter from "events";
-import sortBy from "lodash.sortby";
+import { sortBy } from "../common/sort-util";
 import { lineNumFromUint8Array } from "../common/text-util";
-import { BoardId } from "../device/board-id";
-import { FlashDataSource, HexGenerationError } from "../device/device";
+import { FlashDataError, BoardVersion } from "@microbit/microbit-connection";
 import { Logging } from "../logging/logging";
 import { MicroPythonSource } from "../micropython/micropython";
-import { asciiToBytes, extractModuleData, generateId } from "./fs-util";
+import { extractModuleData, generateId } from "./fs-util";
 import { Host } from "./host";
 import { PythonProject } from "./initial-project";
 import { FSStorage } from "./storage";
+import { TypedEventTarget } from "../common/events";
 
 const commonFsSize = 20 * 1024;
 
@@ -46,10 +46,12 @@ export enum VersionAction {
 export interface Statistics {
   /**
    * The number of lines in code.py.
-   *
-   * Undefined when it is unchanged from the default program.
    */
-  lines: number | undefined;
+  lines: number;
+  /**
+   * Whether code.py is unchanged from the default program.
+   */
+  defaultMain: boolean;
   /**
    * File count.
    */
@@ -133,8 +135,22 @@ export const diff = (before: Project, after: Project): FileChange[] => {
   return result;
 };
 
-export const EVENT_PROJECT_UPDATED = "project_updated";
-export const EVENT_TEXT_EDIT = "file_text_updated";
+export class ProjectUpdatedEvent extends Event {
+  constructor(public readonly project: Project) {
+    super("project_updated");
+  }
+}
+export class TextEditEvent extends Event {
+  constructor() {
+    super("file_text_updated");
+  }
+}
+
+class EventMap {
+  "project_updated": ProjectUpdatedEvent;
+  "file_text_updated": TextEditEvent;
+}
+
 export const MAIN_FILE = "code.py";
 
 export const isNameLengthValid = (filename: string): boolean =>
@@ -153,7 +169,7 @@ export const isNameLengthValid = (filename: string): boolean =>
  * or fire any events. This plays well with uncontrolled embeddings of
  * third-party text editors.
  */
-export class FileSystem extends EventEmitter implements FlashDataSource {
+export class FileSystem extends TypedEventTarget<EventMap> {
   private initializing: Promise<void> | undefined;
   private storage: FSStorage;
   private fileVersions: Map<string, number> = new Map();
@@ -303,7 +319,7 @@ export class FileSystem extends EventEmitter implements FlashDataSource {
       this.incrementFileVersion(filename);
       return this.notify();
     } else {
-      this.emit(EVENT_TEXT_EDIT);
+      this.dispatchTypedEvent("file_text_updated", new TextEditEvent());
       // Nothing can have changed, don't needlessly change the identity of our file objects.
       return this.markDirty();
     }
@@ -357,7 +373,7 @@ export class FileSystem extends EventEmitter implements FlashDataSource {
         overwrite: true,
         formatFirst: true,
       });
-    } catch (e) {
+    } catch {
       const code = getIntelHexAppendedScript(hex);
       if (!code) {
         throw new Error("No appended code found in the hex file");
@@ -401,12 +417,10 @@ export class FileSystem extends EventEmitter implements FlashDataSource {
     return {
       files: files.length,
       storageUsed: fs.getStorageUsed(),
-      lines:
-        this.cachedInitialProject &&
-        this.cachedInitialProject.files[MAIN_FILE] ===
-          fromByteArray(currentMainFile)
-          ? undefined
-          : lineNumFromUint8Array(currentMainFile),
+      lines: lineNumFromUint8Array(currentMainFile),
+      defaultMain:
+        this.cachedInitialProject?.files[MAIN_FILE] ===
+        fromByteArray(currentMainFile),
       magicModules: numMagicModules,
     };
   }
@@ -427,7 +441,10 @@ export class FileSystem extends EventEmitter implements FlashDataSource {
       name: await this.storage.projectName(),
       files: filesSorted,
     };
-    this.emit(EVENT_PROJECT_UPDATED, this.project);
+    this.dispatchTypedEvent(
+      "project_updated",
+      new ProjectUpdatedEvent(this.project)
+    );
   }
 
   async toHexForSave(): Promise<string> {
@@ -440,22 +457,16 @@ export class FileSystem extends EventEmitter implements FlashDataSource {
     return this.storage.clearDirty();
   }
 
-  async fullFlashData(boardId: BoardId): Promise<Uint8Array> {
-    try {
-      const fs = await this.initialize();
-      return asciiToBytes(fs.getIntelHex(boardId.normalize().id));
-    } catch (e: any) {
-      throw new HexGenerationError(e.message);
-    }
-  }
-
-  async partialFlashData(boardId: BoardId): Promise<Uint8Array> {
-    try {
-      const fs = await this.initialize();
-      return fs.getIntelHexBytes(boardId.normalize().id);
-    } catch (e: any) {
-      throw new HexGenerationError(e.message);
-    }
+  asFlashDataSource() {
+    return async (boardVersion: BoardVersion) => {
+      try {
+        const fs = await this.initialize();
+        const boardId = microbitBoardId[boardVersion];
+        return fs.getIntelHex(boardId);
+      } catch (e: any) {
+        throw new FlashDataError(e.message);
+      }
+    };
   }
 
   async files(): Promise<Record<string, Uint8Array>> {

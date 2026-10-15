@@ -3,16 +3,16 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, BoxProps } from "@chakra-ui/layout";
-import { useToken } from "@chakra-ui/react";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { CSSProperties, useEffect, useMemo, useRef } from "react";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
-import "xterm/css/xterm.css";
+import { Box } from "styled-system/jsx";
+import { SystemStyleObject } from "styled-system/types";
+import { token } from "styled-system/tokens";
 import useActionFeedback from "../common/use-action-feedback";
 import useIsUnmounted from "../common/use-is-unmounted";
 import { backgroundColorTerm } from "../deployment/misc";
-import { EVENT_SERIAL_DATA, EVENT_SERIAL_RESET } from "../device/device";
+import { SerialData } from "@microbit/microbit-connection/usb";
 import { parseTraceLine, useDevice } from "../device/device-hooks";
 import { useSelection } from "../workbench/use-selection";
 import { WebLinkProvider } from "./link-provider";
@@ -20,18 +20,26 @@ import { useCurrentTerminalRef } from "./serial-hooks";
 import "./xterm-custom.css";
 import customKeyEventHandler from "./xterm-keyboard";
 
-interface XTermProps extends BoxProps {
+interface XTermProps {
   tabOutRef: HTMLElement;
   fontSizePt: number;
+  css?: SystemStyleObject;
+  style?: CSSProperties;
 }
 
 /**
  * xterm.js-based terminal.
  */
-const XTerm = ({ fontSizePt, tabOutRef, ...props }: XTermProps) => {
+const XTerm = ({ fontSizePt, tabOutRef, css: cssProp, style }: XTermProps) => {
   const ref = useRef<HTMLDivElement>(null);
   useManagedTermimal(ref, tabOutRef, fontSizePt);
-  return <Box {...props} ref={ref} backgroundColor={backgroundColorTerm} />;
+  return (
+    <Box
+      css={cssProp}
+      style={{ backgroundColor: backgroundColorTerm, ...style }}
+      ref={ref}
+    />
+  );
 };
 
 const ptToPixelRatio = 96 / 72;
@@ -48,7 +56,7 @@ const useManagedTermimal = (
   fontSizePt: number
 ): void => {
   const actionFeedback = useActionFeedback();
-  const codeFontFamily = useToken("fonts", "code");
+  const codeFontFamily = token("fonts.code");
   const device = useDevice();
   const isUnmounted = useIsUnmounted();
   const [, setSelection] = useSelection();
@@ -96,9 +104,9 @@ const useManagedTermimal = (
       customKeyEventHandler(e, tabOutRef)
     );
 
-    const serialListener = (data: string) => {
+    const serialListener = (event: SerialData) => {
       if (!isUnmounted()) {
-        terminal.write(data);
+        terminal.write(event.data);
       }
     };
     const resetListener = () => {
@@ -106,8 +114,8 @@ const useManagedTermimal = (
         terminal.reset();
       }
     };
-    device.on(EVENT_SERIAL_DATA, serialListener);
-    device.on(EVENT_SERIAL_RESET, resetListener);
+    device.addEventListener("serialdata", serialListener);
+    device.addEventListener("serialreset", resetListener);
     terminal.onData((data: string) => {
       if (!isUnmounted()) {
         // Async for internal error handling, we don't need to wait.
@@ -132,7 +140,7 @@ const useManagedTermimal = (
         );
         (xtermAccessibilityEl as HTMLElement).style.width =
           (xtermScreenEl as HTMLElement).offsetWidth + "px";
-      } catch (e) {
+      } catch {
         // It throws if you resize it when not visible but it does no harm.
       }
     });
@@ -156,9 +164,10 @@ const useManagedTermimal = (
         let text = event.clipboardData.getData("text/plain");
         if (/[\n\r]/.test(text)) {
           actionFeedback.info({
+            // Previously shown bottom-right near the terminal; the shared
+            // toast region has a single (top) placement.
             title:
               "Started and finished MicroPython paste mode for the multi-line paste.",
-            position: "bottom-right",
           });
           // Wrap in start/end paste mode to prevent auto-indent.
           text = `\x05${text}\x04`;
@@ -168,7 +177,9 @@ const useManagedTermimal = (
     };
     coreTerminal._initGlobal = () => {
       // We don't need to remove these as we share a lifetime with this DOM.
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- shares its lifetime with the terminal DOM, as the note above says
       terminal.element!.addEventListener("paste", customPasteEventHandler);
+      // eslint-disable-next-line @eslint-react/web-api-no-leaked-event-listener -- shares its lifetime with the terminal DOM, as the note above says
       terminal.textarea!.addEventListener("paste", customPasteEventHandler);
       initGlobal();
     };
@@ -177,8 +188,8 @@ const useManagedTermimal = (
 
     return () => {
       currentTerminalRef.current = undefined;
-      device.removeListener(EVENT_SERIAL_RESET, resetListener);
-      device.removeListener(EVENT_SERIAL_DATA, serialListener);
+      device.removeEventListener("serialreset", resetListener);
+      device.removeEventListener("serialdata", serialListener);
       resizeObserver.disconnect();
       terminal.dispose();
     };
@@ -202,7 +213,7 @@ const useManagedTermimal = (
     );
     try {
       fitAddon.fit();
-    } catch (e) {
+    } catch {
       // It throws if you resize it when not visible but it does no harm.
     }
   }, [currentTerminalRef, fitAddon, fontSizePt]);

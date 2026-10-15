@@ -7,15 +7,16 @@ import lunr from "lunr";
 import { ApiDocsResponse } from "../../language-server/apidocs";
 import { Toolkit } from "../reference/model";
 import { IndexMessage } from "./common";
-import lunrJa from "@microbit/lunr-languages/lunr.ja";
+import lunrJa from "lunr-languages/lunr.ja";
 import {
   buildIndex,
   buildSearchIndex,
+  LunrWithLanguages,
   SearchableContent,
   SearchWorker,
 } from "./search.worker";
 import { vi } from "vitest";
-import frLanguageSupport from "@microbit/lunr-languages/lunr.fr";
+import frLanguageSupport from "lunr-languages/lunr.fr";
 
 const searchableReferenceContent: SearchableContent[] = [
   {
@@ -51,7 +52,7 @@ const searchableReferenceContentJa: SearchableContent[] = [
 ];
 
 describe("Search", () => {
-  const languagePlugin = lunr.multiLanguage("en");
+  const languagePlugin = (lunr as LunrWithLanguages).multiLanguage("en");
   const search = buildSearchIndex(
     searchableReferenceContent,
     "reference",
@@ -249,7 +250,10 @@ describe("Search in Japanese", () => {
   const plugins: lunr.Builder.Plugin[] = [];
   lunrJa(lunr);
   plugins.push((lunr as any)["ja"]);
-  const languagePluginJa = lunr.multiLanguage("en", "ja");
+  const languagePluginJa = (lunr as LunrWithLanguages).multiLanguage(
+    "en",
+    "ja"
+  );
 
   const search = buildSearchIndex(
     searchableReferenceContentJa,

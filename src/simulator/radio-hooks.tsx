@@ -1,4 +1,4 @@
-import { usePrevious } from "@chakra-ui/react";
+import { usePrevious } from "@microbit/ui";
 import React, {
   ReactNode,
   useCallback,
@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { useSimulator } from "../device/device-hooks";
-import { EVENT_RADIO_DATA, EVENT_RADIO_RESET } from "../device/simulator";
+import { RadioData } from "../device/simulator";
 
 const messageLimit = 100;
 let idSeq = 0;
@@ -52,7 +52,8 @@ const useRadioChatItemsInternal = (
   }, [group, prevGroup]);
 
   useEffect(() => {
-    const handleReceive = (message: string) => {
+    const handleReceive = (event: RadioData) => {
+      const message = event.text;
       setItems((items) =>
         cappedMessages([
           ...items,
@@ -63,11 +64,11 @@ const useRadioChatItemsInternal = (
     const handleReset = () => {
       setItems([{ type: "groupChange", group, id: idSeq++ }]);
     };
-    device.on(EVENT_RADIO_DATA, handleReceive);
-    device.on(EVENT_RADIO_RESET, handleReset);
+    device.addEventListener("radiodata", handleReceive);
+    device.addEventListener("radioreset", handleReset);
     return () => {
-      device.removeListener(EVENT_RADIO_RESET, handleReset);
-      device.removeListener(EVENT_RADIO_DATA, handleReceive);
+      device.removeEventListener("radioreset", handleReset);
+      device.removeEventListener("radiodata", handleReceive);
     };
   }, [device, group]);
   const handleSend = useCallback(

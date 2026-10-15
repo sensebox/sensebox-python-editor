@@ -3,15 +3,13 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Button } from "@chakra-ui/button";
 import {
+  Button,
   Modal,
   ModalBody,
-  ModalContent,
   ModalFooter,
   ModalHeader,
-  ModalOverlay,
-} from "@chakra-ui/modal";
+} from "@microbit/ui";
 import { FormattedMessage } from "react-intl";
 import SettingsArea from "./SettingsArea";
 
@@ -36,21 +34,17 @@ export const SettingsDialog = ({
       size="lg"
       finalFocusRef={finalFocusRef}
     >
-      <ModalOverlay>
-        <ModalContent>
-          <ModalHeader fontSize="lg" fontWeight="bold">
-            <FormattedMessage id="settings" />
-          </ModalHeader>
-          <ModalBody>
-            <SettingsArea />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="solid" onClick={onClose}>
-              <FormattedMessage id="close-action" />
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </ModalOverlay>
+      <ModalHeader css={{ fontSize: "lg", fontWeight: "bold" }}>
+        <FormattedMessage id="settings" />
+      </ModalHeader>
+      <ModalBody>
+        <SettingsArea />
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="primary" onPress={onClose}>
+          <FormattedMessage id="close-action" />
+        </Button>
+      </ModalFooter>
     </Modal>
   );
 };

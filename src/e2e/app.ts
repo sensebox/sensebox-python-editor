@@ -3,12 +3,19 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { BrowserContext, Frame, Locator, Page, expect } from "@playwright/test";
+import {
+  BrowserContext,
+  Frame,
+  JSHandle,
+  Locator,
+  Page,
+  expect,
+} from "@playwright/test";
 import { Flag } from "../flags";
 import path from "path";
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
-import { WebUSBErrorCode } from "../device/device";
+import { DeviceErrorCode } from "@microbit/microbit-connection";
 
 export enum LoadDialogType {
   CONFIRM,
@@ -22,7 +29,8 @@ export interface BrowserDownload {
   data: Buffer;
 }
 
-const baseUrl = "http://localhost:3000";
+// E2E_PORT points the suite at a server on another port.
+const baseUrl = `http://localhost:${process.env.E2E_PORT ?? "3000"}`;
 
 interface UrlOptions {
   flags?: Flag[];
@@ -199,10 +207,13 @@ class Simulator {
     sliderLabel: string,
     value: "min" | "max"
   ): Promise<void> {
-    const sliderThumb = this.page.locator(
-      `[role="slider"][aria-label="${sliderLabel}"]`
-    );
-    const bounding_box = await sliderThumb!.boundingBox();
+    // Accessible-name query: react-aria labels the slider input via
+    // aria-labelledby rather than an aria-label attribute. The input is
+    // visually hidden inside the draggable thumb, so drag its parent.
+    const sliderThumb = this.page
+      .getByRole("slider", { name: sliderLabel })
+      .locator("..");
+    const bounding_box = await sliderThumb.boundingBox();
     await this.page.mouse.move(
       bounding_box!.x + bounding_box!.width / 2,
       bounding_box!.y + bounding_box!.height / 2
@@ -218,7 +229,7 @@ class Simulator {
     const inputButton = this.page.getByRole("button", {
       name,
     });
-    const bounding_box = await inputButton!.boundingBox();
+    const bounding_box = await inputButton.boundingBox();
     await this.page.mouse.move(
       bounding_box!.x + bounding_box!.width / 2,
       bounding_box!.y + bounding_box!.height / 2
@@ -331,7 +342,9 @@ export class App {
     await this.switchTab("Project");
     await this.page.getByRole("button", { name: "Create file" }).click();
     await this.page.getByLabel("Name*").fill(name);
-    await this.page.getByRole("button", { name: "Create" }).click();
+    await this.page
+      .getByRole("button", { name: "Create", exact: true })
+      .click();
   }
 
   async resetProject(): Promise<void> {
@@ -432,7 +445,7 @@ export class App {
     expectedName: string,
     expectedVersion: string
   ): Promise<void> {
-    for (const name in [expectedName, expectedVersion]) {
+    for (const name of [expectedName, expectedVersion]) {
       await expect(this.page.getByRole("cell", { name })).toBeVisible();
     }
   }
@@ -554,6 +567,73 @@ export class App {
     await codeExample.dragTo(editorLine);
   }
 
+  private dragDataTransfer: JSHandle<DataTransfer> | undefined;
+  private dragSource: Locator | undefined;
+  private dragTarget: { clientX: number; clientY: number } | undefined;
+
+  /**
+   * Starts dragging a code example and hovers it over the target line
+   * without dropping. Finish with dragCodeEmbedOffEditor and/or endDrag.
+   *
+   * The drag is synthesised with dispatched events as Playwright's mouse
+   * API cannot hold a real HTML5 drag mid-flight for assertions.
+   */
+  async startCodeEmbedDrag(name: string, targetLine: number) {
+    // The draggable element with the drag handlers, unlike getCodeExample
+    // which returns a nested div.
+    this.dragSource = this.page
+      .getByRole("listitem")
+      .filter({ hasText: name })
+      .getByRole("button")
+      .filter({ hasText: "Code example:" })
+      .first();
+    this.dragDataTransfer = await this.page.evaluateHandle(
+      () => new DataTransfer()
+    );
+    await this.dragSource.dispatchEvent("dragstart", {
+      dataTransfer: this.dragDataTransfer,
+    });
+    const editorLine = this.editor
+      .getByRole("textbox")
+      .locator("div")
+      .filter({ hasText: targetLine.toString() });
+    const target = (await editorLine.boundingBox())!;
+    this.dragTarget = {
+      clientX: target.x + target.width / 2,
+      clientY: target.y + target.height / 2,
+    };
+    await this.editorTextArea.dispatchEvent("dragover", {
+      dataTransfer: this.dragDataTransfer,
+      ...this.dragTarget,
+    });
+  }
+
+  async dragCodeEmbedOffEditor() {
+    await this.editorTextArea.dispatchEvent("dragleave", {
+      dataTransfer: this.dragDataTransfer,
+    });
+  }
+
+  /**
+   * Drops a drag started with startCodeEmbedDrag at the same position.
+   */
+  async dropCodeEmbed() {
+    await this.editorTextArea.dispatchEvent("drop", {
+      dataTransfer: this.dragDataTransfer,
+      ...this.dragTarget,
+    });
+    await this.endDrag();
+  }
+
+  async endDrag() {
+    await this.dragSource!.dispatchEvent("dragend", {
+      dataTransfer: this.dragDataTransfer,
+    });
+    this.dragDataTransfer = undefined;
+    this.dragSource = undefined;
+    this.dragTarget = undefined;
+  }
+
   async search(searchText: string): Promise<void> {
     await this.switchTab("Reference");
     await this.searchButton.click();
@@ -561,10 +641,12 @@ export class App {
   }
 
   async selectFirstSearchResult(): Promise<void> {
+    // Scoped to the dialog: the rest of the app is inert while it is open,
+    // but Playwright's role queries still match inert content.
+    const results = this.page.getByRole("dialog").getByRole("link");
     // wait for results to show
-    await this.page.getByRole("link").first().waitFor();
-    const links = await this.page.getByRole("link").all();
-    await links[0].click();
+    await results.first().waitFor();
+    await results.first().click();
   }
 
   async selectDocumentationIdea(name: string): Promise<void> {
@@ -606,10 +688,13 @@ export class App {
   }
 
   async followSerialCompactTracebackLink(): Promise<void> {
+    // Park the pointer first: the send button's tooltip re-opens under the
+    // hovering mouse after the click and would intercept.
+    await this.page.mouse.move(0, 0);
     await this.page.getByTestId("traceback-link").click();
   }
 
-  async mockDeviceConnectFailure(code: WebUSBErrorCode) {
+  async mockDeviceConnectFailure(code: DeviceErrorCode) {
     this.page.evaluate((code) => {
       (window as any).mockDevice.mockConnect(code);
     }, code);
@@ -688,8 +773,12 @@ export class App {
   }
 
   async assertFocusOnSidebar(): Promise<void> {
-    const simulator = this.page.getByRole("tabpanel", { name: "Reference" });
-    await expect(simulator).toBeFocused();
+    // Focus lands on the panel's inner content wrapper (react-aria owns
+    // the tabpanel's own tabindex).
+    const panelContent = this.page
+      .getByRole("tabpanel", { name: "Reference" })
+      .locator("[data-panel-content]");
+    await expect(panelContent).toBeFocused();
   }
 
   async assertFocusBeforeEditor(): Promise<void> {
@@ -753,7 +842,7 @@ const optionsToURL = (options: UrlOptions): string => {
     // Maybe can be changed since the Vite upgrade.
     (process.env.E2E_BASE_URL ?? "/") +
     "?" +
-    new URLSearchParams(params) +
+    new URLSearchParams(params).toString() +
     (options.fragment ?? "")
   );
 };

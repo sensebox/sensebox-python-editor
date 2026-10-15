@@ -111,7 +111,7 @@ export class SessionStorageFSStorage implements FSStorage {
     const sessionStorageIfPossible = () => {
       try {
         return window.sessionStorage;
-      } catch (e) {
+      } catch {
         // We see SecurityError here in some scenarios
         // https://github.com/microbit-foundation/python-editor-v3/issues/736
         return undefined;
@@ -269,12 +269,13 @@ export class SplitStrategyStorage implements FSStorage {
         await this.secondary.clear();
       } catch (e2) {
         // Not much we can do.
-        this.log.error("Failed to clear secondary storage in error scenario");
-        this.log.error(e2);
+        this.log.error(
+          "Failed to clear secondary storage in error scenario",
+          e2
+        );
       }
       // Avoid all future errors this session.
-      this.log.error("Abandoning secondary storage due to error");
-      this.log.error(e1);
+      this.log.error("Abandoning secondary storage due to error", e1);
       this.secondary = undefined;
     }
   }

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { BoxProps, HStack, IconButton } from "@chakra-ui/react";
+import { IconButton } from "@microbit/ui";
 import { useCallback, useEffect, useState } from "react";
 import {
   RiRefreshLine,
@@ -12,24 +12,28 @@ import {
   RiVolumeUpFill,
 } from "react-icons/ri";
 import { useIntl } from "react-intl";
+import { styled } from "styled-system/jsx";
+import { SystemStyleObject } from "styled-system/types";
 import {
   SyncStatus,
   useSimulator,
   useSyncStatus,
 } from "../device/device-hooks";
-import { EVENT_REQUEST_FLASH } from "../device/simulator";
 import { useFileSystem } from "../fs/fs-hooks";
 import { useLogging } from "../logging/logging-hooks";
 import { RunningStatus } from "./Simulator";
 
-interface SimulatorActionBarProps extends BoxProps {
+interface SimulatorActionBarProps {
   running: RunningStatus;
   onRunningChange: (running: RunningStatus) => void;
+  "aria-label"?: string;
+  css?: SystemStyleObject;
 }
 
 const SimulatorActionBar = ({
   running,
   onRunningChange,
+  css: cssProp,
   ...props
 }: SimulatorActionBarProps) => {
   const device = useSimulator();
@@ -39,10 +43,8 @@ const SimulatorActionBar = ({
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const syncStatus = useSyncStatus();
   const handlePlay = useCallback(async () => {
-    device.flash(fs, {
-      partial: true,
-      progress: () => {},
-    });
+    const files = await fs.files();
+    await device.flashFileSystem(files);
     onRunningChange(RunningStatus.RUNNING);
   }, [device, fs, onRunningChange]);
   const handleStop = useCallback(
@@ -51,7 +53,7 @@ const SimulatorActionBar = ({
       onRunningChange(RunningStatus.STOPPED);
       if (source === "user") {
         logging.event({
-          type: "sim-user-stopped",
+          type: "sim_stop",
         });
       }
     },
@@ -71,42 +73,54 @@ const SimulatorActionBar = ({
     setIsMuted(!isMuted);
   }, [device, isMuted, setIsMuted]);
   useEffect(() => {
-    device.on(EVENT_REQUEST_FLASH, handlePlay);
+    device.addEventListener("requestflash", handlePlay);
     return () => {
-      device.removeListener(EVENT_REQUEST_FLASH, handlePlay);
+      device.removeEventListener("requestflash", handlePlay);
     };
   }, [device, handlePlay]);
   const size = "md";
   return (
-    <HStack {...props} justifyContent="center" spacing={2.5} py={2} px={1}>
+    <styled.section
+      {...props}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      gap="2.5"
+      py="2"
+      px="1"
+      css={cssProp}
+    >
       <IconButton
         size={size}
-        variant="outline"
-        onClick={() => handleStop("user")}
-        icon={<RiStopFill />}
+        variant="secondary"
+        onPress={() => handleStop("user")}
         aria-label={intl.formatMessage({ id: "simulator-stop" })}
         isDisabled={running === RunningStatus.STOPPED}
-      />
+      >
+        <RiStopFill />
+      </IconButton>
       <IconButton
         size={size}
-        variant="outline"
-        onClick={device.reset}
-        icon={<RiRefreshLine />}
+        variant="secondary"
+        onPress={device.reset}
         aria-label={intl.formatMessage({ id: "simulator-reset" })}
         isDisabled={running === RunningStatus.STOPPED}
-      />
+      >
+        <RiRefreshLine />
+      </IconButton>
       <IconButton
         size={size}
-        variant="outline"
-        onClick={handleMuteUnmute}
-        icon={isMuted ? <RiVolumeMuteFill /> : <RiVolumeUpFill />}
+        variant="secondary"
+        onPress={handleMuteUnmute}
         aria-label={
           isMuted
             ? intl.formatMessage({ id: "simulator-unmute" })
             : intl.formatMessage({ id: "simulator-mute" })
         }
-      />
-    </HStack>
+      >
+        {isMuted ? <RiVolumeMuteFill /> : <RiVolumeUpFill />}
+      </IconButton>
+    </styled.section>
   );
 };
 

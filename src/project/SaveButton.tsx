@@ -3,17 +3,21 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Tooltip } from "@chakra-ui/react";
-import { useRef } from "react";
+import { Tooltip } from "@microbit/ui";
+import { useCallback, useRef } from "react";
 import { RiDownload2Line } from "react-icons/ri";
 import { useIntl } from "react-intl";
 import CollapsibleButton, {
-  CollapsibleButtonProps,
+  CollapsibleButtonComposableProps,
 } from "../common/CollapsibleButton";
 import { useProjectActions } from "./project-hooks";
+import { useHotkeys } from "react-hotkeys-hook";
+import {
+  globalShortcutConfig,
+  keyboardShortcuts,
+} from "../common/keyboard-shortcuts";
 
-interface SaveButtonProps
-  extends Omit<CollapsibleButtonProps, "onClick" | "text" | "icon"> {}
+interface SaveButtonProps extends CollapsibleButtonComposableProps {}
 
 /**
  * Save HEX button.
@@ -27,10 +31,16 @@ const SaveButton = (props: SaveButtonProps) => {
   const actions = useProjectActions();
   const intl = useIntl();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const activeElementRef = useRef<HTMLElement | null>(null);
+  const handleSave = useCallback(() => {
+    activeElementRef.current = document.activeElement as HTMLElement;
+    actions.save(activeElementRef);
+  }, [actions]);
+  useHotkeys(keyboardShortcuts.saveProject, handleSave, globalShortcutConfig);
   return (
     <Tooltip
       hasArrow
-      placement="top-start"
+      placement="top start"
       label={intl.formatMessage({
         id: "save-hover",
       })}
@@ -39,7 +49,7 @@ const SaveButton = (props: SaveButtonProps) => {
         ref={menuButtonRef}
         {...props}
         icon={<RiDownload2Line />}
-        onClick={() => actions.save(menuButtonRef)}
+        onPress={() => actions.save(menuButtonRef)}
         text={intl.formatMessage({
           id: "save-action",
         })}

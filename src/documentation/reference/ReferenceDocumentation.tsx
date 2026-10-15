@@ -3,10 +3,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, Divider, List, ListItem } from "@chakra-ui/layout";
+import { Divider, List, ListItem } from "@microbit/ui";
 import { useCallback } from "react";
 import { useIntl } from "react-intl";
-import { docStyles } from "../../common/documentation-styles";
+import { Box } from "styled-system/jsx";
+import { docStylesClass } from "../../common/documentation-styles";
 import HeadedScrollablePanel from "../../common/HeadedScrollablePanel";
 import { Anchor, useRouterTabSlug } from "../../router-hooks";
 import { useAnimationDirection } from "../common/documentation-animation-hooks";
@@ -34,10 +35,7 @@ const ReferenceToolkit = ({ toolkit }: ReferenceDocumentationProps) => {
   const topicOrEntryId = anchor?.id.split("/")[0];
   const handleNavigate = useCallback(
     (topicOrEntryId: string | undefined) => {
-      setAnchor(
-        topicOrEntryId ? { id: topicOrEntryId } : undefined,
-        "documentation-user"
-      );
+      setAnchor(topicOrEntryId ? { id: topicOrEntryId } : undefined, "user");
     },
     [setAnchor]
   );
@@ -88,15 +86,8 @@ const ActiveLevel = ({
         }
       >
         {topic.introduction && (
-          <Box
-            p={5}
-            pb={1}
-            fontSize="sm"
-            sx={{
-              ...docStyles,
-            }}
-          >
-            <DocumentationContent content={topic.introduction} />
+          <Box p="5" pb="1" fontSize="sm" className={docStylesClass}>
+            <DocumentationContent blocks={topic.introduction} />
           </Box>
         )}
         <List flex="1 1 auto">

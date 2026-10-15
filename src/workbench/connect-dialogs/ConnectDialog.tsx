@@ -3,13 +3,14 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Button } from "@chakra-ui/button";
-import { HStack, Link } from "@chakra-ui/react";
+import { Button } from "@microbit/ui";
 import { useCallback, useState } from "react";
 import { FormattedMessage } from "react-intl";
+import { HStack } from "styled-system/jsx";
 import { GenericDialog } from "../../common/GenericDialog";
 import ConnectCableDialogBody from "./ConnectCableDialog";
 import ConnectHelpDialogBody from "./ConnectHelpDialog";
+import { FinalFocusRef } from "../../project/project-actions";
 
 export const enum ConnectHelpChoice {
   Next,
@@ -21,7 +22,7 @@ interface ConnectHelpDialogProps {
   callback: (choice: ConnectHelpChoice) => void;
   dialogNormallyHidden: boolean;
   shownByRequest: boolean;
-  finalFocusRef: React.RefObject<HTMLButtonElement>;
+  finalFocusRef: FinalFocusRef;
 }
 
 const enum Stage {
@@ -93,30 +94,30 @@ const ConnectDialogFooter = ({
 }: ConnectDialogFooterProps) => {
   return (
     <HStack
-      spacing={2.5}
+      gap="2.5"
       width={dialogNormallyHidden || shownByRequest ? "auto" : "100%"}
     >
       {!dialogNormallyHidden && !shownByRequest && (
-        <Link
-          onClick={onNextDontShowAgain}
-          as="button"
-          color="brand.500"
-          mr="auto"
+        <Button
+          variant="link"
+          size="lg"
+          onPress={onNextDontShowAgain}
+          css={{ color: "brand.500", mr: "auto" }}
         >
           <FormattedMessage id="dont-show-again" />
-        </Link>
+        </Button>
       )}
       {stage === Stage.ConnectCable ? (
-        <Button onClick={onClose} size="lg">
+        <Button onPress={onClose} size="lg">
           <FormattedMessage id="cancel-action" />
         </Button>
       ) : (
-        <Button onClick={onBack} size="lg">
+        <Button onPress={onBack} size="lg">
           <FormattedMessage id="back-action" />
         </Button>
       )}
 
-      <Button onClick={onNext} variant="solid" size="lg">
+      <Button onPress={onNext} variant="primary" size="lg">
         <FormattedMessage id="next-action" />
       </Button>
     </HStack>

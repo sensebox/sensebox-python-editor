@@ -3,11 +3,14 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Link, Text, VStack } from "@chakra-ui/react";
+import { Link, Text } from "@microbit/ui";
+import { VStack } from "styled-system/jsx";
 import { ReactNode, useCallback } from "react";
 import { FormattedMessage } from "react-intl";
+import DialogHeading from "../common/DialogHeading";
 import { GenericDialog, GenericDialogFooter } from "../common/GenericDialog";
 import { useProject } from "../project/project-hooks";
+import { FinalFocusRef } from "../project/project-actions";
 
 export const enum PostSaveChoice {
   ShowTransferHexHelp,
@@ -18,7 +21,7 @@ export const enum PostSaveChoice {
 interface PostSaveDialogProps {
   callback: (value: PostSaveChoice) => void;
   dialogNormallyHidden: boolean;
-  finalFocusRef: React.RefObject<HTMLButtonElement>;
+  finalFocusRef: FinalFocusRef;
 }
 
 export const PostSaveDialog = ({
@@ -70,14 +73,14 @@ const PostSaveDialogBody = ({
       width="auto"
       ml="auto"
       mr="auto"
-      p={5}
-      pb={0}
-      spacing={5}
+      p="5"
+      pb="0"
+      gap="5"
       alignItems="flex-start"
     >
-      <Text as="h2" fontSize="xl" fontWeight="semibold">
+      <DialogHeading>
         <FormattedMessage id="post-save-title" />
-      </Text>
+      </DialogHeading>
       <Text>
         <FormattedMessage
           id="post-save-message-one"
@@ -125,6 +128,7 @@ const PostSaveDialogBody = ({
                 color="brand.500"
                 onClick={handleShowTransferHexHelp}
                 href=""
+                cursor="pointer"
               >
                 {chunks}
               </Link>

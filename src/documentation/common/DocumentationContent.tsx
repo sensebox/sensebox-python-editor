@@ -3,14 +3,16 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Icon } from "@chakra-ui/icon";
-import { Image } from "@chakra-ui/image";
-import { Box, Link, Stack, Text } from "@chakra-ui/layout";
-import { Collapse } from "@chakra-ui/react";
+import { Collapse, Icon, Link, Text } from "@microbit/ui";
 import BlockContent from "@sanity/block-content-to-react";
 import React, { ReactNode, useContext, useMemo } from "react";
 import { RiExternalLinkLine } from "react-icons/ri";
-import { getAspectRatio, imageUrlBuilder } from "../../common/imageUrlBuilder";
+import { Box, Stack } from "styled-system/jsx";
+import { runtimeAspectRatioClass } from "../../common/documentation-styles";
+import {
+  getAspectRatioPadding,
+  imageUrlBuilder,
+} from "../../common/imageUrlBuilder";
 import { PortableText, SimpleImage } from "../../common/sanity";
 import { useRouterState } from "../../router-hooks";
 import {
@@ -21,6 +23,8 @@ import {
 } from "../reference/model";
 import CodeEmbed from "./CodeEmbed";
 import { decorateWithCollapseNodes } from "./collapse-util";
+import ImageWithFallback from "./ImageWithFallback";
+import OfflineImageFallback from "../OfflineImageFallback";
 
 export const enum DocumentationCollapseMode {
   ShowAll,
@@ -30,7 +34,7 @@ export const enum DocumentationCollapseMode {
 }
 
 interface DocumentationContentProps {
-  content?: PortableText;
+  blocks?: PortableText;
   details?: DocumentationCollapseMode;
 }
 
@@ -100,7 +104,7 @@ const DocumentationInternalLinkMark = (
               id: props.mark.slug.current,
             },
           },
-          "documentation-user"
+          "user"
         );
       }}
     >
@@ -121,9 +125,7 @@ const DocumentationExternalLinkMark = (
     >
       {props.children}
       <Icon
-        mb={1 / 3 + "em"}
-        ml={1}
-        verticalAlign="middle"
+        css={{ mb: "0.333em", ml: "1", verticalAlign: "middle" }}
         as={RiExternalLinkLine}
       />
     </Link>
@@ -153,10 +155,10 @@ const ContextualCollapse = ({
   const justFirstLine = collapseToFirstLine && !isExpanded;
   return (
     <Collapse
-      in={isExpanded}
+      isOpen={Boolean(isExpanded)}
       startingHeight={collapseToFirstLine ? "1.9725rem" : undefined}
     >
-      <Stack spacing={3} pt={3} noOfLines={justFirstLine ? 1 : undefined}>
+      <Stack gap="3" pt="3" lineClamp={justFirstLine ? "1" : undefined}>
         <BlockContent blocks={children} serializers={serializers} />
       </Stack>
     </Collapse>
@@ -166,7 +168,7 @@ const ContextualCollapse = ({
 const ContextualCodeEmbed = ({ code }: { code: string }) => {
   const context = useCodeEmbedContext();
   return (
-    <Box mt={3}>
+    <Box mt="3">
       <CodeEmbed {...context} code={code} />
     </Box>
   );
@@ -181,7 +183,7 @@ const serializers = {
   container: ({ children }: HasChildren) => <>{children}</>,
   types: {
     block: (props: { node: { style: string }; children: any }) => {
-      let style = props.node.style;
+      const style = props.node.style;
       if (/^h\d/.test(style)) {
         return (
           // For the moment we only support a h3 in ideas.
@@ -202,22 +204,29 @@ const serializers = {
       <ContextualCodeEmbed code={main} />
     ),
     simpleImage: (props: SerializerNodeProps<SimpleImage>) => {
+      const padding = getAspectRatioPadding(props.node.asset._ref);
       return (
-        <Image
-          src={imageUrlBuilder
-            .image(props.node.asset)
-            .width(300)
-            .fit("max")
-            .url()}
-          alt={props.node.alt}
-          width={300}
-          borderRadius="lg"
-          border="solid 1px"
-          borderColor="gray.300"
-          sx={{
-            aspectRatio: getAspectRatio(props.node.asset._ref),
-          }}
-        />
+        <Box
+          width="300px"
+          maxWidth="100%"
+          className={padding ? runtimeAspectRatioClass : undefined}
+          // Runtime value derived from the image reference.
+          style={{ "--aspect-ratio-padding": padding } as React.CSSProperties}
+        >
+          <ImageWithFallback
+            src={imageUrlBuilder
+              .image(props.node.asset)
+              .width(300)
+              .fit("max")
+              .url()}
+            ignoreFallback={navigator.onLine}
+            fallback={<OfflineImageFallback width={300} />}
+            alt={props.node.alt}
+            borderRadius="lg"
+            border="solid 1px"
+            borderColor="gray.300"
+          />
+        </Box>
       );
     },
   },
@@ -232,20 +241,20 @@ const serializers = {
  * Wrap with DocumentationContextProvider for linking and other contextual behaviours.
  */
 const DocumentationContent = ({
-  content,
+  blocks,
   details = DocumentationCollapseMode.ShowAll,
 }: DocumentationContentProps) => {
   // If we're expanding or collapsing then we pre-process the content to wrap every run of non-code in Collapse.
-  content = useMemo(() => {
+  blocks = useMemo(() => {
     if (details === DocumentationCollapseMode.ShowAll) {
-      return content || [];
+      return blocks || [];
     }
-    return decorateWithCollapseNodes(content, details);
-  }, [details, content]);
+    return decorateWithCollapseNodes(blocks, details);
+  }, [details, blocks]);
 
-  const rendered = <BlockContent blocks={content} serializers={serializers} />;
+  const rendered = <BlockContent blocks={blocks} serializers={serializers} />;
   return details === DocumentationCollapseMode.ShowAll ? (
-    <Stack spacing={3} mt={3}>
+    <Stack gap="3" mt="3">
       {rendered}
     </Stack>
   ) : (

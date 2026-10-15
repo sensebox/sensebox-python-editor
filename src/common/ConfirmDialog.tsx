@@ -3,17 +3,14 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Button } from "@chakra-ui/button";
 import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-} from "@chakra-ui/modal";
-import { Text } from "@chakra-ui/react";
-import { ReactNode, useRef } from "react";
+  Button,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+} from "@microbit/ui";
+import { ReactNode } from "react";
 import { FormattedMessage } from "react-intl";
 
 export interface ConfirmDialogProps {
@@ -32,36 +29,22 @@ export const ConfirmDialog = ({
   actionLabel,
   callback,
 }: ConfirmDialogProps) => {
-  const leastDestructiveRef = useRef<HTMLButtonElement>(null);
   return (
-    <AlertDialog
-      isOpen
-      leastDestructiveRef={leastDestructiveRef}
-      onClose={() => callback(false)}
-    >
-      <AlertDialogOverlay>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <Text as="h2" fontSize="lg" fontWeight="bold">
-              {header}
-            </Text>
-          </AlertDialogHeader>
-          <AlertDialogBody>{body}</AlertDialogBody>
-          <AlertDialogFooter>
-            <Button ref={leastDestructiveRef} onClick={() => callback(false)}>
-              <FormattedMessage id="cancel-action" />
-            </Button>
-            <Button
-              variant="solid"
-              colorScheme="red"
-              onClick={() => callback(true)}
-              ml={3}
-            >
-              {actionLabel}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
-    </AlertDialog>
+    <Modal isOpen role="alertdialog" onClose={() => callback(false)}>
+      <ModalHeader level={2} css={{ fontSize: "lg", fontWeight: "bold" }}>
+        {header}
+      </ModalHeader>
+      <ModalBody>{body}</ModalBody>
+      <ModalFooter>
+        {/* Least-destructive initial focus: RAC honours autoFocus within the
+            dialog's FocusScope. */}
+        <Button autoFocus onPress={() => callback(false)}>
+          <FormattedMessage id="cancel-action" />
+        </Button>
+        <Button variant="solid" tone="danger" onPress={() => callback(true)}>
+          {actionLabel}
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 };

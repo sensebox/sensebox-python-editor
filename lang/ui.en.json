@@ -1,7 +1,7 @@
 {
   "about": {
     "defaultMessage": "About",
-    "description": "About action"
+    "description": "About action; also the accessible name of the about dialog"
   },
   "about-comic": {
     "defaultMessage": "Three panel comic titled \"MicroPython Rocks\" by Mike Rowbit. A cartoon snake introduces Damien, saying \"Meet Damien... He created MicroPython.\". Two snakes discuss MicroPython. The yellow snake says \"MicroPython is designed to work on very small computers.\" \"Like your BBC micro:bit\" the purple snake replies.\" The yellows snake continues \"But Python can run anywhere.\". The purple snake agrees, saying \"Like on this rack of servers that run huge websites\". The background behind the snakes shows a server rack.",
@@ -22,6 +22,10 @@
   "about-read-more-micropython": {
     "defaultMessage": "Read more about MicroPython",
     "description": "Aria label to expand a collapsed section about MicroPython"
+  },
+  "accessibility": {
+    "defaultMessage": "Accessibility",
+    "description": "Menu item for link to accessibility site"
   },
   "added-change": {
     "defaultMessage": "Added file {changeName}",
@@ -211,6 +215,10 @@
     "defaultMessage": "Copy code",
     "description": "Copy code to clipboard action text"
   },
+  "copy-snippet-advice": {
+    "defaultMessage": "Code copied, use paste to insert it.",
+    "description": "Toast shown when you copy from API or Reference snippets"
+  },
   "create-action": {
     "defaultMessage": "Create",
     "description": "Create action label (e.g. in create file dialog)"
@@ -273,7 +281,7 @@
   },
   "feedback": {
     "defaultMessage": "Feedback",
-    "description": "Feedback action"
+    "description": "Feedback action; also the accessible name of the feedback dialog"
   },
   "file-actions": {
     "defaultMessage": "{name} file actions",
@@ -355,10 +363,6 @@
     "defaultMessage": "Help & support",
     "description": "Menu item for link to support site"
   },
-  "help-translate": {
-    "defaultMessage": "Help translate",
-    "description": "Help translate  menu option text"
-  },
   "highlight-code-structure": {
     "defaultMessage": "Highlight code structure",
     "description": "Code structure setting label"
@@ -384,8 +388,7 @@
     "description": "Ideas tab description text. Tab shows programs to give students ideas."
   },
   "insert-code-action": {
-    "defaultMessage": "Insert code",
-    "descrition": "Insert code action label"
+    "defaultMessage": "Insert code"
   },
   "language": {
     "defaultMessage": "Language",
@@ -510,6 +513,10 @@
   "not-found-update-link": {
     "defaultMessage": "You must <link>update your firmware before</link> you can connect to this micro:bit.",
     "description": "Text in the no micro:bit found dialog"
+  },
+  "offline-image-alt": {
+    "defaultMessage": "Image unavailable offline",
+    "description": "Alt text for an image placeholder when the user is offline"
   },
   "open-action": {
     "defaultMessage": "Open",
@@ -685,7 +692,7 @@
   },
   "serial-ctrl-d-action": {
     "defaultMessage": "Send Ctrl+D to reset",
-    "description": "Button to reset the micro:bit from the serial area"
+    "description": "Button in the serial area that restarts the program running on the micro:bit"
   },
   "serial-expand": {
     "defaultMessage": "Show serial",
@@ -743,6 +750,14 @@
     "defaultMessage": "Changing third-party modules may mean they don’t work as intended.",
     "description": "Checkbox setting label"
   },
+  "setting-warn-on-v2-only-features": {
+    "defaultMessage": "Show warnings about V2-only features",
+    "description": "Checkbox setting label"
+  },
+  "setting-warn-on-v2-only-features-info": {
+    "defaultMessage": "Warnings are shown in the editor when a micro:bit V1 is connected",
+    "description": "Checkbox setting label"
+  },
   "settings": {
     "defaultMessage": "Settings",
     "description": "Settings text"
@@ -797,11 +812,11 @@
   },
   "simulator-button-hold-label": {
     "defaultMessage": "Hold button {button}",
-    "description": "Aria label for simulator toggle button"
+    "description": "Accessible name of the toggle that keeps simulator button {button} pressed down. 'Hold' is the verb, as in press and hold."
   },
   "simulator-button-press-label": {
     "defaultMessage": "Press button {button}",
-    "description": "Aria label for simulator push button"
+    "description": "Accessible name of the control that presses and releases simulator button {button}."
   },
   "simulator-buttons": {
     "defaultMessage": "Buttons",
@@ -821,7 +836,7 @@
   },
   "simulator-compass-heading-one": {
     "defaultMessage": "Heading",
-    "description": "Sub heading for simulator Compass panel"
+    "description": "Compass heading: the direction the micro:bit is pointing, in degrees. Label in the simulator Compass panel, not a UI heading."
   },
   "simulator-compass-heading-two": {
     "defaultMessage": "Magnetic field strength",
@@ -873,11 +888,11 @@
   },
   "simulator-gesture-face-down": {
     "defaultMessage": "face down",
-    "description": "Simulator gesture option"
+    "description": "Simulator gesture option: the micro:bit lying flat with the LEDs facing down"
   },
   "simulator-gesture-face-up": {
     "defaultMessage": "face up",
-    "description": "Simulator gesture option"
+    "description": "Simulator gesture option: the micro:bit lying flat with the LEDs facing up"
   },
   "simulator-gesture-freefall": {
     "defaultMessage": "freefall",
@@ -913,11 +928,11 @@
   },
   "simulator-input-hold": {
     "defaultMessage": "Hold",
-    "description": "Label for UI toggles to hold simulator buttons or pins"
+    "description": "Label for the toggles that keep a simulator button or pin pressed down. 'Hold' is the verb, as in press and hold."
   },
   "simulator-input-press": {
     "defaultMessage": "Press",
-    "description": "Label for UI buttons to press simulator buttons or pins"
+    "description": "Label for the controls that press and release a simulator button or pin."
   },
   "simulator-light-level": {
     "defaultMessage": "Light level",
@@ -937,11 +952,11 @@
   },
   "simulator-pin-hold-label": {
     "defaultMessage": "Hold pin {pin}",
-    "description": "Aria label for simulator pin control"
+    "description": "Accessible name of the toggle that keeps simulator pin {pin} pressed down. 'Hold' is the verb, as in press and hold."
   },
   "simulator-pin-press-label": {
     "defaultMessage": "Press pin {pin}",
-    "description": "Aria label for simulator pin control"
+    "description": "Accessible name of the control that presses and releases simulator pin {pin}."
   },
   "simulator-pins": {
     "defaultMessage": "Pins",
@@ -957,7 +972,7 @@
   },
   "simulator-radio-code": {
     "defaultMessage": "micro:bit sent:",
-    "description": "Visually hidden text for a radio message sent from the simulated micro:bit. Text of the message follows."
+    "description": "Visually hidden text read as a sentence, \"micro:bit sent: <message>\", for a radio message the simulated micro:bit sent. The micro:bit is the sender."
   },
   "simulator-radio-group-notice": {
     "defaultMessage": "Radio group set to {groupNumber}",
@@ -985,7 +1000,7 @@
   },
   "simulator-radio-user": {
     "defaultMessage": "You sent:",
-    "description": "Visually hidden text for a radio message sent from the user to the simulated micro:bit. Text of the message follows."
+    "description": "Visually hidden text read as a sentence, \"You sent: <message>\", for a radio message the user sent to the simulated micro:bit."
   },
   "simulator-reference-link": {
     "defaultMessage": "Link to Reference section",
@@ -993,7 +1008,7 @@
   },
   "simulator-reset": {
     "defaultMessage": "Reset",
-    "description": "Aria label for the reset simulator button"
+    "description": "Aria label for the simulator button that restarts the program from the beginning"
   },
   "simulator-serial-terminal": {
     "defaultMessage": "Simulator serial terminal",
@@ -1022,6 +1037,22 @@
   "simulator-touch-logo": {
     "defaultMessage": "Touch logo",
     "description": "Name for the touch logo pin on the V2 micro:bit board. Used in the simulator."
+  },
+  "simulator-unit-celsius": {
+    "defaultMessage": "degrees Celsius",
+    "description": "Unit for the temperature slider, used in its accessible name"
+  },
+  "simulator-unit-degrees": {
+    "defaultMessage": "degrees",
+    "description": "Unit for the compass heading slider, used in its accessible name"
+  },
+  "simulator-unit-milli-g": {
+    "defaultMessage": "milli-g",
+    "description": "Unit for the accelerometer axis sliders (thousandths of g-force), used in their accessible names"
+  },
+  "simulator-unit-nanotesla": {
+    "defaultMessage": "nanotesla",
+    "description": "Unit for the compass axis sliders, used in their accessible names"
   },
   "simulator-unmute": {
     "defaultMessage": "Unmute",
@@ -1107,9 +1138,17 @@
     "defaultMessage": "Updated file {changeName}",
     "description": "Change made to file"
   },
+  "user-guide": {
+    "defaultMessage": "User guide",
+    "description": "Menu item for link to user guide site"
+  },
   "visit-dot-org": {
     "defaultMessage": "visit microbit.org (opens in a new tab)",
     "description": "alt text for logo link to .org"
+  },
+  "warn-on-v2-only-features-action": {
+    "defaultMessage": "Disable warnings about V2-only features",
+    "description": "Label for editor action"
   },
   "webusb-error-clear-connect-description-1": {
     "defaultMessage": "Another process is connected to this device.",
@@ -1120,7 +1159,7 @@
     "description": "Part of WebUSB error message"
   },
   "webusb-error-clear-connect-title": {
-    "defaultMessage": "Unable to claim interface",
+    "defaultMessage": "Another page or browser tab is connected to this micro:bit",
     "description": "Title of error for WebUsb connection"
   },
   "webusb-error-default-title": {
@@ -1128,16 +1167,8 @@
     "description": "Default title for error messages relating to WebUSB"
   },
   "webusb-error-reconnect-microbit-description": {
-    "defaultMessage": "Please reconnect your micro:bit and try again.",
-    "description": "Part of WebUSB error message"
-  },
-  "webusb-error-update-req-description": {
-    "defaultMessage": "You need to <link>update your micro:bit firmware</link> to make use of this feature.",
-    "description": "WebUSB error telling user to update firmware"
-  },
-  "webusb-error-update-req-title": {
-    "defaultMessage": "Please update the micro:bit firmware",
-    "description": "Error text telling user to update firmware"
+    "defaultMessage": "<p>Please follow these steps, then try again:</p><ul><li>unplug the USB cable</li><li>unplug the battery pack if one is attached</li><li>reconnect the USB cable</li><li>reconnect the battery pack if one was attached</li></ul>",
+    "description": "Part of WebUSB error message. HTML: a paragraph then a list of four steps. Keep each step in its own <li></li>."
   },
   "webusb-not-supported": {
     "defaultMessage": "Unfortunately, WebUSB is not supported in this browser and your program will be saved to your computer instead. Follow the steps on the next screen to transfer it to your micro:bit. We recommend Google Chrome or Microsoft Edge so you can connect directly to your micro:bit.",

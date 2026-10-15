@@ -6,15 +6,18 @@
 import type { PluginValue, ViewUpdate } from "@codemirror/view";
 import { EditorView, ViewPlugin } from "@codemirror/view";
 import { IntlShape } from "react-intl";
-import * as LSP from "vscode-languageserver-protocol";
 import { ApiReferenceMap } from "../../../documentation/mapping/content";
-import { LanguageServerClient } from "../../../language-server/client";
+import {
+  DiagnosticsEvent,
+  LanguageServerClient,
+} from "../../../language-server/client";
 import { Logging } from "../../../logging/logging";
-import { setDiagnostics } from "../lint/lint";
+import { Action, setDiagnostics } from "../lint/lint";
 import { autocompletion } from "./autocompletion";
 import { BaseLanguageServerView, clientFacet, uriFacet } from "./common";
 import { diagnosticsMapping } from "./diagnostics";
 import { signatureHelp } from "./signatureHelp";
+import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 
 /**
  * The main extension. This synchronises the diagnostics between the client
@@ -22,20 +25,50 @@ import { signatureHelp } from "./signatureHelp";
  * the language server when the document changes.
  */
 class LanguageServerView extends BaseLanguageServerView implements PluginValue {
-  private diagnosticsListener = (params: LSP.PublishDiagnosticsParams) => {
+  private diagnosticsListener = (event: DiagnosticsEvent) => {
+    const params = event.detail;
     if (params.uri === this.uri) {
       const diagnostics = diagnosticsMapping(
         this.view.state.doc,
-        params.diagnostics
+        params.diagnostics,
+        this.device,
+        this.warnOnV2OnlyFeatures,
+        this.warnOnV2OnlyFeaturesAction
       );
       this.view.dispatch(setDiagnostics(this.view.state, diagnostics));
     }
   };
   private destroyed = false;
-  constructor(view: EditorView) {
+  private onDeviceStatusChanged = () => {
+    const diagnostics = diagnosticsMapping(
+      this.view.state.doc,
+      this.client.allDiagnostics(),
+      this.device,
+      this.warnOnV2OnlyFeatures,
+      this.warnOnV2OnlyFeaturesAction
+    );
+    this.view.dispatch(setDiagnostics(this.view.state, diagnostics));
+  };
+  private warnOnV2OnlyFeaturesAction = (): Action => {
+    return {
+      name: this.intl.formatMessage({ id: "warn-on-v2-only-features-action" }),
+      apply: () => {
+        this.disableV2OnlyFeaturesWarning();
+      },
+    };
+  };
+
+  constructor(
+    view: EditorView,
+    private device: MicrobitUSBConnection,
+    private intl: IntlShape,
+    private warnOnV2OnlyFeatures: boolean,
+    private disableV2OnlyFeaturesWarning: () => void
+  ) {
     super(view);
 
-    this.client.on("diagnostics", this.diagnosticsListener);
+    this.client.addEventListener("diagnostics", this.diagnosticsListener);
+    this.device.addEventListener("status", this.onDeviceStatusChanged);
 
     // Is there a better way to do this? We can 't dispatch at this point.
     // It would be best to do this with initial state and avoid the dispatch.
@@ -43,7 +76,10 @@ class LanguageServerView extends BaseLanguageServerView implements PluginValue {
       if (!this.destroyed) {
         const diagnostics = diagnosticsMapping(
           view.state.doc,
-          this.client.currentDiagnostics(this.uri)
+          this.client.currentDiagnostics(this.uri),
+          device,
+          warnOnV2OnlyFeatures,
+          this.warnOnV2OnlyFeaturesAction
         );
         view.dispatch(setDiagnostics(view.state, diagnostics));
       }
@@ -62,7 +98,8 @@ class LanguageServerView extends BaseLanguageServerView implements PluginValue {
 
   destroy() {
     this.destroyed = true;
-    this.client.removeListener("diagnostics", this.diagnosticsListener);
+    this.client.removeEventListener("diagnostics", this.diagnosticsListener);
+    this.device.removeEventListener("status", this.onDeviceStatusChanged);
     // We don't own the client/connection which might outlive us, just our notifications.
   }
 }
@@ -71,6 +108,11 @@ interface Options {
   signatureHelp: {
     automatic: boolean;
   };
+  warnOnV2OnlyFeatures: boolean;
+}
+
+interface Actions {
+  disableV2OnlyFeaturesWarning: () => void;
 }
 
 /**
@@ -84,16 +126,27 @@ interface Options {
  */
 export function languageServer(
   client: LanguageServerClient,
+  device: MicrobitUSBConnection,
   uri: string,
   intl: IntlShape,
   logging: Logging,
   apiReferenceMap: ApiReferenceMap,
-  options: Options
+  options: Options,
+  actions: Actions
 ) {
   return [
     uriFacet.of(uri),
     clientFacet.of(client),
-    ViewPlugin.define((view) => new LanguageServerView(view)),
+    ViewPlugin.define(
+      (view) =>
+        new LanguageServerView(
+          view,
+          device,
+          intl,
+          options.warnOnV2OnlyFeatures,
+          actions.disableV2OnlyFeaturesWarning
+        )
+    ),
     signatureHelp(intl, options.signatureHelp.automatic, apiReferenceMap),
     autocompletion(intl, logging, apiReferenceMap),
   ];

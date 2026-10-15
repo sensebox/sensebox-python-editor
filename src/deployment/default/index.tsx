@@ -3,44 +3,22 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { ReactNode, createContext } from "react";
-import { CookieConsent, DeploymentConfigFactory } from "..";
-import { NullLogging } from "./logging";
-import theme from "./theme";
+import { BrandConfigFactory } from "..";
 
-const stubConsentValue: CookieConsent = {
-  analytics: false,
-  functional: true,
-};
-const stubConsentContext = createContext<CookieConsent | undefined>(
-  stubConsentValue
-);
-
-const defaultDeploymentFactory: DeploymentConfigFactory = () => ({
-  chakraTheme: theme,
+const defaultBrandFactory: BrandConfigFactory = () => ({
+  product: "python-editor",
   // This isn't ideal as it's the branded version. You can just remove the field to remove the welcome dialog.
   welcomeVideoYouTubeId: "mREwMW69qKc",
-  logging: new NullLogging(),
-  compliance: {
-    ConsentProvider: ({ children }: { children: ReactNode }) => (
-      <stubConsentContext.Provider value={stubConsentValue}>
-        {children}
-      </stubConsentContext.Provider>
-    ),
-    consentContext: stubConsentContext,
-    manageCookies: undefined,
-  },
   horizontalLogo: (
-    <img src="https://sensebox.de/images/logos/sensebox_wort_logo.svg" />
+    <img src="https://sensebox.de/images/logos/sensebox_wort_logo.svg" alt="" />
   ),
   squareLogo: (
     <img
       src="https://sensebox.de/images/pressekit/sensebox_logo.svg"
-      style={{
-        padding: ".7rem",
-      }}
+      alt=""
+      style={{ padding: ".7rem" }}
     />
   ),
 });
 
-export default defaultDeploymentFactory;
+export default defaultBrandFactory;

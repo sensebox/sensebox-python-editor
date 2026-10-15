@@ -3,30 +3,24 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Button } from "@chakra-ui/button";
 import {
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-} from "@chakra-ui/modal";
-import { HStack, SimpleGrid, Text, VStack, Link, Icon } from "@chakra-ui/react";
-import { useCallback } from "react";
-import { RiExternalLinkLine } from "react-icons/ri";
-import { FormattedMessage } from "react-intl";
+  LanguageDialog as SharedLanguageDialog,
+  LanguageDialogLanguage,
+} from "@microbit/ui-patterns";
+import { RefObject, useCallback, useMemo } from "react";
 import { deployment } from "../deployment";
-import { Language, supportedLanguages, useSettings } from "./settings";
+import { supportedLanguages, useSettings } from "./settings";
 
 interface LanguageDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  finalFocusRef: React.RefObject<HTMLButtonElement>;
+  finalFocusRef: RefObject<HTMLButtonElement>;
 }
 
 /**
- * Language setting dialog.
+ * Language setting dialog: @microbit/ui-patterns' LanguageDialog fed our
+ * supported languages (all fully supported; preview markers for in-progress
+ * translations).
  */
 export const LanguageDialog = ({
   isOpen,
@@ -34,97 +28,28 @@ export const LanguageDialog = ({
   finalFocusRef,
 }: LanguageDialogProps) => {
   const [settings, setSettings] = useSettings();
-  const handleChooseLanguage = useCallback(
-    (languageId: string) => {
-      setSettings({
-        ...settings,
-        languageId,
-      });
-      onClose();
-    },
-    [settings, setSettings, onClose]
+  const languages = useMemo<LanguageDialogLanguage[]>(
+    () =>
+      supportedLanguages.map((language) => ({
+        id: language.id,
+        preview: language.preview,
+      })),
+    []
   );
-  const hasPreviewLanguages = supportedLanguages.some((l) => l.preview);
+  const handleSelectLanguage = useCallback(
+    (languageId: string) => {
+      setSettings({ ...settings, languageId });
+    },
+    [settings, setSettings]
+  );
   return (
-    <Modal
+    <SharedLanguageDialog
       isOpen={isOpen}
       onClose={onClose}
-      size="xl"
       finalFocusRef={finalFocusRef}
-    >
-      <ModalOverlay>
-        <ModalContent>
-          <ModalHeader fontSize="lg" fontWeight="bold">
-            <FormattedMessage id="language" />
-          </ModalHeader>
-          <ModalBody>
-            <VStack spacing={8} width="100%">
-              <SimpleGrid width="100%" columns={[1, 1, 2, 2]} spacing={4}>
-                {supportedLanguages.map((language) => (
-                  <LanguageCard
-                    key={language.id}
-                    language={language}
-                    onChooseLanguage={handleChooseLanguage}
-                  />
-                ))}
-              </SimpleGrid>
-              <Link
-                pl={1}
-                alignSelf="flex-start"
-                href={deployment.translationLink}
-                target="_blank"
-                rel="noopener"
-                color="brand.500"
-              >
-                <FormattedMessage id="help-translate" />{" "}
-                <Icon as={RiExternalLinkLine} />
-              </Link>
-            </VStack>
-            {hasPreviewLanguages && (
-              <Text fontSize="xs" alignSelf="flex-end" mt={1}>
-                * These languages are an early preview of in-progress
-                translations.
-              </Text>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="solid" onClick={onClose}>
-              <FormattedMessage id="close-action" />
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </ModalOverlay>
-    </Modal>
-  );
-};
-
-interface LanguageCardProps {
-  language: Language;
-  onChooseLanguage: (languageId: string) => void;
-}
-
-const LanguageCard = ({ language, onChooseLanguage }: LanguageCardProps) => {
-  return (
-    <Button
-      padding={3}
-      variant="language"
-      alignItems="stretch"
-      borderRadius="xl"
-      onClick={() => onChooseLanguage(language.id)}
-      height="auto"
-      data-testid={language.id}
-    >
-      <HStack>
-        <VStack alignItems="left">
-          <Text fontSize="lg" fontWeight="semibold">
-            {language.name}
-          </Text>
-          <Text fontWeight="normal" fontSize="sm" color="gray.700">
-            {language.enName}
-            {language.preview ? "*" : null}
-          </Text>
-        </VStack>
-      </HStack>
-    </Button>
+      languages={languages}
+      onSelectLanguage={handleSelectLanguage}
+      translationLinkHref={deployment.translationLink}
+    />
   );
 };

@@ -11,21 +11,19 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { EVENT_PROJECT_UPDATED, EVENT_TEXT_EDIT } from "../fs/fs";
 import { useFileSystem } from "../fs/fs-hooks";
 import { useLogging } from "../logging/logging-hooks";
 import {
   ConnectionStatus,
-  DeviceConnection,
-  EVENT_FLASH,
-  EVENT_SERIAL_DATA,
-  EVENT_SERIAL_ERROR,
-  EVENT_SERIAL_RESET,
-  EVENT_STATUS,
-} from "./device";
+  ConnectionStatusChange,
+} from "@microbit/microbit-connection";
+import {
+  MicrobitUSBConnection,
+  SerialData,
+} from "@microbit/microbit-connection/usb";
 import { SimulatorDeviceConnection } from "./simulator";
 
-const DeviceContext = React.createContext<undefined | DeviceConnection>(
+const DeviceContext = React.createContext<undefined | MicrobitUSBConnection>(
   undefined
 );
 
@@ -60,12 +58,12 @@ export const useConnectionStatus = () => {
   const device = useDevice();
   const [status, setStatus] = useState<ConnectionStatus>(device.status);
   useEffect(() => {
-    const statusListener = (status: ConnectionStatus) => {
-      setStatus(status);
+    const statusListener = (event: ConnectionStatusChange) => {
+      setStatus(event.status);
     };
-    device.on(EVENT_STATUS, statusListener);
+    device.addEventListener("status", statusListener);
     return () => {
-      device.removeListener(EVENT_STATUS, statusListener);
+      device.removeEventListener("status", statusListener);
     };
   }, [device, setStatus]);
 
@@ -189,12 +187,12 @@ export const useDeviceTraceback = () => {
 
   useEffect(() => {
     const buffer = new TracebackScrollback();
-    const dataListener = (data: string) => {
-      const latest = buffer.push(data);
+    const dataListener = (event: SerialData) => {
+      const latest = buffer.push(event.data);
       setRuntimeError((current) => {
         if (!current && latest) {
           logging.event({
-            type: "serial-traceback",
+            type: "serial_traceback",
           });
         }
         return latest;
@@ -204,13 +202,11 @@ export const useDeviceTraceback = () => {
       buffer.clear();
       setRuntimeError(undefined);
     };
-    device.addListener(EVENT_SERIAL_DATA, dataListener);
-    device.addListener(EVENT_SERIAL_RESET, clearListener);
-    device.addListener(EVENT_SERIAL_ERROR, clearListener);
+    device.addEventListener("serialdata", dataListener);
+    device.addEventListener("serialreset", clearListener);
     return () => {
-      device.removeListener(EVENT_SERIAL_ERROR, clearListener);
-      device.removeListener(EVENT_SERIAL_RESET, clearListener);
-      device.removeListener(EVENT_SERIAL_DATA, dataListener);
+      device.removeEventListener("serialreset", clearListener);
+      device.removeEventListener("serialdata", dataListener);
     };
   }, [device, setRuntimeError, logging]);
 
@@ -238,24 +234,25 @@ export const DeviceContextProvider = ({
   value: device,
   children,
 }: {
-  value: DeviceConnection;
+  value: MicrobitUSBConnection;
   children: ReactNode;
 }) => {
+  // eslint-disable-next-line @eslint-react/use-state -- the tuple is handed to context as-is
   const syncStatusState = useState<SyncStatus>(SyncStatus.OUT_OF_SYNC);
   const [, setSyncStatus] = syncStatusState;
   const fs = useFileSystem();
   useEffect(() => {
     const moveToOutOfSync = () => setSyncStatus(SyncStatus.OUT_OF_SYNC);
     const moveToInSync = () => setSyncStatus(SyncStatus.IN_SYNC);
-    fs.on(EVENT_TEXT_EDIT, moveToOutOfSync);
-    fs.on(EVENT_PROJECT_UPDATED, moveToOutOfSync);
-    device.on(EVENT_FLASH, moveToInSync);
-    device.on(EVENT_STATUS, moveToOutOfSync);
+    fs.addEventListener("file_text_updated", moveToOutOfSync);
+    fs.addEventListener("project_updated", moveToOutOfSync);
+    device.addEventListener("flash", moveToInSync);
+    device.addEventListener("status", moveToOutOfSync);
     return () => {
-      fs.removeListener(EVENT_TEXT_EDIT, moveToOutOfSync);
-      fs.removeListener(EVENT_PROJECT_UPDATED, moveToOutOfSync);
-      device.removeListener(EVENT_STATUS, moveToOutOfSync);
-      device.removeListener(EVENT_FLASH, moveToInSync);
+      fs.removeEventListener("file_text_updated", moveToOutOfSync);
+      fs.removeEventListener("project_updated", moveToOutOfSync);
+      device.removeEventListener("status", moveToOutOfSync);
+      device.removeEventListener("flash", moveToInSync);
     };
   }, [fs, device, setSyncStatus]);
   return (

@@ -32,7 +32,7 @@ export const renderDocumentation = (
     try {
       div.innerHTML = renderMarkdown(documentation.value, parts).__html;
       return div;
-    } catch (e) {
+    } catch {
       // Fall through to simple text below.
     }
   }
@@ -77,7 +77,10 @@ export const renderMarkdown = (
   parts: DocSections = DocSections.All
 ): SanitisedHtml => {
   const html = DOMPurify.sanitize(
-    marked.parse(fixupMarkdown(subsetMarkdown(markdown, parts)), { gfm: true })
+    marked.parse(fixupMarkdown(subsetMarkdown(markdown, parts)), {
+      gfm: true,
+      async: false,
+    })
   );
   return {
     __html: html,
@@ -89,7 +92,7 @@ export const subsetMarkdown = (
   parts: DocSections
 ): string => {
   const split = splitDocString(markdown);
-  let sections = [];
+  const sections = [];
   if (parts & DocSections.Summary && split.summary) {
     sections.push(split.summary);
   }
@@ -105,8 +108,8 @@ export const subsetMarkdown = (
 const createStyledAnchorElement = (): HTMLAnchorElement => {
   const anchor = document.createElement("a");
   anchor.href = "";
-  anchor.style.fontSize = "var(--chakra-fontSizes-sm)";
-  anchor.style.color = "var(--chakra-colors-brand-600)";
+  anchor.style.fontSize = "var(--font-sizes-sm)";
+  anchor.style.color = "var(--colors-brand-600)";
   anchor.style.display = "block";
   anchor.style.margin = "0";
   anchor.style.padding = "0.5rem";

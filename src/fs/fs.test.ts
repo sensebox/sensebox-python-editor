@@ -8,12 +8,10 @@
 
 import * as fs from "fs";
 import * as fsp from "fs/promises";
-import { NullLogging } from "../deployment/default/logging";
-import { BoardId } from "../device/board-id";
+import { ConsoleLogging } from "../deployment/default/logging";
 import { MicroPythonSource } from "../micropython/micropython";
 import {
   diff,
-  EVENT_PROJECT_UPDATED,
   FileSystem,
   MAIN_FILE,
   Project,
@@ -23,31 +21,31 @@ import {
 import { DefaultHost } from "./host";
 import { defaultInitialProject } from "./initial-project";
 
-const hexes = Promise.all([
+const hexes = [
   fs.readFileSync("src/micropython/microbit-micropython-v1.hex", {
     encoding: "ascii",
   }),
   fs.readFileSync("src/micropython/main/microbit-micropython-v2.hex", {
     encoding: "ascii",
   }),
-]);
+];
 
 const fsMicroPythonSource: MicroPythonSource = async () => {
-  const [v1, v2] = await hexes;
+  const [v1, v2] = hexes;
   return [
     {
       boardId: 0x9900,
       hex: v1,
     },
     {
-      boardId: 0x9003,
+      boardId: 0x9903,
       hex: v2,
     },
   ];
 };
 
 describe("Filesystem", () => {
-  const logging = new NullLogging();
+  const logging = new ConsoleLogging();
   const host = new DefaultHost();
   let ufs = new FileSystem(logging, host, fsMicroPythonSource);
   let events: Project[] = [];
@@ -55,7 +53,9 @@ describe("Filesystem", () => {
   beforeEach(() => {
     events = [];
     ufs = new FileSystem(logging, host, fsMicroPythonSource);
-    ufs.addListener(EVENT_PROJECT_UPDATED, events.push.bind(events));
+    ufs.addEventListener("project_updated", (e) => {
+      events.push(e.project);
+    });
   });
 
   it("has an initial blank project", async () => {
@@ -125,7 +125,7 @@ describe("Filesystem", () => {
   });
 
   it("throws error attempting to read non-existent file", async () => {
-    await expect(() => ufs.read("non-existent file")).rejects.toThrowError(
+    await expect(() => ufs.read("non-existent file")).rejects.toThrow(
       /No such file non-existent file/
     );
   });
@@ -217,17 +217,19 @@ describe("Filesystem", () => {
     expect(typeof data).toEqual("string");
   });
 
-  it("creates board-specific data for flashing", async () => {
-    const boardId = BoardId.parse("9900");
-    const partial = await ufs.partialFlashData(boardId);
-    const full = await ufs.fullFlashData(boardId);
-    expect(partial.length).toBeLessThan(full.length);
+  it("creates board-specific data for flashing V1", async () => {
+    await ufs.asFlashDataSource()("V1");
+  });
+
+  it("creates board-specific data for flashing V2", async () => {
+    await ufs.asFlashDataSource()("V2");
   });
 
   it("gives useful stats", async () => {
     expect(await ufs.statistics()).toEqual({
       files: 1,
-      lines: undefined, // signifies initial program
+      lines: expect.any(Number),
+      defaultMain: true,
       storageUsed: 256,
       magicModules: 0,
     });
@@ -245,6 +247,7 @@ describe("Filesystem", () => {
     expect(await ufs.statistics()).toEqual({
       files: 3,
       lines: 3,
+      defaultMain: false,
       storageUsed: 896,
       magicModules: 1,
     });
@@ -260,18 +263,18 @@ describe("fs - diff", () => {
   const main1: Project = {
     name: "foo",
     id: "asdf",
-    files: [{ name: "code.py", version: 1 }],
+    files: [{ name: "main.py", version: 1 }],
   };
   const main2: Project = {
     name: "foo",
     id: "asdf",
-    files: [{ name: "code.py", version: 2 }],
+    files: [{ name: "main.py", version: 2 }],
   };
   const other: Project = {
     name: "foo",
     id: "asdf",
     files: [
-      { name: "code.py", version: 1 },
+      { name: "main.py", version: 1 },
       { name: "other.py", version: 1 },
     ],
   };
@@ -280,15 +283,15 @@ describe("fs - diff", () => {
   });
   it("detects create", () => {
     // We're empty on start-up
-    expect(diff(empty, main1)).toEqual([{ name: "code.py", type: "create" }]);
+    expect(diff(empty, main1)).toEqual([{ name: "main.py", type: "create" }]);
     expect(diff(main1, other)).toEqual([{ name: "other.py", type: "create" }]);
   });
   it("detects delete", () => {
     expect(diff(other, main1)).toEqual([{ name: "other.py", type: "delete" }]);
   });
   it("detects edit", () => {
-    expect(diff(main1, main2)).toEqual([{ name: "code.py", type: "edit" }]);
-    expect(diff(main2, main1)).toEqual([{ name: "code.py", type: "edit" }]);
+    expect(diff(main1, main2)).toEqual([{ name: "main.py", type: "edit" }]);
+    expect(diff(main2, main1)).toEqual([{ name: "main.py", type: "edit" }]);
   });
 });
 

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Link } from "@chakra-ui/react";
+import { Link } from "@microbit/ui";
 import { ReactNode, useCallback } from "react";
 import { Traceback } from "../device/device-hooks";
 import { useSelection } from "../workbench/use-selection";
@@ -33,7 +33,13 @@ const TracebackLink = ({ traceback, children }: TracebackLinkProps) => {
     [setSelection, traceback]
   );
   return (
-    <Link data-testid="traceback-link" onClick={handleClick}>
+    // Standalone: only the location span (see MaybeTracebackLink) is
+    // underlined, not the error text sharing the click target.
+    <Link
+      variant="standalone"
+      data-testid="traceback-link"
+      onClick={handleClick}
+    >
       {children}
     </Link>
   );

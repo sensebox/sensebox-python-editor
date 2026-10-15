@@ -1,20 +1,49 @@
-import { configDefaults, defineConfig, UserConfig } from "vitest/config";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react from "@vitejs/plugin-react";
-import svgr from "vite-plugin-svgr";
+import ejs from "ejs";
+import fs from "node:fs";
+import path from "node:path";
 import {
   IndexHtmlTransformContext,
   IndexHtmlTransformResult,
   loadEnv,
   Plugin,
 } from "vite";
-import fs from "node:fs";
-import path from "node:path";
-import ejs from "ejs";
+import { VitePWA } from "vite-plugin-pwa";
+import svgr from "vite-plugin-svgr";
+import { configDefaults, defineConfig, UserConfig } from "vitest/config";
+
+// Browser-support floor (esbuild/lightningcss target syntax) for JS
+// (build.target) and CSS (build.cssTarget). Keep in sync with the
+// "browserslist" field in package.json, which is documentation — this is what
+// the build actually uses.
+//
+// safari14.1/ios14.5 rather than 14/14 is deliberate: flexbox `gap` landed in
+// exactly those versions, and the Panda stack patterns this app is built on
+// depend on it. See postcss.config.cjs for the two Safari <15.4 fixes that go
+// with this floor.
+const BUILD_TARGETS = [
+  "chrome90",
+  "edge90",
+  "firefox88",
+  "safari14.1",
+  "ios14.5",
+];
 
 // Support optionally pulling in external branding if the module is installed.
 const theme = "@microbit-foundation/python-editor-v3-microbit";
 const external = `node_modules/${theme}`;
 const internal = "src/deployment/default";
+
+const featurePwa = process.env.FEATURE_PWA === "true";
+const pwaCacheId =
+  // v3 vs beta should have distinct caches
+  // for the moment we do this for all review stages too but likely that's too much over time
+  process.env.STAGE === "PRODUCTION" ||
+  process.env.STAGE === "STAGING" ||
+  process.env.STAGE === "REVIEW"
+    ? process.env.BASE_URL.replaceAll("/", "")
+    : undefined;
 
 // There are third-party options but seems better to just depend on ejs.
 const viteEjsPlugin = ({ data }: { data: ejs.Data }): Plugin => ({
@@ -28,22 +57,65 @@ const viteEjsPlugin = ({ data }: { data: ejs.Data }): Plugin => ({
   },
 });
 
+// Removes webmanifest link tag from output index.html file.
+// We readd this client side if PWA features are enabled via a feature flag.
+// When that feature flag goes this plugin can be removed.
+const viteRemoveManifestPlugin = (): Plugin => ({
+  name: "Manifest",
+  enforce: "post",
+  transformIndexHtml: {
+    order: "post",
+    handler: (
+      html: string,
+      _ctx: IndexHtmlTransformContext
+    ): IndexHtmlTransformResult => {
+      const updated = html.replace(
+        `<link rel="manifest" href="${
+          process.env.BASE_URL ?? "/"
+        }manifest.webmanifest">`,
+        ""
+      );
+      if (featurePwa && updated == html) {
+        throw new Error("Failed to remove web manifest");
+      }
+      return updated;
+    },
+  },
+});
+
 export default defineConfig(({ mode }) => {
+  process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
   const unitTest: UserConfig["test"] = {
     globals: true,
     exclude: [...configDefaults.exclude, "**/e2e/**"],
     environment: "jsdom",
     setupFiles: "./src/setupTests.ts",
     mockReset: true,
+    alias: {
+      // vscode-jsonrpc@9's "./browser" export only declares a "browser"
+      // condition. The app build applies it, but vitest resolves in node mode
+      // and can't, so point it at the browser entry (as the build does).
+      "vscode-jsonrpc/browser": path.resolve(
+        __dirname,
+        "node_modules/vscode-jsonrpc/lib/browser/main.js"
+      ),
+    },
   };
   const config: UserConfig = {
     base: process.env.BASE_URL ?? "/",
     build: {
       outDir: "build",
       sourcemap: true,
+      target: BUILD_TARGETS,
+      cssTarget: BUILD_TARGETS,
     },
     server: {
       port: 3000,
+      strictPort: true,
+    },
+    preview: {
+      port: 4000,
+      strictPort: true,
     },
     assetsInclude: ["**/*.hex"],
     plugins: [
@@ -52,6 +124,118 @@ export default defineConfig(({ mode }) => {
       }),
       react(),
       svgr(),
+      VitePWA({
+        disable: !featurePwa,
+        registerType: "autoUpdate",
+        // Remove the trailing slash so we can serve from e.g. /v/3 not just /v/3/
+        // This requires the corresponding service-worker-allowed header to be set.
+        // URLs are prefix matched so it's a compromise solution that could affect other
+        // paths sharing the same prefix
+        scope: process.env.BASE_URL?.replace(/\/$/, ""),
+        workbox: {
+          cacheId: pwaCacheId,
+          // Only precache language assets for the fallback language.
+          // Cache other languages at runtime.
+          globIgnores: [
+            "**/{typeshed.!(en*).js,pyright-locale-!(en*).js,search.worker.!(en*).js,ui.!(en*).js}",
+          ],
+          maximumFileSizeToCacheInBytes: 3097152,
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,gif,hex}"],
+          runtimeCaching: [
+            {
+              urlPattern: new RegExp(
+                `^https://${process.env.VITE_SANITY_PROJECT}.apicdn.sanity.io/.*`
+              ),
+              handler: "NetworkFirst",
+              options: {
+                cacheName: `${pwaCacheId}-sanity-content-cache`,
+                expiration: {
+                  maxEntries: 40,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern: new RegExp(
+                `^https://cdn.sanity.io/images/${process.env.VITE_SANITY_PROJECT}/${process.env.VITE_SANITY_DATASET}/.*`
+              ),
+              handler: "CacheFirst",
+              options: {
+                cacheName: `${pwaCacheId}-sanity-images-cache`,
+                expiration: {
+                  maxEntries: 100,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern: /^https:\/\/fonts.microbit.org\/.*/,
+              handler: "CacheFirst",
+              options: {
+                cacheName: `${pwaCacheId}-fonts-cache`,
+                expiration: {
+                  maxEntries: 10,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern:
+                /.*(?:pyright-locale|search\.worker|typeshed|ui\.).*\.js/,
+              handler: "CacheFirst",
+              options: {
+                cacheName: `${pwaCacheId}-lang-cache`,
+                expiration: {
+                  maxEntries: 40,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+          ],
+        },
+        manifest: {
+          name: "micro:bit Python Editor",
+          short_name: "micro:bit Python Editor",
+          description:
+            "A Python Editor for the BBC micro:bit, built by the Micro:bit Educational Foundation and the global Python Community.",
+          theme_color: "#6c4bc1",
+          icons: [
+            {
+              src: `${process.env.BASE_URL ?? "/"}logo512.png`,
+              sizes: "512x512",
+              type: "image/png",
+            },
+            {
+              src: `${process.env.BASE_URL ?? "/"}logo192.png`,
+              sizes: "192x192",
+              type: "image/png",
+            },
+          ],
+        },
+      }),
+      viteRemoveManifestPlugin(),
+      // Source maps are public (open source) so there's nothing to delete;
+      // uploading them means Sentry doesn't depend on fetching from the CDN.
+      process.env.SENTRY_AUTH_TOKEN
+        ? sentryVitePlugin({
+            org: "microbit",
+            project: "python-editor-next",
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            telemetry: false,
+            release: {
+              // Must match the release passed to Sentry.init in src/logging/sentry.ts.
+              name: `python-editor-v${process.env.VITE_VERSION}`,
+            },
+          })
+        : false,
     ],
     test: unitTest,
     resolve: {
@@ -59,7 +243,22 @@ export default defineConfig(({ mode }) => {
         "theme-package": fs.existsSync(external)
           ? theme
           : path.resolve(__dirname, internal),
+        // Resolve Panda's generated helpers for all importers, including
+        // @microbit/ui's source (consumed from node_modules). Mirrors the
+        // tsconfig `paths` entry.
+        "styled-system": path.resolve(__dirname, "styled-system"),
       },
+      // @microbit/ui is consumed as source via a file: symlink, so its
+      // `import "react"` etc. would otherwise resolve to the ui monorepo's own
+      // copies — two Reacts → invalid-hook "useContext of null" crashes. Force
+      // a single copy (the app's) for React and the react-aria stack.
+      dedupe: [
+        "react",
+        "react-dom",
+        "react-aria-components",
+        "react-aria",
+        "react-stately",
+      ],
     },
   };
   return config;

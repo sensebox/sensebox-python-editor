@@ -3,9 +3,9 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Flex, VStack } from "@chakra-ui/react";
 import { useState } from "react";
 import { useIntl } from "react-intl";
+import { Flex, VStack } from "styled-system/jsx";
 import {
   SplitView,
   SplitViewDivider,
@@ -13,7 +13,7 @@ import {
   SplitViewSized,
 } from "../common/SplitView";
 import { SizedMode } from "../common/SplitView/SplitView";
-import { ConnectionStatus } from "../device/device";
+import { ConnectionStatus } from "@microbit/microbit-connection";
 import { useConnectionStatus } from "../device/device-hooks";
 import SerialArea from "../serial/SerialArea";
 import { RunningStatus } from "./Simulator";
@@ -26,7 +26,7 @@ interface SimulatorSplitViewProps {
 
 const SimulatorSplitView = ({ simRunning }: SimulatorSplitViewProps) => {
   const intl = useIntl();
-  const connected = useConnectionStatus() === ConnectionStatus.CONNECTED;
+  const connected = useConnectionStatus() === ConnectionStatus.Connected;
   const [serialStateWhenOpen, setSerialStateWhenOpen] =
     useState<SizedMode>("compact");
   const serialSizedMode = connected ? serialStateWhenOpen : "collapsed";
@@ -36,13 +36,11 @@ const SimulatorSplitView = ({ simRunning }: SimulatorSplitViewProps) => {
       direction="column"
       minimums={[150, 200]}
       compactSize={SerialArea.compactSize}
-      height="0"
-      flexGrow={1}
+      css={{ height: "0", flexGrow: 1 }}
       mode={serialSizedMode}
     >
       <SplitViewSized>
         <SerialArea
-          as="section"
           terminalFontSizePt={12}
           compact={serialStateWhenOpen === "compact"}
           expandDirection="down"
@@ -57,10 +55,10 @@ const SimulatorSplitView = ({ simRunning }: SimulatorSplitViewProps) => {
         />
       </SplitViewSized>
       <SplitViewDivider />
-      <SplitViewRemainder overflowY="auto">
+      <SplitViewRemainder css={{ overflowY: "auto" }}>
         <Flex flexDirection="column" height="100%">
-          <VStack spacing={5} bg="gray.25" flex="1 1 auto">
-            <SimulatorModules flex="1 1 auto" running={simRunning} />
+          <VStack gap="5" bg="gray.75" flex="1 1 auto">
+            <SimulatorModules css={{ flex: "1 1 auto" }} running={simRunning} />
           </VStack>
         </Flex>
       </SplitViewRemainder>

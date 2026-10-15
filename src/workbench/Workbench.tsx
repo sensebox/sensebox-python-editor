@@ -3,10 +3,16 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, Flex } from "@chakra-ui/layout";
-import { useMediaQuery } from "@chakra-ui/react";
+import { useMediaQuery } from "@microbit/ui";
+import { Flex, styled } from "styled-system/jsx";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useIntl } from "react-intl";
+import {
+  hideSidebarMediaQuery,
+  sidebarToWidthRatio,
+  simulatorToWidthRatio,
+  widthToHideSidebar,
+} from "../common/screenWidthUtils";
 import {
   SplitView,
   SplitViewDivider,
@@ -14,52 +20,66 @@ import {
   SplitViewSized,
 } from "../common/SplitView";
 import { SizedMode } from "../common/SplitView/SplitView";
-import {
-  hideSidebarMediaQuery,
-  sidebarToWidthRatio,
-  simulatorToWidthRatio,
-  widthToHideSidebar,
-} from "../common/screenWidthUtils";
-import { ConnectionStatus } from "../device/device";
+import { ConnectionStatus } from "@microbit/microbit-connection";
 import { useConnectionStatus } from "../device/device-hooks";
 import EditorArea from "../editor/EditorArea";
-import { MAIN_FILE } from "../fs/fs";
-import ProjectActionBar from "../project/ProjectActionBar";
+import { FileVersion, MAIN_FILE } from "../fs/fs";
 import { useProject } from "../project/project-hooks";
-import ReplWindow from "../repl";
+import ProjectActionBar from "../project/ProjectActionBar";
 import SerialArea from "../serial/SerialArea";
 import { useSettings } from "../settings/settings";
-import Simulator from "../simulator/Simulator";
-import SideBar from "./SideBar";
+import ReplWindow from "../repl";
 import Overlay from "./connect-dialogs/Overlay";
-import { useSelection } from "./use-selection";
+import SideBar from "./SideBar";
+import { WorkbenchSelection, useSelection } from "./use-selection";
+import { flags } from "../flags";
 
 const minimums: [number, number] = [380, 580];
 const simulatorMinimums: [number, number] = [275, 0];
+
+const defaultSelection = (
+  selection: WorkbenchSelection,
+  files: FileVersion[]
+) => {
+  // Selected file deleted? Default it.
+  if (!files.find((x) => x.name === selection.file) && files.length > 0) {
+    const defaultFile = files.find((x) => x.name === MAIN_FILE) ?? files[0];
+    return { file: defaultFile.name, location: { line: undefined } };
+  }
+  return selection;
+};
 
 /**
  * The main app layout with resizable panels.
  */
 const Workbench = () => {
-  const [selection, setSelection] = useSelection();
   const intl = useIntl();
+
+  const [maybeInvalidSelection, setSelection] = useSelection();
   const { files } = useProject();
+  const selection = defaultSelection(maybeInvalidSelection, files);
   const setSelectedFile = useCallback(
     (file: string) => {
       setSelection({ file, location: { line: undefined } });
     },
     [setSelection]
   );
+
   useEffect(() => {
-    // No file yet or selected file deleted? Default it.
+    const scriptId = "crowdin-jipt";
     if (
-      (!selection || !files.find((x) => x.name === selection.file)) &&
-      files.length > 0
+      document.getElementById("crowdin-jipt-config") &&
+      flags.translate &&
+      !document.getElementById(scriptId)
     ) {
-      const defaultFile = files.find((x) => x.name === MAIN_FILE) || files[0];
-      setSelectedFile(defaultFile.name);
+      // Add Crowdin just in place translation script
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.type = "text/javascript";
+      script.src = "//cdn.crowdin.com/jipt/jipt.js";
+      document.head.appendChild(script);
     }
-  }, [selection, setSelectedFile, files]);
+  }, []);
 
   const fileVersion = files.find((f) => f.name === selection.file)?.version;
 
@@ -67,7 +87,6 @@ const Workbench = () => {
     () => window.innerWidth > widthToHideSidebar
   );
   const [simulatorShown, setSimulatorShown] = useState<boolean>(true);
-  const [replShown, setReplShown] = useState<boolean>(true);
   const simulatorButtonRef = useRef<HTMLButtonElement>(null);
   const [tabIndex, setTabIndex] = useState<number>(() =>
     window.innerWidth > widthToHideSidebar ? 0 : -1
@@ -98,19 +117,7 @@ const Workbench = () => {
       handleSidebarCollapse();
     }
   }, [handleSidebarCollapse]);
-  const handleReplHide = useCallback(() => {
-    setReplShown(false);
-  }, []);
-  const handleReplExpand = useCallback(() => {
-    setReplShown(true);
-    // If there's not room for the sidebar then hide it.
-    if (window.innerWidth <= widthToHideSidebar) {
-      handleSidebarCollapse();
-    }
-  }, [handleSidebarCollapse]);
-  const [hideSideBarMediaQueryValue] = useMediaQuery(hideSidebarMediaQuery, {
-    ssr: false,
-  });
+  const hideSideBarMediaQueryValue = useMediaQuery(hideSidebarMediaQuery);
   useEffect(() => {
     if (hideSideBarMediaQueryValue) {
       handleSidebarCollapse();
@@ -118,7 +125,7 @@ const Workbench = () => {
   }, [hideSideBarMediaQueryValue, handleSidebarCollapse]);
 
   const editor = (
-    <Box height="100%" as="section">
+    <styled.section height="100%">
       {selection && fileVersion !== undefined && (
         <EditorArea
           key={selection.file + "/" + fileVersion}
@@ -126,20 +133,17 @@ const Workbench = () => {
           onSelectedFileChanged={setSelectedFile}
           onSimulatorExpand={handleSimulatorExpand}
           simulatorShown={simulatorShown}
-          onReplExpand={handleReplExpand}
-          replShown={replShown}
           ref={simulatorButtonRef}
         />
       )}
-    </Box>
+    </styled.section>
   );
 
   return (
-    <Flex className="WorkbenchContainer" flexDir="column">
+    <Flex className="WorkbenchContainer" direction="column">
       <Flex className="Workbench">
         <SplitView
           direction="row"
-          width="100%"
           minimums={minimums}
           initialSize={Math.min(
             700,
@@ -153,11 +157,10 @@ const Workbench = () => {
         >
           <SplitViewSized>
             <SideBar
-              as="section"
               aria-label={intl.formatMessage({ id: "sidebar" })}
               selectedFile={selection.file}
               onSelectedFileChanged={setSelectedFile}
-              flex="1 1 100%"
+              css={{ flex: "1 1 100%" }}
               shown={sidebarShown}
               tabIndex={tabIndex}
               onTabIndexChange={setTabIndex}
@@ -167,10 +170,10 @@ const Workbench = () => {
           </SplitViewSized>
           <SplitViewDivider />
           <SplitViewRemainder>
-            <EditorWithRepl
+            <EditorWithSimulator
               editor={editor}
-              onSimulatorHide={handleReplHide}
-              simulatorShown={replShown}
+              onSimulatorHide={handleSimulatorHide}
+              simulatorShown={simulatorShown}
               showSimulatorButtonRef={simulatorButtonRef}
               simFocus={simFocus}
             />
@@ -196,52 +199,13 @@ interface EditorWithSimulatorProps extends EditorProps {
 const EditorWithSimulator = ({
   editor,
   simulatorShown,
-  showSimulatorButtonRef,
-  onSimulatorHide,
-  simFocus,
-}: EditorWithSimulatorProps) => {
-  return (
-    <SplitView
-      direction="row"
-      minimums={simulatorMinimums}
-      height="100%"
-      mode={simulatorShown ? "open" : "collapsed"}
-      initialSize={Math.min(
-        350,
-        Math.max(
-          simulatorMinimums[0],
-          Math.floor(window.innerWidth * simulatorToWidthRatio)
-        )
-      )}
-    >
-      <SplitViewRemainder>
-        <Editor editor={editor} />
-      </SplitViewRemainder>
-      <SplitViewDivider showBoxShadow={true} />
-      <SplitViewSized>
-        <Simulator
-          shown={simulatorShown}
-          onSimulatorHide={onSimulatorHide}
-          showSimulatorButtonRef={showSimulatorButtonRef}
-          minWidth={simulatorMinimums[0]}
-          simFocus={simFocus}
-        />
-      </SplitViewSized>
-    </SplitView>
-  );
-};
-
-const EditorWithRepl = ({
-  editor,
-  simulatorShown,
-  showSimulatorButtonRef,
   onSimulatorHide,
 }: EditorWithSimulatorProps) => {
   return (
     <SplitView
       direction="row"
       minimums={simulatorMinimums}
-      height="100%"
+      css={{ height: "100%" }}
       mode={simulatorShown ? "open" : "collapsed"}
       initialSize={Math.min(
         350,
@@ -259,7 +223,6 @@ const EditorWithRepl = ({
         <ReplWindow
           shown={simulatorShown}
           onReplHide={onSimulatorHide}
-          showReplButtonRef={showSimulatorButtonRef}
           minWidth={simulatorMinimums[0]}
         />
       </SplitViewSized>
@@ -269,15 +232,15 @@ const EditorWithRepl = ({
 
 const Editor = ({ editor }: EditorProps) => {
   const intl = useIntl();
-  const connected = useConnectionStatus() === ConnectionStatus.CONNECTED;
+  const connected = useConnectionStatus() === ConnectionStatus.Connected;
   const [serialStateWhenOpen, setSerialStateWhenOpen] =
     useState<SizedMode>("compact");
   const serialSizedMode = connected ? serialStateWhenOpen : "collapsed";
   const [{ fontSize: settingsFontSizePt }] = useSettings();
   const ref = useRef<HTMLButtonElement>(null);
   return (
-    <Flex
-      as="main"
+    <styled.main
+      display="flex"
       flex="1 1 100%"
       flexDirection="column"
       height="100%"
@@ -287,14 +250,13 @@ const Editor = ({ editor }: EditorProps) => {
         direction="column"
         minimums={[248, 200]}
         compactSize={SerialArea.compactSize}
-        height="100%"
+        css={{ height: "100%" }}
         mode={serialSizedMode}
       >
         <SplitViewRemainder>{editor}</SplitViewRemainder>
         <SplitViewDivider />
         <SplitViewSized>
           <SerialArea
-            as="section"
             compact={serialSizedMode === "compact"}
             onSizeChange={setSerialStateWhenOpen}
             aria-label={intl.formatMessage({
@@ -310,13 +272,15 @@ const Editor = ({ editor }: EditorProps) => {
       <ProjectActionBar
         ref={ref}
         sendButtonRef={ref}
-        as="section"
         aria-label={intl.formatMessage({ id: "project-actions" })}
-        borderTopWidth={2}
-        borderColor="gray.200"
-        overflow="hidden"
+        css={{
+          borderTopWidth: "2px",
+          borderTopStyle: "solid",
+          borderColor: "gray.200",
+          overflow: "hidden",
+        }}
       />
-    </Flex>
+    </styled.main>
   );
 };
 

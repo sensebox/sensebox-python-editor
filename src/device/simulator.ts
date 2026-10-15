@@ -3,25 +3,28 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import EventEmitter from "events";
-import { Logging } from "../logging/logging";
 import {
+  BoardVersion,
   ConnectionStatus,
-  DeviceConnection,
-  EVENT_FLASH,
-  EVENT_SERIAL_DATA,
-  EVENT_SERIAL_RESET,
-  EVENT_STATUS,
-  FlashDataSource,
-} from "./device";
+  ConnectionStatusChange,
+} from "@microbit/microbit-connection";
+import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
+import { SimpleEventTarget } from "./simple-event-target";
+import { Logging } from "../logging/logging";
 
 // Simulator-only events.
-export const EVENT_LOG_DATA = "log_data";
-export const EVENT_RADIO_DATA = "radio_data";
-export const EVENT_RADIO_GROUP = "radio_group";
-export const EVENT_RADIO_RESET = "radio_reset";
-export const EVENT_STATE_CHANGE = "state_change";
-export const EVENT_REQUEST_FLASH = "request_flash";
+
+export interface LogData {
+  log: DataLog;
+}
+
+export interface RadioData {
+  text: string;
+}
+
+export interface StateChange {
+  state: SimulatorState;
+}
 
 // It'd be nice to publish these types from the simulator project.
 
@@ -42,7 +45,9 @@ export interface RangeSensor {
   value: number;
   min: number;
   max: number;
-  unit: number;
+  // Free-form display unit ("mg", "°C", "deg", "nT") or undefined; see the
+  // simulator's board/state.ts.
+  unit: string | undefined;
   lowThreshold?: number;
   highThreshold?: number;
 }
@@ -132,16 +137,32 @@ const initialDataLog = (): DataLog => ({
   data: [],
 });
 
+interface SimulatorEventMap {
+  status: ConnectionStatusChange;
+  beforerequestdevice: void;
+  afterrequestdevice: void;
+  flash: void;
+  serialdata: { data: string };
+  serialreset: void;
+  // Simulator-specific
+  logdata: LogData;
+  radiodata: RadioData;
+  radioreset: void;
+  statechange: StateChange;
+  requestflash: void;
+}
+
 /**
  * A simulated device.
  *
  * This communicates with the iframe that is used to embed the simulator.
  */
 export class SimulatorDeviceConnection
-  extends EventEmitter
-  implements DeviceConnection
+  extends SimpleEventTarget<SimulatorEventMap>
+  implements MicrobitUSBConnection
 {
-  status: ConnectionStatus = ConnectionStatus.NO_AUTHORIZED_DEVICE;
+  readonly type = "usb" as const;
+  status: ConnectionStatus = ConnectionStatus.NoAuthorizedDevice;
   state: SimulatorState | undefined;
 
   log: DataLog = initialDataLog();
@@ -154,26 +175,28 @@ export class SimulatorDeviceConnection
     }
     switch (event.data.kind) {
       case "ready": {
-        this.state = event.data.state;
-        this.emit(EVENT_STATE_CHANGE, this.state);
-        if (this.status !== ConnectionStatus.CONNECTED) {
-          this.setStatus(ConnectionStatus.CONNECTED);
+        const newState = event.data.state;
+        this.state = newState;
+        this.dispatchEvent("statechange", { state: newState });
+        if (this.status !== ConnectionStatus.Connected) {
+          this.setStatus(ConnectionStatus.Connected);
         }
         break;
       }
       case "request_flash": {
-        this.emit(EVENT_REQUEST_FLASH);
+        this.dispatchEvent("requestflash");
         this.logging.event({
-          type: "sim-user-start",
+          type: "sim_start",
         });
         break;
       }
       case "state_change": {
-        this.state = {
+        const updated = {
           ...this.state,
           ...event.data.change,
         };
-        this.emit(EVENT_STATE_CHANGE, this.state);
+        this.state = updated;
+        this.dispatchEvent("statechange", { state: updated });
         break;
       }
       case "radio_output": {
@@ -186,7 +209,7 @@ export class SimulatorDeviceConnection
           // eslint-disable-next-line no-control-regex
           .replace(/^\x01\x00\x01/, "");
         if (message instanceof Uint8Array) {
-          this.emit(EVENT_RADIO_DATA, text);
+          this.dispatchEvent("radiodata", { text });
         }
         break;
       }
@@ -204,24 +227,24 @@ export class SimulatorDeviceConnection
           result.data.push({ data: entry.data });
         }
         this.log = result;
-        this.emit(EVENT_LOG_DATA, this.log);
+        this.dispatchEvent("logdata", { log: this.log });
         break;
       }
       case "log_delete": {
         this.log = initialDataLog();
-        this.emit(EVENT_LOG_DATA, this.log);
+        this.dispatchEvent("logdata", { log: this.log });
         break;
       }
       case "serial_output": {
         const text = event.data.data;
         if (typeof text === "string") {
-          this.emit(EVENT_SERIAL_DATA, text);
+          this.dispatchEvent("serialdata", { data: text });
         }
         break;
       }
       case "internal_error": {
         const error = event.data.error;
-        this.logging.error(error);
+        this.logging.error("Simulator internal error", error);
         break;
       }
       default: {
@@ -241,7 +264,8 @@ export class SimulatorDeviceConnection
   private logSensor(sensorId: string): void {
     if (!this.sensorsLogged[sensorId]) {
       this.logging.event({
-        type: `sim-user-${sensorId}`,
+        type: "sim_sensor",
+        detail: { id: sensorId },
       });
       this.sensorsLogged[sensorId] = true;
     }
@@ -249,32 +273,34 @@ export class SimulatorDeviceConnection
 
   async initialize(): Promise<void> {
     window.addEventListener("message", this.messageListener);
-    this.setStatus(ConnectionStatus.NOT_CONNECTED);
+    this.setStatus(ConnectionStatus.Disconnected);
   }
 
   dispose() {
-    this.removeAllListeners();
     window.removeEventListener("message", this.messageListener);
   }
 
-  async connect(): Promise<ConnectionStatus> {
-    this.setStatus(ConnectionStatus.CONNECTED);
-    return this.status;
+  async connect(): Promise<void> {
+    this.setStatus(ConnectionStatus.Connected);
   }
 
-  async flash(
-    dataSource: FlashDataSource,
-    options: {
-      partial: boolean;
-      progress: (percentage: number | undefined) => void;
-    }
-  ): Promise<void> {
+  getBoardVersion(): BoardVersion {
+    return "V2";
+  }
+
+  /**
+   * The simulator doesn't support flash from a hex file.
+   *
+   * Instead you simply specify the files in the file system.
+   *
+   * @param filesystem A map from file name to file data.
+   */
+  async flashFileSystem(filesystem: Record<string, Uint8Array>): Promise<void> {
     this.postMessage("flash", {
-      filesystem: await dataSource.files(),
+      filesystem,
     });
     this.notifyResetComms();
-    options.progress(undefined);
-    this.emit(EVENT_FLASH);
+    this.dispatchEvent("flash");
   }
 
   configure(config: Config): void {
@@ -283,13 +309,13 @@ export class SimulatorDeviceConnection
 
   private notifyResetComms() {
     // Might be nice to rework so this was all about connection state changes.
-    this.emit(EVENT_SERIAL_RESET, {});
-    this.emit(EVENT_RADIO_RESET, {});
+    this.dispatchEvent("serialreset");
+    this.dispatchEvent("radioreset");
   }
 
   async disconnect(): Promise<void> {
     window.removeEventListener("message", this.messageListener);
-    this.setStatus(ConnectionStatus.NOT_CONNECTED);
+    this.setStatus(ConnectionStatus.Disconnected);
   }
 
   async serialWrite(data: string): Promise<void> {
@@ -324,7 +350,7 @@ export class SimulatorDeviceConnection
         value,
       },
     };
-    this.emit(EVENT_STATE_CHANGE, this.state);
+    this.dispatchEvent("statechange", { state: this.state });
     this.postMessage("set_value", {
       id,
       value,
@@ -340,31 +366,37 @@ export class SimulatorDeviceConnection
     this.postMessage("reset", {});
     this.notifyResetComms();
     this.logging.event({
-      type: "sim-user-reset",
+      type: "sim_reset",
     });
   };
 
   mute = async (): Promise<void> => {
     this.postMessage("mute", {});
     this.logging.event({
-      type: "sim-user-mute",
+      type: "sim_audio",
+      detail: { state: "mute" },
     });
   };
 
   unmute = async (): Promise<void> => {
     this.postMessage("unmute", {});
     this.logging.event({
-      type: "sim-user-unmute",
+      type: "sim_audio",
+      detail: { state: "unmute" },
     });
   };
 
   private setStatus(newStatus: ConnectionStatus) {
+    const previousStatus = this.status;
     this.status = newStatus;
-    this.emit(EVENT_STATUS, this.status);
+    this.dispatchEvent("status", {
+      status: newStatus,
+      previousStatus,
+    });
   }
 
   clearDevice(): void {
-    this.setStatus(ConnectionStatus.NO_AUTHORIZED_DEVICE);
+    this.setStatus(ConnectionStatus.NoAuthorizedDevice);
   }
 
   private postMessage(kind: string, data: any): void {
@@ -380,4 +412,17 @@ export class SimulatorDeviceConnection
       "*"
     );
   }
+
+  async checkAvailability() {
+    return "available" as const;
+  }
+  getDeviceId(): number {
+    return 0;
+  }
+  setRequestDeviceExclusionFilters(): void {}
+  async flash(): Promise<void> {}
+  getDevice() {
+    return undefined;
+  }
+  async softwareReset(): Promise<void> {}
 }

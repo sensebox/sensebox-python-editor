@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+import { ConsoleLogging } from "../deployment/default/logging";
 import { MockLogging } from "../logging/mock";
-import { NullLogging } from "../deployment/default/logging";
 import {
   FSStorage,
   InMemoryFSStorage,
@@ -44,7 +44,7 @@ const commonStorageTests = (storage: FSStorage) => {
   });
 
   it("throws trying to read a non-existent file", async () => {
-    await expect(() => storage.read("test1.py")).rejects.toThrowError(
+    await expect(() => storage.read("test1.py")).rejects.toThrow(
       /No such file test1.py/
     );
   });
@@ -91,7 +91,7 @@ describe("SplitStrategyStorage", () => {
   const storage = new SplitStrategyStorage(
     new InMemoryFSStorage(projectName),
     new SessionStorageFSStorage(sessionStorage),
-    new NullLogging()
+    new ConsoleLogging()
   );
 
   beforeEach(() => {
@@ -107,7 +107,11 @@ describe("SplitStrategyStorage", () => {
     await session.write("test1.py", new Uint8Array([1]));
     await session.markDirty();
 
-    const split = new SplitStrategyStorage(memory, session, new NullLogging());
+    const split = new SplitStrategyStorage(
+      memory,
+      session,
+      new ConsoleLogging()
+    );
 
     expect(await split.ls()).toEqual(["test1.py"]);
     expect(await split.projectName()).toEqual("foo");
@@ -125,7 +129,9 @@ describe("SplitStrategyStorage", () => {
     // After encoding this is big enough to hit the 5MB limit. Note that Safari is half this.
     await split.write("test2.py", new Uint8Array(3_800_000));
 
-    expect(log.errors[0]).toEqual("Abandoning secondary storage due to error");
+    expect(log.errors[0].message).toEqual(
+      "Abandoning secondary storage due to error"
+    );
     expect(await session.ls()).toEqual([]);
     expect(await memory.ls()).toEqual(["test1.py", "test2.py"]);
 

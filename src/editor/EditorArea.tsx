@@ -3,11 +3,13 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Box, BoxProps, Flex, useMediaQuery } from "@chakra-ui/react";
+import { useMediaQuery } from "@microbit/ui";
 import React, { ForwardedRef } from "react";
 import { useIntl } from "react-intl";
-import HideSplitViewButton from "../common/SplitView/HideSplitViewButton";
+import { Box, Flex, styled } from "styled-system/jsx";
+import { token } from "styled-system/tokens";
 import { widthXl } from "../common/media-queries";
+import HideSplitViewButton from "../common/SplitView/HideSplitViewButton";
 import { topBarHeight } from "../deployment/misc";
 import ZoomControls from "../editor/ZoomControls";
 import ProjectNameEditable from "../project/ProjectNameEditable";
@@ -16,13 +18,11 @@ import ActiveFileInfo from "./ActiveFileInfo";
 import EditorContainer from "./EditorContainer";
 import UndoRedoControls from "./UndoRedoControls";
 
-interface EditorAreaProps extends BoxProps {
+interface EditorAreaProps {
   selection: WorkbenchSelection;
   onSelectedFileChanged: (filename: string) => void;
   simulatorShown: boolean;
   onSimulatorExpand: () => void;
-  replShown: boolean;
-  onReplExpand: () => void;
 }
 
 /**
@@ -36,32 +36,28 @@ const EditorArea = React.forwardRef(
       onSelectedFileChanged,
       simulatorShown,
       onSimulatorExpand,
-      replShown,
-      onReplExpand,
-      ...props
     }: EditorAreaProps,
-    // _simulatorButtonRef: ForwardedRef<HTMLButtonElement>,
-    replButtonRef: ForwardedRef<HTMLButtonElement>
+    simulatorButtonRef: ForwardedRef<HTMLButtonElement>
   ) => {
     const intl = useIntl();
-    const [isWideScreen] = useMediaQuery(widthXl, { ssr: false });
+    const isWideScreen = useMediaQuery(widthXl);
     return (
-      <Flex
-        height="100%"
-        flexDirection="column"
-        {...props}
-        backgroundColor="gray.10"
-      >
-        <Flex
-          as="section"
+      <Flex height="100%" flexDirection="column" backgroundColor="gray.10">
+        <styled.section
           aria-label={intl.formatMessage({ id: "project-header" })}
+          display="flex"
           width="100%"
           alignItems="center"
           justifyContent="space-between"
-          pr={!simulatorShown ? 0 : isWideScreen ? 10 : 5}
           pl={isWideScreen ? "3rem" : "2rem"}
-          py={2}
-          height={topBarHeight}
+          py="2"
+          // Three-way padding + imported height constant: runtime values.
+          style={{
+            paddingRight: !simulatorShown
+              ? 0
+              : token(isWideScreen ? "spacing.10" : "spacing.5"),
+            height: topBarHeight,
+          }}
         >
           <ProjectNameEditable
             color="gray.700"
@@ -75,51 +71,39 @@ const EditorArea = React.forwardRef(
             onSelectedFileChanged={onSelectedFileChanged}
           />
           <Flex alignItems="center">
-            <ZoomControls display={["none", "none", "none", "flex"]} />
-            <Flex alignItems="end" direction="column">
-              {/* {!simulatorShown && (
-                <HideSplitViewButton
-                  aria-label={intl.formatMessage({ id: "simulator-expand" })}
-                  onClick={onSimulatorExpand}
-                  splitViewShown={simulatorShown}
-                  direction="expandLeft"
-                  text={intl.formatMessage({ id: "simulator-title" })}
-                  ml={5}
-                  boxShadow="none"
-                  ref={simulatorButtonRef}
-                />
-              )} */}
-              {!replShown && (
-                <HideSplitViewButton
-                  aria-label={"REPL Expand"}
-                  onClick={onReplExpand}
-                  splitViewShown={replShown}
-                  direction="expandLeft"
-                  text={"REPL"}
-                  ml={5}
-                  boxShadow="none"
-                  ref={replButtonRef}
-                />
-              )}
-            </Flex>
+            <ZoomControls css={{ display: ["none", "none", "none", "flex"] }} />
+            {!simulatorShown && (
+              <HideSplitViewButton
+                aria-label="Show REPL"
+                onClick={onSimulatorExpand}
+                splitViewShown={simulatorShown}
+                direction="expandLeft"
+                text="REPL"
+                css={{ ml: "5" }}
+                ref={simulatorButtonRef}
+              />
+            )}
           </Flex>
-        </Flex>
+        </styled.section>
         {/* Just for the line */}
         <Box
           ml={isWideScreen ? "6rem" : "5rem"}
           mr={isWideScreen ? "2.5rem" : "1.25rem"}
-          mb={5}
+          mb="5"
           width={isWideScreen ? "calc(100% - 8.5rem)" : "calc(100% - 6.25rem)"}
-          borderBottomWidth={2}
+          borderBottomWidth="2px"
+          borderBottomStyle="solid"
           borderColor="gray.200"
         />
-        <Box position="relative" flex="1 1 auto" height={0}>
+        <Box position="relative" flex="1 1 auto" height="0">
           <UndoRedoControls
-            display={["none", "none", "none", "flex"]}
-            zIndex="1"
-            top={6}
-            right={isWideScreen ? 10 : 5}
-            position="absolute"
+            css={{
+              display: ["none", "none", "none", "flex"],
+              zIndex: 1,
+              top: "6",
+              right: isWideScreen ? "10" : "5",
+              position: "absolute",
+            }}
           />
           <EditorContainer selection={selection} />
         </Box>

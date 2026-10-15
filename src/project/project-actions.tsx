@@ -3,8 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Link, List, ListItem, Stack } from "@chakra-ui/layout";
-import { Text, VStack } from "@chakra-ui/react";
+import { Link, List, ListItem, Text, UnorderedList } from "@microbit/ui";
+import { Box, HStack, Stack, VStack } from "styled-system/jsx";
 import { isMakeCodeForV1Hex as isMakeCodeForV1HexNoErrorHandling } from "@microbit/microbit-universal-hex";
 import { saveAs } from "file-saver";
 import { ReactNode } from "react";
@@ -18,15 +18,13 @@ import PostSaveDialog, { PostSaveChoice } from "../common/PostSaveDialog";
 import { ActionFeedback } from "../common/use-action-feedback";
 import { Dialogs } from "../common/use-dialogs";
 import {
-  ConnectOptions,
-  ConnectionAction,
   ConnectionStatus,
-  DeviceConnection,
-  EVENT_END_USB_SELECT,
-  HexGenerationError,
-  WebUSBError,
-  WebUSBErrorCode,
-} from "../device/device";
+  FlashDataError,
+  DeviceError,
+  DeviceErrorCode,
+  ProgressStage,
+} from "@microbit/microbit-connection";
+import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 import { FileSystem, MAIN_FILE, Statistics, VersionAction } from "../fs/fs";
 import {
   getLowercaseFileExtension,
@@ -35,11 +33,18 @@ import {
   readFileAsUint8Array,
 } from "../fs/fs-util";
 import {
-  PythonProject,
   defaultInitialProject,
   projectFilesToBase64,
+  PythonProject,
 } from "../fs/initial-project";
 import { LanguageServerClient } from "../language-server/client";
+import {
+  AnalyticsTask,
+  deviceFailureCode,
+  importFormat,
+  markUserDisconnect,
+  transport,
+} from "../logging/analytics";
 import { Logging } from "../logging/logging";
 import { SessionSettings } from "../settings/session-settings";
 import { Settings } from "../settings/settings";
@@ -55,26 +60,31 @@ import TransferHexDialog, {
 } from "../workbench/connect-dialogs/TransferHexDialog";
 import WebUSBDialog from "../workbench/connect-dialogs/WebUSBDialog";
 import { WorkbenchSelection } from "../workbench/use-selection";
-import ChooseMainScriptQuestion from "./ChooseMainScriptQuestion";
-import NewFileNameQuestion from "./NewFileNameQuestion";
-import ProjectNameQuestion from "./ProjectNameQuestion";
 import {
   ClassifiedFileInput,
   FileChange,
   FileInput,
   FileOperation,
 } from "./changes";
+import ChooseMainScriptQuestion from "./ChooseMainScriptQuestion";
+import NewFileNameQuestion from "./NewFileNameQuestion";
 import { DefaultedProject } from "./project-hooks";
 import {
   ensurePythonExtension,
   isPythonFile,
   validateNewFilename,
 } from "./project-utils";
+import ProjectNameQuestion from "./ProjectNameQuestion";
+import WebUSBErrorDialog from "../workbench/connect-dialogs/WebUSBErrorDialog";
+import reconnectWebm from "../workbench/connect-dialogs/reconnect.webm";
+import reconnectMp4 from "../workbench/connect-dialogs/reconnect.mp4";
 
 /**
  * Distinguishes the different ways to trigger the load action.
  */
 export type LoadType = "drop-load" | "file-upload";
+
+export type FinalFocusRef = React.RefObject<HTMLElement> | undefined;
 
 export interface MainScriptChoice {
   main: string | undefined;
@@ -83,6 +93,24 @@ export interface MainScriptChoice {
 interface ProjectStatistics extends Statistics {
   errorCount: number;
 }
+
+export enum ConnectionAction {
+  FLASH = "FLASH",
+  CONNECT = "CONNECT",
+  DISCONNECT = "DISCONNECT",
+}
+
+const analyticsTask = (userAction: ConnectionAction): AnalyticsTask =>
+  userAction === ConnectionAction.FLASH ? "download" : "connect";
+
+const statsParams = (stats: ProjectStatistics) => ({
+  files: stats.files,
+  lines: stats.lines,
+  is_default: stats.defaultMain,
+  storage_used: stats.storageUsed,
+  errors: stats.errorCount,
+  modules: stats.magicModules,
+});
 
 /**
  * Key actions.
@@ -96,7 +124,7 @@ interface ProjectStatistics extends Statistics {
 export class ProjectActions {
   constructor(
     private fs: FileSystem,
-    private device: DeviceConnection,
+    private device: MicrobitUSBConnection,
     private actionFeedback: ActionFeedback,
     private dialogs: Dialogs,
     private setSelection: (selection: WorkbenchSelection) => void,
@@ -120,22 +148,17 @@ export class ProjectActions {
   connect = async (
     forceConnectHelp: boolean,
     userAction: ConnectionAction,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ): Promise<boolean | undefined> => {
-    this.logging.event({
-      type: "connect",
-    });
-
-    if (this.device.status === ConnectionStatus.NOT_SUPPORTED) {
+    const availability = await this.device.checkAvailability();
+    if (availability !== "available") {
       this.webusbNotSupportedError(finalFocusRef);
-    } else {
-      if (await this.showConnectHelp(forceConnectHelp, finalFocusRef)) {
-        return this.connectInternal(
-          { serial: userAction !== ConnectionAction.FLASH },
-          userAction,
-          finalFocusRef
-        );
-      }
+      return false;
+    }
+
+    const task = analyticsTask(userAction);
+    if (await this.showConnectHelp(forceConnectHelp, task, finalFocusRef)) {
+      return this.connectInternal(userAction, finalFocusRef);
     }
   };
 
@@ -147,16 +170,21 @@ export class ProjectActions {
    */
   private async showConnectHelp(
     force: boolean,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    task: AnalyticsTask,
+    finalFocusRef: FinalFocusRef
   ): Promise<boolean> {
     const showConnectHelpSetting = this.settings.values.showConnectHelp;
     if (
       !force &&
       (!showConnectHelpSetting ||
-        this.device.status === ConnectionStatus.NOT_CONNECTED)
+        this.device.status === ConnectionStatus.Disconnected)
     ) {
       return true;
     }
+    this.logging.event({
+      type: "device_step",
+      detail: { task, step: "connect_help", transport },
+    });
     const choice = await this.dialogs.show<ConnectHelpChoice>((callback) => (
       <ConnectDialog
         finalFocusRef={finalFocusRef}
@@ -176,6 +204,10 @@ export class ProjectActions {
       case ConnectHelpChoice.Next:
         return true;
       case ConnectHelpChoice.Cancel:
+        this.logging.event({
+          type: "device_exit",
+          detail: { task, at_step: "connect_help", reason: "close", transport },
+        });
         return false;
     }
   }
@@ -184,15 +216,35 @@ export class ProjectActions {
    * Connect to the device if possible, otherwise show feedback.
    */
   private async connectInternal(
-    options: ConnectOptions,
     userAction: ConnectionAction,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ) {
+    const task = analyticsTask(userAction);
+    this.logging.event({
+      type: "device_step",
+      detail: { task, step: "connecting", transport },
+    });
     try {
-      await this.device.connect(options);
-      finalFocusRef.current?.focus();
+      await this.device.connect();
+      if (task === "connect") {
+        // For a download the terminal success is the flash itself.
+        this.logging.event({
+          type: "device_success",
+          detail: { task, transport },
+        });
+      }
+      finalFocusRef?.current?.focus();
       return true;
     } catch (e) {
+      this.logging.event({
+        type: "device_failure",
+        detail: {
+          task,
+          at_step: "connecting",
+          code: deviceFailureCode(e),
+          transport,
+        },
+      });
       this.handleWebUSBError(e, userAction, finalFocusRef);
       return false;
     }
@@ -201,14 +253,18 @@ export class ProjectActions {
   /**
    * Disconnect from the device.
    */
-  disconnect = async (finalFocusRef: React.RefObject<HTMLButtonElement>) => {
+  disconnect = async (finalFocusRef: FinalFocusRef) => {
     this.logging.event({
-      type: "disconnect",
+      type: "device_disconnect",
+      detail: { reason: "user", transport },
     });
-
+    // Only expect a Connected -> Disconnected status change if we were
+    // actually connected, otherwise the flag would linger.
+    markUserDisconnect(this.device.status === ConnectionStatus.Connected);
     try {
       await this.device.disconnect();
     } catch (e) {
+      markUserDisconnect(false);
       this.handleWebUSBError(e, ConnectionAction.DISCONNECT, finalFocusRef);
     }
   };
@@ -223,7 +279,7 @@ export class ProjectActions {
         callback={callback}
         header={this.intl.formatMessage({ id: "confirm-replace-title" })}
         body={
-          <Stack>
+          <Stack gap="2">
             <Text>
               {customConfirmPrompt ??
                 this.intl.formatMessage({ id: "confirm-replace-body" })}
@@ -258,14 +314,16 @@ export class ProjectActions {
     files: File[],
     type: LoadType = "file-upload"
   ): Promise<void> => {
-    this.logging.event({
-      type,
-      detail: files,
-    });
-
     if (files.length === 0) {
       throw new Error("Expected to be called with at least one file");
     }
+    this.logging.event({
+      type: "project_import",
+      detail: {
+        source: type === "drop-load" ? "drop" : "file_picker",
+        format: importFormat(files),
+      },
+    });
 
     // Avoid lingering messages related to the previous project.
     // Also makes e2e testing easier.
@@ -310,7 +368,7 @@ export class ProjectActions {
             this.actionFeedback.expectedError({
               title: errorTitle,
               description: isMakeCodeHex ? (
-                <Stack spacing={0.5}>
+                <Stack gap="0.5">
                   <Text>
                     {this.intl.formatMessage({
                       id: "load-error-makecode-info",
@@ -383,8 +441,8 @@ export class ProjectActions {
 
   openIdea = async (slug: string | undefined, code: string, title: string) => {
     this.logging.event({
-      type: "idea-open",
-      message: slug,
+      type: "idea_open",
+      detail: { id: slug },
     });
     const pythonProject: PythonProject = {
       files: projectFilesToBase64({
@@ -408,7 +466,7 @@ export class ProjectActions {
 
   reset = async () => {
     this.logging.event({
-      type: "reset-project",
+      type: "project_reset",
     });
     const confirmPrompt = this.intl.formatMessage({
       id: "confirm-replace-reset",
@@ -488,22 +546,16 @@ export class ProjectActions {
    * Flash the device, reporting progress via a dialog.
    */
   flash = async (
-    finalFocusRef: React.RefObject<HTMLButtonElement>,
+    finalFocusRef: FinalFocusRef,
     tryAgain?: boolean
   ): Promise<void> => {
-    this.logging.event({
-      type: "flash",
-      detail: await this.projectStats(),
-    });
-
-    if (this.device.status === ConnectionStatus.NOT_SUPPORTED) {
-      this.webusbNotSupportedError(finalFocusRef);
-      return;
+    if (!this.device.flash) {
+      throw new Error("Device connection doesn't support flash");
     }
 
     if (
-      this.device.status === ConnectionStatus.NO_AUTHORIZED_DEVICE ||
-      this.device.status === ConnectionStatus.NOT_CONNECTED
+      this.device.status === ConnectionStatus.NoAuthorizedDevice ||
+      this.device.status === ConnectionStatus.Disconnected
     ) {
       const connected = await this.connect(
         tryAgain || false,
@@ -515,23 +567,58 @@ export class ProjectActions {
       }
     }
 
+    const task: AnalyticsTask = "download";
+    const stats = await this.projectStats();
+    this.logging.event({
+      type: "device_step",
+      detail: { task, step: "flashing", transport },
+    });
+    const flashStart = Date.now();
+    const flashingCode = this.intl.formatMessage({ id: "flashing-code" });
     try {
-      const flashingCode = this.intl.formatMessage({ id: "flashing-code" });
       const firstFlashNotice = (
         <Text fontSize="lg">
           <FormattedMessage id="flashing-full-flash-detail" />
         </Text>
       );
-      const progress = (value: number | undefined, partial: boolean) => {
-        this.dialogs.progress({
-          header: flashingCode,
-          body: partial ? undefined : firstFlashNotice,
-          progress: value,
-        });
+      const progress = (stage: ProgressStage, value?: number) => {
+        const isPartial = stage === ProgressStage.PartialFlashing;
+        const isFlashing = isPartial || stage === ProgressStage.FullFlashing;
+        // An undefined value for a flashing stage signals completion; hold the
+        // bar at its last value until the dialog closes rather than showing 0.
+        if (isFlashing && value !== undefined) {
+          this.dialogs.progress({
+            header: flashingCode,
+            body: isPartial ? undefined : firstFlashNotice,
+            progress: value,
+          });
+        }
       };
-      await this.device.flash(this.fs, { partial: true, progress });
+      await this.device.flash(this.fs.asFlashDataSource(), {
+        partial: true,
+        progress,
+      });
+      this.logging.event({
+        type: "device_success",
+        detail: {
+          task,
+          transport,
+          duration_ms: Date.now() - flashStart,
+          ...statsParams(stats),
+        },
+      });
     } catch (e) {
-      if (e instanceof HexGenerationError) {
+      this.logging.event({
+        type: "device_failure",
+        detail: {
+          task,
+          at_step: "flashing",
+          code:
+            e instanceof FlashDataError ? "flash-data" : deviceFailureCode(e),
+          transport,
+        },
+      });
+      if (e instanceof FlashDataError) {
         this.actionFeedback.expectedError({
           title: this.intl.formatMessage({ id: "failed-to-build-hex" }),
           // Not translated, see https://github.com/microbit-foundation/python-editor-v3/issues/159
@@ -540,6 +627,8 @@ export class ProjectActions {
       } else {
         this.handleWebUSBError(e, ConnectionAction.FLASH, finalFocusRef);
       }
+    } finally {
+      this.dialogs.closeProgress();
     }
   };
 
@@ -547,12 +636,12 @@ export class ProjectActions {
    * Trigger a browser download with a universal hex file.
    */
   save = async (
-    finalFocusRef: React.RefObject<HTMLButtonElement>,
+    finalFocusRef: FinalFocusRef,
     saveViaWebUsbNotSupported?: boolean
   ) => {
     this.logging.event({
-      type: "save",
-      detail: await this.projectStats(),
+      type: "project_save",
+      detail: { format: "hex", ...statsParams(await this.projectStats()) },
     });
 
     if (!(await this.ensureProjectName(finalFocusRef))) {
@@ -589,12 +678,12 @@ export class ProjectActions {
    */
   saveFile = async (filename: string) => {
     this.logging.event({
-      type: "save-file",
+      type: "file_save",
     });
 
     try {
       const content = await this.fs.read(filename);
-      const blob = new Blob([content.data], {
+      const blob = new Blob([content.data as BlobPart], {
         type: "application/octet-stream",
       });
       saveAs(blob, filename);
@@ -611,7 +700,8 @@ export class ProjectActions {
    */
   saveMainFile = async (finalFocusRef: React.RefObject<HTMLButtonElement>) => {
     this.logging.event({
-      type: "save-main-file",
+      type: "project_save",
+      detail: { format: "py", ...statsParams(await this.projectStats()) },
     });
 
     if (!(await this.ensureProjectName(finalFocusRef))) {
@@ -620,7 +710,7 @@ export class ProjectActions {
 
     try {
       const content = await this.fs.read(MAIN_FILE);
-      const blob = new Blob([content.data], {
+      const blob = new Blob([content.data as BlobPart], {
         type: "application/octet-stream",
       });
       const filename = `${this.project.name}-${MAIN_FILE}`;
@@ -673,7 +763,7 @@ export class ProjectActions {
 
     if (filenameWithoutExtension) {
       this.logging.event({
-        type: "create-file",
+        type: "file_create",
       });
       try {
         const filename = ensurePythonExtension(filenameWithoutExtension);
@@ -698,7 +788,7 @@ export class ProjectActions {
    */
   deleteFile = async (filename: string) => {
     this.logging.event({
-      type: "delete-file",
+      type: "file_delete",
     });
 
     try {
@@ -728,7 +818,7 @@ export class ProjectActions {
   isDefaultProjectName = (): boolean => this.fs.project.name === undefined;
 
   ensureProjectName = async (
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ): Promise<boolean | undefined> => {
     if (this.isDefaultProjectName()) {
       return await this.editProjectName(true, finalFocusRef);
@@ -738,7 +828,7 @@ export class ProjectActions {
 
   editProjectName = async (
     isSave: boolean = false,
-    finalFocusRef?: React.RefObject<HTMLButtonElement>
+    finalFocusRef?: FinalFocusRef
   ) => {
     const name = await this.dialogs.show<string | undefined>((callback) => (
       <InputDialog
@@ -776,7 +866,7 @@ export class ProjectActions {
    */
   setProjectName = async (name: string) => {
     this.logging.event({
-      type: "set-project-name",
+      type: "project_rename",
     });
 
     return this.fs.setProjectName(name);
@@ -785,7 +875,7 @@ export class ProjectActions {
   private handleConnectErrorChoice = (
     choice: ConnectErrorChoice,
     userAction: ConnectionAction,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ) => {
     if (choice !== ConnectErrorChoice.TRY_AGAIN) {
       return;
@@ -799,7 +889,7 @@ export class ProjectActions {
 
   private async handleNotFound(
     userAction: ConnectionAction,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ) {
     const choice = await this.dialogs.show<ConnectErrorChoice>((callback) => (
       <NotFoundDialog callback={callback} finalFocusRef={finalFocusRef} />
@@ -808,9 +898,9 @@ export class ProjectActions {
   }
 
   private async handleFirmwareUpdate(
-    _errorCode: WebUSBErrorCode,
+    _errorCode: DeviceErrorCode,
     userAction: ConnectionAction,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ) {
     this.device.clearDevice();
     const choice = await this.dialogs.show<ConnectErrorChoice>((callback) => (
@@ -822,11 +912,13 @@ export class ProjectActions {
   private async handleWebUSBError(
     e: any,
     userAction: ConnectionAction,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ) {
-    if (e instanceof WebUSBError) {
-      this.device.emit(EVENT_END_USB_SELECT);
+    if (e instanceof DeviceError) {
       switch (e.code) {
+        case "unsupported":
+          this.webusbNotSupportedError(finalFocusRef);
+          return;
         case "no-device-selected": {
           // User just cancelled the browser dialog, perhaps because there
           // where no devices.
@@ -837,16 +929,15 @@ export class ProjectActions {
           // The UI will already reflect the disconnection.
           return;
         }
-        case "update-req":
+        case "firmware-update-required":
           await this.handleFirmwareUpdate(e.code, userAction, finalFocusRef);
           return;
-        case "clear-connect":
-        case "timeout-error":
-        case "reconnect-microbit": {
-          return this.actionFeedback.expectedError(
-            this.webusbErrorMessage(e.code)
-          );
-        }
+        case "device-in-use":
+          return this.handleDeviceInUseError(finalFocusRef);
+        case "timeout":
+          return this.handleTimeoutError(finalFocusRef);
+        case "connection-error":
+          return this.handleConnectionError(finalFocusRef);
         default: {
           return this.actionFeedback.unexpectedError(e);
         }
@@ -857,7 +948,7 @@ export class ProjectActions {
   }
 
   private async webusbNotSupportedError(
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ): Promise<void> {
     if (this.sessionSettings.values.showWebUsbNotSupported) {
       await this.dialogs.show<void>((callback) => (
@@ -871,77 +962,49 @@ export class ProjectActions {
     this.save(finalFocusRef, true);
   }
 
-  private webusbErrorMessage(code: WebUSBErrorCode) {
-    switch (code) {
-      case "update-req":
-        return {
-          title: this.intl.formatMessage({
-            id: "webusb-error-update-req-title",
-          }),
-          description: (
-            <span>
-              {this.intl.formatMessage(
-                {
-                  id: "webusb-error-update-req-description",
-                },
-                {
-                  link: (chunks: ReactNode) => (
-                    <Link
-                      target="_blank"
-                      rel="noreferrer"
-                      href="https://microbit.org/get-started/user-guide/firmware/"
-                      textDecoration="underline"
-                    >
-                      {chunks}
-                    </Link>
-                  ),
-                }
-              )}
-            </span>
-          ),
-        };
-      case "clear-connect":
-        return {
-          title: this.intl.formatMessage({
-            id: "webusb-error-clear-connect-title",
-          }),
-          description: (
-            <VStack alignItems="stretch" mt={1}>
-              <p>
-                {this.intl.formatMessage({
-                  id: "webusb-error-clear-connect-description-1",
-                })}
-              </p>
-              <p>
-                {this.intl.formatMessage({
-                  id: "webusb-error-clear-connect-description-2",
-                })}
-              </p>
-            </VStack>
-          ),
-        };
-      case "reconnect-microbit":
-        return {
-          title: this.intl.formatMessage({ id: "webusb-error-default-title" }),
-          description: this.intl.formatMessage({
-            id: "webusb-error-reconnect-microbit-description",
-          }),
-        };
-      case "timeout-error":
-        return {
-          title: this.intl.formatMessage({ id: "timeout-error-title" }),
-          description: this.intl.formatMessage({
-            id: "timeout-error-description",
-          }),
-        };
-      default:
-        throw new Error("Unknown code");
-    }
+  private async handleDeviceInUseError(finalFocusRef: FinalFocusRef) {
+    return this.dialogs.show<void>((callback) => (
+      <WebUSBErrorDialog
+        callback={callback}
+        finalFocusRef={finalFocusRef}
+        title={this.intl.formatMessage({
+          id: "webusb-error-clear-connect-title",
+        })}
+        description={
+          <VStack alignItems="stretch" mt="1">
+            <p>
+              {this.intl.formatMessage({
+                id: "webusb-error-clear-connect-description-2",
+              })}
+            </p>
+          </VStack>
+        }
+      />
+    ));
+  }
+  private async handleConnectionError(finalFocusRef: FinalFocusRef) {
+    return this.dialogs.show<void>((callback) => (
+      <WebUSBErrorDialog
+        callback={callback}
+        finalFocusRef={finalFocusRef}
+        title={this.intl.formatMessage({ id: "webusb-error-default-title" })}
+        description={<ReconnectTextAndVideo />}
+      />
+    ));
   }
 
-  private async handlePostSaveDialog(
-    finalFocusRef: React.RefObject<HTMLButtonElement>
-  ) {
+  private async handleTimeoutError(finalFocusRef: FinalFocusRef) {
+    return this.dialogs.show<void>((callback) => (
+      <WebUSBErrorDialog
+        callback={callback}
+        finalFocusRef={finalFocusRef}
+        title={this.intl.formatMessage({ id: "timeout-error-title" })}
+        description={<ReconnectTextAndVideo />}
+      />
+    ));
+  }
+
+  private async handlePostSaveDialog(finalFocusRef: FinalFocusRef) {
     const showPostSaveHelpSetting = this.settings.values.showPostSaveHelp;
     if (!showPostSaveHelpSetting) {
       return;
@@ -966,7 +1029,7 @@ export class ProjectActions {
 
   private async handleTransferHexDialog(
     forceTransferHexHelp: boolean,
-    finalFocusRef: React.RefObject<HTMLButtonElement>
+    finalFocusRef: FinalFocusRef
   ) {
     const showTransferHexHelpSetting = this.settings.values.showTransferHexHelp;
     if (!forceTransferHexHelp && !showTransferHexHelpSetting) {
@@ -1029,7 +1092,7 @@ export class ProjectActions {
 const isMakeCodeForV1Hex = (hexStr: string) => {
   try {
     return isMakeCodeForV1HexNoErrorHandling(hexStr);
-  } catch (e) {
+  } catch {
     // We just use this to give a better message in error scenarios so we don't
     // care if we failed to parse it etc.
     return false;
@@ -1046,3 +1109,30 @@ export const defaultedProject = (
     name: fs.project.name ?? intl.formatMessage({ id: "untitled-project" }),
   };
 };
+
+const ReconnectTextAndVideo = () => (
+  <HStack alignItems="flex-start">
+    <Box flex="1 0 50%">
+      <FormattedMessage
+        id="webusb-error-reconnect-microbit-description"
+        values={{
+          p: (chunks: ReactNode) => <Text>{chunks}</Text>,
+          li: (chunks: ReactNode) => (
+            <ListItem>
+              <Text as="span">{chunks}</Text>
+            </ListItem>
+          ),
+          ul: (chunks: ReactNode) => (
+            <UnorderedList pl="2">{chunks}</UnorderedList>
+          ),
+        }}
+      />
+    </Box>
+    <Box flex="1 0 50%" mb="-5%">
+      <video autoPlay loop>
+        <source src={reconnectWebm} type="video/webm" />
+        <source src={reconnectMp4} type="video/mp4" />
+      </video>
+    </Box>
+  </HStack>
+);

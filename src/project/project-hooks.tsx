@@ -9,7 +9,7 @@ import useActionFeedback from "../common/use-action-feedback";
 import { useDialogs } from "../common/use-dialogs";
 import useIsUnmounted from "../common/use-is-unmounted";
 import { useDevice } from "../device/device-hooks";
-import { EVENT_PROJECT_UPDATED, Project, VersionAction } from "../fs/fs";
+import { Project, VersionAction } from "../fs/fs";
 import { useFileSystem } from "../fs/fs-hooks";
 import {
   extractModuleData,
@@ -82,7 +82,7 @@ export const useProject = (): DefaultedProject => {
   const fs = useFileSystem();
   const intl = useIntl();
   const isUnmounted = useIsUnmounted();
-  const [state, setState] = useState<DefaultedProject>(
+  const [state, setState] = useState<DefaultedProject>(() =>
     defaultedProject(fs, intl)
   );
   useEffect(() => {
@@ -92,9 +92,9 @@ export const useProject = (): DefaultedProject => {
         setState(defaultedProject(fs, intl));
       }
     };
-    fs.on(EVENT_PROJECT_UPDATED, listener);
+    fs.addEventListener("project_updated", listener);
     return () => {
-      fs.removeListener(EVENT_PROJECT_UPDATED, listener);
+      fs.removeEventListener("project_updated", listener);
     };
   }, [fs, isUnmounted, intl]);
   return state;
