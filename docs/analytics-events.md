@@ -157,7 +157,7 @@ back/forward and typed URLs don't fire it (they are `page_view` only).
 | Param     | Values                                                                                                                                     |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `via`     | `user` (clicked in the sidebar), `search` (picked a search result), `code` (from a code hover/help link), `simulator` (from the simulator) |
-| `surface` | `reference` / `ideas` / `api`                                                                                                              |
+| `surface` | The sidebar section id from `content/sidebar.json` (e.g. `grundlagen`) or `api`                                                            |
 | `id`      | The page slug, e.g. `buttons`; absent when navigating to a tab root                                                                        |
 
 ### `docs_search`
@@ -179,8 +179,9 @@ success rate.
 | `code_copy`  | `surface`, `id` | User used the snippet's copy button                                         |
 | `code_paste` | `surface`, `id` | A copied snippet was pasted into the editor (via our own clipboard context) |
 
-- `surface` — `reference` / `ideas` / `api`.
-- `id` — the documentation slug for Reference / Ideas, or the fully qualified
+- `surface` — `reference` (snippets in a section with the reference layout),
+  `ideas` (snippets in a section with the cards layout) or `api`.
+- `id` — the documentation slug for sections, or the fully qualified
   name for API (e.g. `microbit.display.scroll`). Bounded cardinality, but
   large; expect `(other)` in standard reports and use Explorations.
 

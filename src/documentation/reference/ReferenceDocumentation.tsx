@@ -5,21 +5,24 @@
  */
 import { Divider, List, ListItem } from "@microbit/ui";
 import { useCallback } from "react";
-import { useIntl } from "react-intl";
 import { Box } from "styled-system/jsx";
 import { docStylesClass } from "../../common/documentation-styles";
 import HeadedScrollablePanel from "../../common/HeadedScrollablePanel";
 import { Anchor, useRouterTabSlug } from "../../router-hooks";
+import { useSettings } from "../../settings/settings";
+import AreaHeading from "../../common/AreaHeading";
 import { useAnimationDirection } from "../common/documentation-animation-hooks";
 import DocumentationBreadcrumbHeading from "../common/DocumentationBreadcrumbHeading";
 import DocumentationContent from "../common/DocumentationContent";
 import DocumentationTopLevelItem from "../common/DocumentationTopLevelItem";
 import { isV2Only } from "../common/model";
+import { DocsSectionConfig, localize } from "../sections/config";
 import { getTopicAndEntry } from "./content";
 import { Toolkit } from "./model";
 import ReferenceTopicEntry from "./ReferenceTopicEntry";
 
 interface ReferenceDocumentationProps {
+  section: DocsSectionConfig;
   toolkit: Toolkit;
 }
 
@@ -29,8 +32,11 @@ interface ReferenceDocumentationProps {
  * The components used here are also used with the API data to
  * generate the API documentation.
  */
-const ReferenceToolkit = ({ toolkit }: ReferenceDocumentationProps) => {
-  const [anchor, setAnchor] = useRouterTabSlug("reference");
+const ReferenceToolkit = ({
+  section,
+  toolkit,
+}: ReferenceDocumentationProps) => {
+  const [anchor, setAnchor] = useRouterTabSlug(section.id);
   const direction = useAnimationDirection(anchor);
   const topicOrEntryId = anchor?.id.split("/")[0];
   const handleNavigate = useCallback(
@@ -45,6 +51,7 @@ const ReferenceToolkit = ({ toolkit }: ReferenceDocumentationProps) => {
       anchor={anchor}
       topicOrEntryId={topicOrEntryId}
       onNavigate={handleNavigate}
+      section={section}
       toolkit={toolkit}
       direction={direction}
     />
@@ -62,12 +69,14 @@ const ActiveLevel = ({
   anchor,
   topicOrEntryId,
   onNavigate,
+  section,
   toolkit,
   direction,
 }: ActiveLevelProps) => {
   const [topic, activeItem] = getTopicAndEntry(toolkit, topicOrEntryId);
-  const intl = useIntl();
-  const referenceString = intl.formatMessage({ id: "reference-tab" });
+  const [{ languageId }] = useSettings();
+  const referenceString = localize(section.title, languageId);
+  const description = localize(section.description, languageId);
   if (topic) {
     return (
       <HeadedScrollablePanel
@@ -96,6 +105,7 @@ const ActiveLevel = ({
               <ReferenceTopicEntry
                 topic={topic}
                 entry={item}
+                sectionId={section.id}
                 anchor={anchor}
                 active={activeItem === item}
               />
@@ -107,7 +117,14 @@ const ActiveLevel = ({
     );
   }
   return (
-    <HeadedScrollablePanel direction={direction}>
+    <HeadedScrollablePanel
+      direction={direction}
+      heading={
+        description ? (
+          <AreaHeading name={referenceString} description={description} />
+        ) : undefined
+      }
+    >
       <List flex="1 1 auto">
         {toolkit.contents?.map((topic) => (
           <DocumentationTopLevelItem

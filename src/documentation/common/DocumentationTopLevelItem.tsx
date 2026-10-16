@@ -8,7 +8,7 @@ import { MouseEventHandler, ReactNode } from "react";
 import { RiArrowRightLine } from "react-icons/ri";
 import { useIntl } from "react-intl";
 import { Box, HStack, VStack } from "styled-system/jsx";
-import { SimpleImage } from "../../common/sanity";
+import { SimpleImage } from "../../common/portable-text";
 import DocumentationIcon from "./DocumentationIcon";
 import DocumentationHeading from "./DocumentationHeading";
 import { heightMd, widthXl } from "../../common/media-queries";

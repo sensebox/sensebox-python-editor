@@ -7,7 +7,7 @@ import { Button, Collapse, Text } from "@microbit/ui";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { RiArrowLeftSFill } from "react-icons/ri";
 import { Box, HStack, Stack, VStack } from "styled-system/jsx";
-import { SimpleImage } from "../../common/sanity";
+import { SimpleImage } from "../../common/portable-text";
 import { useScrollablePanelAncestor } from "../../common/ScrollablePanel";
 import { useResizeObserverContentRect } from "../../common/use-resize-observer";
 import DocumentationIcon from "./DocumentationIcon";

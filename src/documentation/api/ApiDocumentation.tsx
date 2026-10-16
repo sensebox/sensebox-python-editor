@@ -14,6 +14,7 @@ import HeadedScrollablePanel from "../../common/HeadedScrollablePanel";
 import { splitDocString } from "../../editor/codemirror/language-server/docstrings";
 import { ApiDocsEntry, ApiDocsResponse } from "../../language-server/apidocs";
 import { Anchor, useRouterTabSlug, useRouterState } from "../../router-hooks";
+import { docsSections } from "../sections/config";
 import DocString from "../common/DocString";
 import { useAnimationDirection } from "../common/documentation-animation-hooks";
 import DocumentationBreadcrumbHeading from "../common/DocumentationBreadcrumbHeading";
@@ -66,7 +67,7 @@ const ActiveLevel = ({
   const handleReferenceLink = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      setParams({ tab: "reference" });
+      setParams({ tab: referenceSectionId });
     },
     [setParams]
   );
@@ -129,6 +130,10 @@ const ActiveLevel = ({
     </HeadedScrollablePanel>
   );
 };
+
+const referenceSectionId = docsSections.find(
+  (s) => s.layout === "reference"
+)?.id;
 
 interface ShortModuleDescriptionProps {
   value: ApiDocsEntry;

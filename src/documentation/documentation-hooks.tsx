@@ -19,11 +19,8 @@ import { useLogging } from "../logging/logging-hooks";
 import { useSettings } from "../settings/settings";
 import { pullModulesToTop } from "./api/apidocs-util";
 import dragImage from "./drag-image.svg";
-import { fetchIdeas } from "./ideas/content";
-import { Idea } from "./ideas/model";
 import { ApiReferenceMap, fetchMappingData } from "./mapping/content";
-import { fetchReferenceToolkit } from "./reference/content";
-import { Toolkit } from "./reference/model";
+import { DocsSections, fetchSections } from "./sections/content";
 
 export type ContentState<T> =
   | { status: "ok"; content: T; languageId: string }
@@ -87,8 +84,10 @@ const useApiDocumentation = (): ApiDocsContent | undefined => {
 
 export interface DocumentationContextValue {
   api: ApiDocsContent | undefined;
-  ideas: ContentState<Idea[]>;
-  reference: ContentState<Toolkit>;
+  /**
+   * Content for the sections configured in content/sidebar.json.
+   */
+  sections: ContentState<DocsSections>;
   apiReferenceMap: ContentState<ApiReferenceMap>;
 }
 
@@ -109,12 +108,11 @@ export const useDocumentation = (): DocumentationContextValue => {
 
 const DocumentationProvider = ({ children }: { children: ReactNode }) => {
   const api = useApiDocumentation();
-  const ideas = useContent(fetchIdeas);
-  const reference = useContent(fetchReferenceToolkit);
+  const sections = useContent(fetchSections);
   const apiReferenceMap = useContent(fetchMappingData);
   const value: DocumentationContextValue = useMemo(() => {
-    return { reference, api, ideas, apiReferenceMap };
-  }, [reference, api, ideas, apiReferenceMap]);
+    return { sections, api, apiReferenceMap };
+  }, [sections, api, apiReferenceMap]);
   return (
     <DocumentationContext.Provider value={value}>
       {children}

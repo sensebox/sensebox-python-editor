@@ -17,6 +17,7 @@ import { RiCloseLine, RiSearch2Line } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Box, Stack } from "styled-system/jsx";
 import { RouterState } from "../../router-hooks";
+import { sidebarConfig } from "../sections/config";
 import { SearchResults } from "./common";
 import SearchResultList from "./SearchResultList";
 
@@ -107,27 +108,38 @@ const SearchDialog = ({
               <FormattedMessage
                 id="results-count"
                 values={{
-                  count: results.reference.length + results.api.length,
+                  count:
+                    results.sections.reduce(
+                      (sum, s) => sum + s.results.length,
+                      0
+                    ) + (showApi ? results.api.length : 0),
                 }}
               />
             </Text>
-            <SearchResultList
-              title={intl.formatMessage({ id: "reference-tab" })}
-              results={results.reference}
-              viewedResults={viewedResults}
-              onViewResult={onViewResult}
-            />
-            <SearchResultList
-              title={intl.formatMessage({ id: "api-tab" })}
-              results={results.api}
-              viewedResults={viewedResults}
-              onViewResult={onViewResult}
-            />
+            {results.sections.map((section) => (
+              <SearchResultList
+                key={section.id}
+                title={section.title}
+                results={section.results}
+                viewedResults={viewedResults}
+                onViewResult={onViewResult}
+              />
+            ))}
+            {showApi && (
+              <SearchResultList
+                title={intl.formatMessage({ id: "api-tab" })}
+                results={results.api}
+                viewedResults={viewedResults}
+                onViewResult={onViewResult}
+              />
+            )}
           </Stack>
         </Box>
       )}
     </Box>
   );
 };
+
+const showApi = sidebarConfig.entries.some((e) => e.kind === "builtin");
 
 export default SearchDialog;

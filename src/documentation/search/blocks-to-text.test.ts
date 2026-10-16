@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { PortableText } from "../../common/sanity";
+import { PortableText } from "../../common/portable-text";
 import { blocksToText } from "./blocks-to-text";
 
 const content: PortableText[] = [

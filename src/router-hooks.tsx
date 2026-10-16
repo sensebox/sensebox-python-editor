@@ -11,12 +11,21 @@
  */
 import { useCallback, useMemo } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
+import { docsSections } from "./documentation/sections/config";
 import { useLogging } from "./logging/logging-hooks";
 import { createEditorUrl } from "./urls";
 
-export type TabName = "api" | "ideas" | "reference" | "project";
+/**
+ * "api", "project" or the id of a documentation section from
+ * content/sidebar.json.
+ */
+export type TabName = string;
 
-const tabNames: readonly string[] = ["api", "ideas", "reference", "project"];
+const tabNames: readonly string[] = [
+  "api",
+  "project",
+  ...docsSections.map((s) => s.id),
+];
 
 const isTabName = (value: string | undefined): value is TabName =>
   value !== undefined && tabNames.includes(value);

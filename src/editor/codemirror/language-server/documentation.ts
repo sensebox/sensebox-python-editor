@@ -9,6 +9,7 @@ import { IntlShape } from "react-intl";
 import { MarkupContent } from "vscode-languageserver-types";
 import { moduleAndApiFromId } from "../../../documentation/api/apidocs-util";
 import { ApiReferenceMap } from "../../../documentation/mapping/content";
+import { docsSections } from "../../../documentation/sections/config";
 import { splitDocString } from "./docstrings";
 import "./documentation.css";
 
@@ -121,7 +122,7 @@ export const wrapWithDocumentationButton = (
   intl: IntlShape,
   child: Element,
   id: string,
-  referenceLink: string | undefined
+  referenceLink: ReferenceLink | undefined
 ): Element => {
   const docsAndActions = document.createElement("div");
   docsAndActions.style.display = "flex";
@@ -146,8 +147,8 @@ export const wrapWithDocumentationButton = (
       document.dispatchEvent(
         new CustomEvent("cm/openDocs", {
           detail: {
-            tab: "reference",
-            id: referenceLink,
+            tab: referenceLink.tab,
+            id: referenceLink.id,
           },
         })
       );
@@ -184,20 +185,32 @@ export const wrapWithDocumentationButton = (
   return docsAndActions;
 };
 
+export interface ReferenceLink {
+  tab: string;
+  id: string;
+}
+
 export const getLinkToReference = (
   id: string,
   apiReferenceMap: ApiReferenceMap
-): string | undefined => {
+): ReferenceLink | undefined => {
   const { pythonModuleName, apiId } = moduleAndApiFromId(id);
   if (!pythonModuleName && !apiId) {
     return;
   }
-  let referenceLink = apiReferenceMap[pythonModuleName]?.[apiId]?.referenceLink;
-  const alternative = apiReferenceMap[pythonModuleName]?.[apiId]?.alternative;
-  if (referenceLink && alternative) {
-    referenceLink = `${encodeURIComponent(referenceLink)}/${encodeURIComponent(
-      alternative
-    )}`;
+  const detail = apiReferenceMap[pythonModuleName]?.[apiId];
+  const tab =
+    detail?.section ?? docsSections.find((s) => s.layout === "reference")?.id;
+  if (!detail || !tab) {
+    return;
   }
-  return referenceLink;
+  const { referenceLink, alternative } = detail;
+  return {
+    tab,
+    id: alternative
+      ? `${encodeURIComponent(referenceLink)}/${encodeURIComponent(
+          alternative
+        )}`
+      : referenceLink,
+  };
 };

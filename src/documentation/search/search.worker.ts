@@ -19,6 +19,7 @@ import {
   IndexMessage,
   QueryMessage,
   Result,
+  SearchableSection,
   SearchResults,
 } from "./common";
 import { Position, contextExtracts, fullStringExtracts } from "./extracts";
@@ -88,7 +89,7 @@ export class SearchIndex {
     private contentByRef: Map<string, SearchableContent>,
     public index: lunr.Index,
     private tokenizer: TokenizerFunction,
-    private tab: "reference" | "api"
+    private tab: string
   ) {}
 
   search(text: string): Result[] {
@@ -145,11 +146,18 @@ const getExtracts = (
 };
 
 export class LunrSearch {
-  constructor(private reference: SearchIndex, private api: SearchIndex) {}
+  constructor(
+    private sections: { id: string; title: string; index: SearchIndex }[],
+    private api: SearchIndex
+  ) {}
 
   search(text: string): SearchResults {
     return {
-      reference: this.reference.search(text),
+      sections: this.sections.map(({ id, title, index }) => ({
+        id,
+        title,
+        results: index.search(text),
+      })),
       api: this.api.search(text),
     };
   }
@@ -236,7 +244,7 @@ type TokenizerFunction = {
 
 export const buildSearchIndex = (
   searchableContent: SearchableContent[],
-  tab: "reference" | "api",
+  tab: string,
   language: LunrLanguage | undefined,
   languagePlugin: lunr.Builder.Plugin,
   ...plugins: lunr.Builder.Plugin[]
@@ -288,7 +296,7 @@ export const buildSearchIndex = (
 
 // Exposed for testing.
 export const buildIndex = async (
-  reference: Toolkit,
+  sections: SearchableSection[],
   api: ApiDocsResponse,
   lunrLanguage: LunrLanguage | undefined,
   languageSupport: ((l: typeof lunr) => void) | undefined
@@ -307,13 +315,17 @@ export const buildIndex = async (
   const languagePlugin = lunrWithLanguages.multiLanguage(...multiLanguages);
 
   return new LunrSearch(
-    buildSearchIndex(
-      referenceSearchableContent(reference),
-      "reference",
-      lunrLanguage,
-      languagePlugin,
-      ...plugins
-    ),
+    sections.map((section) => ({
+      id: section.id,
+      title: section.title,
+      index: buildSearchIndex(
+        referenceSearchableContent(section.toolkit),
+        section.id,
+        lunrLanguage,
+        languagePlugin,
+        ...plugins
+      ),
+    })),
     buildSearchIndex(
       apiSearchableContent(api),
       "api",
@@ -358,7 +370,7 @@ export class SearchWorker {
 
   private async index(message: IndexMessage) {
     this.search = await buildIndex(
-      message.reference,
+      message.sections,
       message.api,
       this.languageId,
       this.languageSupport

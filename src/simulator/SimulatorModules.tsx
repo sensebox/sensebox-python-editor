@@ -16,6 +16,8 @@ import {
   SimulatorState,
   StateChange,
 } from "../device/simulator";
+import { useDocumentation } from "../documentation/documentation-hooks";
+import { findSectionForSlug } from "../documentation/sections/content";
 import { useRouterState } from "../router-hooks";
 import ButtonsModule from "./ButtonsModule";
 import CompassModule from "./CompassModule";
@@ -168,16 +170,21 @@ const CollapsibleModule = ({
   const [isOpen, setOpen] = useState(false);
   const intl = useIntl();
   const [, setRouterState] = useRouterState();
+  const { sections } = useDocumentation();
+  const referenceSection =
+    sections.status === "ok"
+      ? findSectionForSlug(sections.content, references[id])
+      : undefined;
   const handleLinkToReference = useCallback(() => {
     setRouterState(
       {
-        tab: "reference",
+        tab: referenceSection,
         slug: { id: references[id] },
         focus: true,
       },
       "simulator"
     );
-  }, [id, setRouterState]);
+  }, [id, referenceSection, setRouterState]);
   const module = (
     <ModuleForId
       id={id}
@@ -203,17 +210,19 @@ const CollapsibleModule = ({
             <Text as="h3" fontWeight="semibold">
               {title}
             </Text>
-            <IconButton
-              aria-label={intl.formatMessage({
-                id: "simulator-reference-link",
-              })}
-              css={{ color: "brand.500", fontSize: "lg" }}
-              variant="ghost"
-              size="xs"
-              onPress={handleLinkToReference}
-            >
-              <RiInformationLine />
-            </IconButton>
+            {referenceSection && (
+              <IconButton
+                aria-label={intl.formatMessage({
+                  id: "simulator-reference-link",
+                })}
+                css={{ color: "brand.500", fontSize: "lg" }}
+                variant="ghost"
+                size="xs"
+                onPress={handleLinkToReference}
+              >
+                <RiInformationLine />
+              </IconButton>
+            )}
           </HStack>
         )}
         {!isOpen && <Box w="100%">{module}</Box>}

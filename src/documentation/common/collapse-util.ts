@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { PortableText } from "../../common/sanity";
+import { PortableText } from "../../common/portable-text";
 import { DocumentationCollapseMode } from "./DocumentationContent";
 
 /**

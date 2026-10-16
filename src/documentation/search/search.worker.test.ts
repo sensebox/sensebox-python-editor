@@ -123,15 +123,28 @@ describe("buildReferenceIndex", () => {
       ...referenceEn,
       language: "fr",
     };
-    const enIndex = await buildIndex(referenceEn, api, undefined, undefined);
-    expect(enIndex.search("topic").reference.length).toEqual(1);
+    const section = (toolkit: Toolkit) => [
+      { id: "reference", title: "Reference", toolkit },
+    ];
+    const enIndex = await buildIndex(
+      section(referenceEn),
+      api,
+      undefined,
+      undefined
+    );
+    expect(enIndex.search("topic").sections[0].results.length).toEqual(1);
     // "that" is an English stopword
-    expect(enIndex.search("that").reference.length).toEqual(0);
+    expect(enIndex.search("that").sections[0].results.length).toEqual(0);
 
-    const frIndex = await buildIndex(referenceFr, api, "fr", frLanguageSupport);
-    expect(frIndex.search("topic").reference.length).toEqual(1);
+    const frIndex = await buildIndex(
+      section(referenceFr),
+      api,
+      "fr",
+      frLanguageSupport
+    );
+    expect(frIndex.search("topic").sections[0].results.length).toEqual(1);
     // "that" is not a French stopword
-    expect(frIndex.search("that").reference.length).toEqual(1);
+    expect(frIndex.search("that").sections[0].results.length).toEqual(1);
   });
 });
 
@@ -158,13 +171,19 @@ describe("SearchWorker", () => {
 
     const indexMessage: IndexMessage = {
       kind: "index",
-      reference: {
-        id: "reference",
-        description: "Reference stuff",
-        name: "Reference",
-        contents: [],
-        language: "en",
-      },
+      sections: [
+        {
+          id: "reference",
+          title: "Reference",
+          toolkit: {
+            id: "reference",
+            description: "Reference stuff",
+            name: "Reference",
+            contents: [],
+            language: "en",
+          },
+        },
+      ],
       api: {},
     };
     ctx.onmessage!(
@@ -175,7 +194,13 @@ describe("SearchWorker", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(postMessage.mock.calls).toEqual([
-      [{ reference: [], api: [], kind: "queryResponse" }],
+      [
+        {
+          sections: [{ id: "reference", title: "Reference", results: [] }],
+          api: [],
+          kind: "queryResponse",
+        },
+      ],
     ]);
   });
 
@@ -189,31 +214,43 @@ describe("SearchWorker", () => {
 
     const emptyIndex: IndexMessage = {
       kind: "index",
-      reference: {
-        id: "reference",
-        description: "Reference stuff",
-        name: "Reference",
-        contents: [],
-        language: "en",
-      },
+      sections: [
+        {
+          id: "reference",
+          title: "Reference",
+          toolkit: {
+            id: "reference",
+            description: "Reference stuff",
+            name: "Reference",
+            contents: [],
+            language: "en",
+          },
+        },
+      ],
       api: {},
     };
     const fullIndex: IndexMessage = {
       kind: "index",
-      reference: {
-        id: "reference",
-        description: "Reference stuff",
-        name: "Reference",
-        contents: [
-          {
-            name: "Hello",
-            subtitle: "Hello",
-            slug: { _type: "slug", current: "hello" },
-            compatibility: [],
+      sections: [
+        {
+          id: "reference",
+          title: "Reference",
+          toolkit: {
+            id: "reference",
+            description: "Reference stuff",
+            name: "Reference",
+            contents: [
+              {
+                name: "Hello",
+                subtitle: "Hello",
+                slug: { _type: "slug", current: "hello" },
+                compatibility: [],
+              },
+            ],
+            language: "en",
           },
-        ],
-        language: "en",
-      },
+        },
+      ],
       api: {},
     };
 
@@ -241,8 +278,8 @@ describe("SearchWorker", () => {
     await queryHello();
 
     expect(postMessage.mock.calls.length).toEqual(2);
-    expect(postMessage.mock.calls[0][0].reference.length).toEqual(0);
-    expect(postMessage.mock.calls[1][0].reference.length).toEqual(1);
+    expect(postMessage.mock.calls[0][0].sections[0].results.length).toEqual(0);
+    expect(postMessage.mock.calls[1][0].sections[0].results.length).toEqual(1);
   });
 });
 

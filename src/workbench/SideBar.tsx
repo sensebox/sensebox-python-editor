@@ -7,8 +7,7 @@ import { usePrevious } from "@microbit/ui";
 import { ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { TabList, TabPanel, TabPanels, Tabs } from "react-aria-components";
 import { IconType } from "react-icons";
-import { RiLightbulbFlashLine } from "react-icons/ri";
-import { VscFiles, VscLibrary } from "react-icons/vsc";
+import { VscFiles } from "react-icons/vsc";
 import { useIntl } from "react-intl";
 import { css } from "styled-system/css";
 import { Box, Flex, styled, VStack } from "styled-system/jsx";
@@ -16,11 +15,13 @@ import { SystemStyleObject } from "styled-system/types";
 import ErrorBoundary from "../common/ErrorBoundary";
 import PythonLogo from "../common/PythonLogo";
 import ApiArea from "../documentation/ApiArea";
-import IdeasArea from "../documentation/IdeasArea";
-import ReferenceArea from "../documentation/ReferenceArea";
+import DocsSectionArea from "../documentation/DocsSectionArea";
+import { localize, sidebarConfig } from "../documentation/sections/config";
+import { sectionIcon } from "../documentation/sections/icons";
 import { flags } from "../flags";
 import ProjectArea from "../project/ProjectArea";
 import { TabName, useRouterState } from "../router-hooks";
+import { useSettings } from "../settings/settings";
 import SettingsMenu from "../settings/SettingsMenu";
 import HelpMenu from "./HelpMenu";
 import PreReleaseNotice, { useReleaseDialogState } from "./PreReleaseNotice";
@@ -69,32 +70,34 @@ const SideBar = ({
 }: SideBarProps) => {
   const intl = useIntl();
   const [releaseDialog, setReleaseDialog] = useReleaseDialogState();
+  const [{ languageId }] = useSettings();
   const panes: Pane[] = useMemo(() => {
-    const result = [
+    // Documentation tabs come from content/sidebar.json.
+    const docsPanes: Pane[] = sidebarConfig.entries.map((entry) =>
+      entry.kind === "builtin"
+        ? {
+            id: "api",
+            title: intl.formatMessage({ id: "api-tab" }),
+            icon: PythonLogo as IconType,
+            contents: <ApiArea />,
+            color: "gray.75",
+          }
+        : {
+            id: entry.id,
+            title: localize(entry.title, languageId),
+            icon: sectionIcon(entry.icon),
+            contents: <DocsSectionArea section={entry} />,
+            color: "gray.75",
+          }
+    );
+    if (docsPanes.length > 0) {
+      // Pushes the project tab to the bottom.
+      docsPanes[docsPanes.length - 1].mb = "auto";
+    }
+    const result: Pane[] = [
+      ...docsPanes,
       {
-        id: "reference" as const,
-        title: intl.formatMessage({ id: "reference-tab" }),
-        icon: VscLibrary,
-        contents: <ReferenceArea />,
-        color: "gray.75",
-      },
-      {
-        id: "ideas" as const,
-        title: intl.formatMessage({ id: "ideas-tab" }),
-        icon: RiLightbulbFlashLine,
-        contents: <IdeasArea />,
-        color: "gray.75",
-      },
-      {
-        id: "api" as const,
-        title: intl.formatMessage({ id: "api-tab" }),
-        icon: PythonLogo as IconType,
-        contents: <ApiArea />,
-        color: "gray.75",
-        mb: "auto",
-      },
-      {
-        id: "project" as const,
+        id: "project",
         title: intl.formatMessage({ id: "project-tab" }),
         icon: VscFiles,
         contents: (
@@ -107,7 +110,7 @@ const SideBar = ({
       },
     ];
     return result;
-  }, [onSelectedFileChanged, selectedFile, intl]);
+  }, [onSelectedFileChanged, selectedFile, intl, languageId]);
   const [{ tab, slug, focus }, setParams] = useRouterState();
   const tabPanelsRef = useRef<HTMLDivElement>(null);
   const setPanelFocus = () => {

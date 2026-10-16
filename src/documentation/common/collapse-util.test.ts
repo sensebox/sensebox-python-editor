@@ -5,7 +5,7 @@
  *
  * @vitest-environment jsdom
  */
-import { PortableText } from "../../common/sanity";
+import { PortableText } from "../../common/portable-text";
 import { decorateWithCollapseNodes } from "./collapse-util";
 import { DocumentationCollapseMode } from "./DocumentationContent";
 
