@@ -6,7 +6,7 @@
  * @vitest-environment jsdom
  */
 import { render } from "@testing-library/react";
-import { PortableText } from "../../common/sanity";
+import { PortableText } from "../../common/portable-text";
 import DocumentationContent from "./DocumentationContent";
 
 describe("DocumentationContent", () => {
@@ -50,15 +50,12 @@ describe("DocumentationContent", () => {
       {
         _type: "simpleImage",
         alt: "micro:bit showing X axis going across the front, Y axis going down and up, Z axis going back to front",
-        asset: {
-          _ref: "image-9fccaf51a164fedc98662188593de19bfb9be8ad-435x512-png",
-          _type: "reference",
-        },
+        src: "/content/images/axes.png",
       },
     ];
     const view = render(<DocumentationContent blocks={content} />);
     expect(view.container.innerHTML).toMatchInlineSnapshot(
-      `"<div class="d_flex flex-d_column gap_3 mt_3"><div class="w_300px max-w_100% pos_relative before:content_&quot;&quot; before:d_block before:h_0 before:pb_var(--aspect-ratio-padding) [&amp;_>_*]:pos_absolute [&amp;_>_*]:inset_0 [&amp;_>_*]:w_100% [&amp;_>_*]:h_100%" style="--aspect-ratio-padding: 117.70114942528735%;"><img src="https://cdn.sanity.io/images/project/dataset/9fccaf51a164fedc98662188593de19bfb9be8ad-435x512.png?w=300&amp;q=80&amp;fit=max&amp;auto=format" alt="micro:bit showing X axis going across the front, Y axis going down and up, Z axis going back to front" class="max-w_100% bdr_lg bd_solid_1px bd-c_gray.300"></div></div>"`
+      `"<div class="d_flex flex-d_column gap_3 mt_3"><div class="w_300px max-w_100%"><img src="/content/images/axes.png" alt="micro:bit showing X axis going across the front, Y axis going down and up, Z axis going back to front" class="max-w_100% bdr_lg bd_solid_1px bd-c_gray.300"></div></div>"`
     );
   });
 });

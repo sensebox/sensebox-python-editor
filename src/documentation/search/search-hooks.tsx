@@ -17,7 +17,9 @@ import useIsUnmounted from "../../common/use-is-unmounted";
 import { useLogging } from "../../logging/logging-hooks";
 import { useSettings } from "../../settings/settings";
 import { useDocumentation } from "../documentation-hooks";
-import { SearchResults } from "./common";
+import { docsSections, localize } from "../sections/config";
+import { DocsSections } from "../sections/content";
+import { SearchableSection, SearchResults } from "./common";
 import { WorkerSearch } from "./search-client";
 
 type UseSearch = {
@@ -37,7 +39,7 @@ export const useSearch = (): UseSearch => {
 };
 
 const SearchProvider = ({ children }: { children: ReactNode }) => {
-  const { reference, api } = useDocumentation();
+  const { sections, api } = useDocumentation();
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<SearchResults | undefined>();
   const isUnmounted = useIsUnmounted();
@@ -53,13 +55,16 @@ const SearchProvider = ({ children }: { children: ReactNode }) => {
     }
     // Wait for everything to be loaded and in the right language
     if (
-      reference.status === "ok" &&
-      reference.languageId === languageId &&
+      sections.status === "ok" &&
+      sections.languageId === languageId &&
       api?.languageId === languageId
     ) {
-      search.current.index(reference.content, api.content);
+      search.current.index(
+        searchableSections(sections.content, languageId),
+        api.content
+      );
     }
-  }, [languageId, reference, api]);
+  }, [languageId, sections, api]);
 
   const debouncedSearch = useMemo(
     () =>
@@ -97,5 +102,37 @@ const SearchProvider = ({ children }: { children: ReactNode }) => {
     <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
   );
 };
+
+/**
+ * Cards are indexed as topics without entries.
+ */
+const searchableSections = (
+  sections: DocsSections,
+  languageId: string
+): SearchableSection[] =>
+  docsSections.flatMap((config) => {
+    const content = sections[config.id];
+    if (!content) {
+      return [];
+    }
+    const title = localize(config.title, languageId);
+    const toolkit =
+      content.layout === "reference"
+        ? content.toolkit
+        : {
+            id: config.id,
+            name: title,
+            description: "",
+            language: languageId,
+            contents: content.cards.map((card) => ({
+              name: card.name,
+              subtitle: "",
+              slug: card.slug,
+              compatibility: card.compatibility,
+              introduction: card.content,
+            })),
+          };
+    return [{ id: config.id, title, toolkit }];
+  });
 
 export default SearchProvider;

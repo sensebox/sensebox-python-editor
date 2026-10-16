@@ -21,10 +21,6 @@ export type Flag =
    */
   | "betaNotice"
   /**
-   * Uses CMS content from an alternative preview dataset.
-   */
-  | "cmsPreview"
-  /**
    * Enables verbose debug logging to the console of drag events.
    */
   | "dndDebug"
@@ -62,7 +58,6 @@ interface FlagMetadata {
 const allFlags: FlagMetadata[] = [
   // Alphabetical order.
   { name: "betaNotice", defaultOnStages: ["local", "REVIEW", "STAGING"] },
-  { name: "cmsPreview", defaultOnStages: [] },
   { name: "dndDebug", defaultOnStages: [] },
   { name: "noLang", defaultOnStages: [] },
   { name: "translate", defaultOnStages: [] },

@@ -3,20 +3,11 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Link, Text } from "@microbit/ui";
-import { CSSProperties, ReactNode, useCallback, useRef } from "react";
-import { FormattedMessage, useIntl } from "react-intl";
+import { useCallback, useRef } from "react";
 import { Box, Grid, Stack } from "styled-system/jsx";
 import AreaHeading from "../../common/AreaHeading";
-import {
-  docStylesClass,
-  runtimeAspectRatioClass,
-} from "../../common/documentation-styles";
+import { docStylesClass } from "../../common/documentation-styles";
 import HeadedScrollablePanel from "../../common/HeadedScrollablePanel";
-import {
-  getAspectRatioPadding,
-  imageUrlBuilder,
-} from "../../common/imageUrlBuilder";
 import { useResizeObserverContentRect } from "../../common/use-resize-observer";
 import { Anchor, useRouterTabSlug } from "../../router-hooks";
 import { useAnimationDirection } from "../common/documentation-animation-hooks";
@@ -29,15 +20,16 @@ import { isV2Only } from "../common/model";
 import IdeaCard from "./IdeaCard";
 import { Idea } from "./model";
 import OfflineImageFallback from "../OfflineImageFallback";
-import { microbitOrgMiciProjectsUrl } from "../../external-links";
 import { useSettings } from "../../settings/settings";
+import { DocsSectionConfig, localize } from "../sections/config";
 
 interface IdeasDocumentationProps {
+  section: DocsSectionConfig;
   ideas: Idea[];
 }
 
-const IdeasDocumentation = ({ ideas }: IdeasDocumentationProps) => {
-  const [anchor, setAnchor] = useRouterTabSlug("ideas");
+const IdeasDocumentation = ({ section, ideas }: IdeasDocumentationProps) => {
+  const [anchor, setAnchor] = useRouterTabSlug(section.id);
   const direction = useAnimationDirection(anchor);
   const ideaId = anchor?.id;
   const handleNavigate = useCallback(
@@ -52,6 +44,7 @@ const IdeasDocumentation = ({ ideas }: IdeasDocumentationProps) => {
       anchor={anchor}
       ideaId={ideaId}
       onNavigate={handleNavigate}
+      section={section}
       ideas={ideas}
       direction={direction}
     />
@@ -68,23 +61,19 @@ interface ActiveLevelProps extends IdeasDocumentationProps {
 const ActiveLevel = ({
   ideaId,
   onNavigate,
+  section,
   ideas,
   direction,
 }: ActiveLevelProps) => {
   const activeIdea = ideas.find((idea) => idea.slug.current === ideaId);
-  const intl = useIntl();
   const [{ languageId }] = useSettings();
-  const headingString = intl.formatMessage({ id: "ideas-tab" });
+  const headingString = localize(section.title, languageId);
   const ref = useRef<HTMLDivElement>(null);
   const contentRect = useResizeObserverContentRect(ref);
   const contentWidth = contentRect?.width ?? 0;
   const numCols =
     !contentWidth || contentWidth > 1100 ? 3 : contentWidth > 550 ? 2 : 1;
   if (activeIdea) {
-    // Runtime value derived from the image reference.
-    const imagePadding = activeIdea.image
-      ? getAspectRatioPadding(activeIdea.image.asset._ref)
-      : undefined;
     return (
       <HeadedScrollablePanel
         key={activeIdea.slug.current}
@@ -109,24 +98,12 @@ const ActiveLevel = ({
             className={docStylesClass}
           >
             {activeIdea.image && (
-              <Box
-                width="600px"
-                maxWidth="100%"
-                className={imagePadding ? runtimeAspectRatioClass : undefined}
-                style={
-                  {
-                    "--aspect-ratio-padding": imagePadding,
-                  } as CSSProperties
-                }
-              >
+              <Box width="600px" maxWidth="100%">
                 <ImageWithFallback
-                  src={imageUrlBuilder
-                    .image(activeIdea.image.asset)
-                    .fit("max")
-                    .url()}
+                  src={activeIdea.image.src}
                   ignoreFallback={navigator.onLine}
                   fallback={<OfflineImageFallback width={600} />}
-                  alt=""
+                  alt={activeIdea.image.alt ?? ""}
                   borderTopRadius="lg"
                 />
               </Box>
@@ -135,6 +112,7 @@ const ActiveLevel = ({
             <DocumentationContextProvider
               parentSlug={activeIdea.slug.current}
               toolkitType="ideas"
+              sectionId={section.id}
               title={activeIdea.name}
             >
               <DocumentationContent blocks={activeIdea.content} />
@@ -150,7 +128,7 @@ const ActiveLevel = ({
       heading={
         <AreaHeading
           name={headingString}
-          description={intl.formatMessage({ id: "ideas-tab-description" })}
+          description={localize(section.description, languageId)}
         />
       }
     >
@@ -170,24 +148,6 @@ const ActiveLevel = ({
           />
         ))}
       </Grid>
-      <Text pb="8" px="5">
-        <FormattedMessage
-          id="more-ideas"
-          values={{
-            link: (chunks: ReactNode) => (
-              <Link
-                variant="standalone"
-                color="brand.500"
-                href={microbitOrgMiciProjectsUrl(languageId)}
-                target="_blank"
-                rel="noopener"
-              >
-                {chunks}
-              </Link>
-            ),
-          }}
-        />
-      </Text>
     </HeadedScrollablePanel>
   );
 };

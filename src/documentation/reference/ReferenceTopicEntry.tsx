@@ -7,7 +7,7 @@ import { NativeSelect, Text } from "@microbit/ui";
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Box, HStack, styled } from "styled-system/jsx";
 import { docStylesClass } from "../../common/documentation-styles";
-import { PortableText } from "../../common/sanity";
+import { PortableText } from "../../common/portable-text";
 import { Anchor } from "../../router-hooks";
 import DocumentationContent, {
   DocumentationCollapseMode,
@@ -28,6 +28,7 @@ interface ToolkitTopicEntryProps {
   alternative?: string;
   active?: boolean;
   anchor?: Anchor;
+  sectionId: string;
 }
 
 /**
@@ -41,6 +42,7 @@ const ReferenceTopicEntry = ({
   topic,
   entry,
   active,
+  sectionId,
 }: ToolkitTopicEntryProps) => {
   const { content, detailContent, alternatives, alternativesLabel } = entry;
   const activeAlterative = anchor?.id.split("/")[1];
@@ -91,6 +93,7 @@ const ReferenceTopicEntry = ({
     <DocumentationContextProvider
       parentSlug={entry.slug.current}
       toolkitType={toolkitType}
+      sectionId={sectionId}
       isExpanded={disclosure.isOpen}
       title={topic.name}
     >

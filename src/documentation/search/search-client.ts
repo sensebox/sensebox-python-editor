@@ -8,11 +8,11 @@ import {
   QueryMessage,
   QueryResponseMessage,
   Search,
+  SearchableSection,
   SearchResults,
 } from "./common";
 
 import { ApiDocsResponse } from "../../language-server/apidocs";
-import { Toolkit } from "../reference/model";
 
 export class WorkerSearch implements Search {
   private worker: Worker;
@@ -20,10 +20,10 @@ export class WorkerSearch implements Search {
   constructor(public language: string) {
     this.worker = workerForLanguage(language);
   }
-  index(reference: Toolkit, api: ApiDocsResponse) {
+  index(sections: SearchableSection[], api: ApiDocsResponse) {
     const message: IndexMessage = {
       kind: "index",
-      reference,
+      sections,
       api,
     };
     this.worker.postMessage(message);

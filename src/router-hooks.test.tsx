@@ -4,12 +4,17 @@
  * SPDX-License-Identifier: MIT
  */
 import { act, render } from "@testing-library/react";
+import { vi } from "vitest";
 import { useEffect } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { LoggingProvider } from "./logging/logging-hooks";
 import { MockLogging } from "./logging/mock";
 import { NavigationSource, RouterState, useRouterState } from "./router-hooks";
 import { editorRoutePath } from "./urls";
+
+vi.mock("./documentation/sections/config", () => ({
+  docsSections: [{ id: "reference" }, { id: "ideas" }],
+}));
 
 const result: { current?: ReturnType<typeof useRouterState> } = {};
 const state = (): RouterState => result.current![0];

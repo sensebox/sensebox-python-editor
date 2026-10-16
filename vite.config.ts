@@ -143,36 +143,6 @@ export default defineConfig(({ mode }) => {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,gif,hex}"],
           runtimeCaching: [
             {
-              urlPattern: new RegExp(
-                `^https://${process.env.VITE_SANITY_PROJECT}.apicdn.sanity.io/.*`
-              ),
-              handler: "NetworkFirst",
-              options: {
-                cacheName: `${pwaCacheId}-sanity-content-cache`,
-                expiration: {
-                  maxEntries: 40,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
-              urlPattern: new RegExp(
-                `^https://cdn.sanity.io/images/${process.env.VITE_SANITY_PROJECT}/${process.env.VITE_SANITY_DATASET}/.*`
-              ),
-              handler: "CacheFirst",
-              options: {
-                cacheName: `${pwaCacheId}-sanity-images-cache`,
-                expiration: {
-                  maxEntries: 100,
-                },
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
-            {
               urlPattern: /^https:\/\/fonts.microbit.org\/.*/,
               handler: "CacheFirst",
               options: {

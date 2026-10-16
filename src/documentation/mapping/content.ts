@@ -1,29 +1,23 @@
 /**
- * (c) 2021-2022, Micro:bit Educational Foundation and contributors
+ * Mapping from API entries to documentation, read from content/mapping.json.
+ *
+ * (c) 2021-2026, Micro:bit Educational Foundation and contributors
  *
  * SPDX-License-Identifier: MIT
  */
-import { fetchContent } from "../../common/sanity";
-import { PythonModule } from "./model";
+const mappingFiles = import.meta.glob<RawMapping>("/content/mapping.json", {
+  import: "default",
+  eager: true,
+});
 
-export const fetchMappingData = async (): Promise<ApiReferenceMap> =>
-  fetchContent("", mappingQuery, adaptContent);
-
-const mappingQuery = (): string => {
-  return `
-  *[_type == "pythonModule" && !(_id in path("drafts.**"))]{
-    pythonModuleName,
-    pythonModuleItem[] {
-      pythonAlternativeContentLink,
-      pythonApiEntry,
-      referenceLink {
-        _type == "reference" =>^-> {
-          slug
-        }
-      }
-    }
-  }`;
-};
+/**
+ * Module name to API entry to link target. The target is either
+ * "section/slug" or an object with an alternative to preselect.
+ */
+type RawMapping = Record<
+  string,
+  Record<string, string | { reference: string; alternative?: string }>
+>;
 
 export type ApiReferenceMap = Record<
   string,
@@ -31,30 +25,33 @@ export type ApiReferenceMap = Record<
 >;
 
 export interface ReferenceLinkDetail {
+  /**
+   * The sidebar section id. If absent the section containing the slug is used.
+   */
+  section?: string;
   referenceLink: string;
   alternative?: string;
 }
 
-const adaptContent = (result: any): ApiReferenceMap | undefined => {
-  const mappingData = result as PythonModule[];
-  if (mappingData.length === 0) {
-    return undefined;
-  }
+export const adaptMapping = (raw: RawMapping): ApiReferenceMap => {
   const map: ApiReferenceMap = {};
-  for (const module of mappingData) {
-    for (const moduleItem of module.pythonModuleItem) {
-      const referenceLink = moduleItem.referenceLink?.slug.current;
-      const alternative = moduleItem.pythonAlternativeContentLink;
+  for (const [moduleName, items] of Object.entries(raw)) {
+    for (const [apiEntry, target] of Object.entries(items)) {
+      const { reference, alternative } =
+        typeof target === "string" ? { reference: target } : target;
+      const parts = reference.split("/").filter(Boolean);
+      const [section, referenceLink] =
+        parts.length > 1 ? parts : [undefined, parts[0]];
       if (referenceLink) {
-        map[module.pythonModuleName] = {
-          ...map[module.pythonModuleName],
-          [moduleItem.pythonApiEntry]: {
-            referenceLink,
-            alternative,
-          },
+        map[moduleName] = {
+          ...map[moduleName],
+          [apiEntry]: { section, referenceLink, alternative },
         };
       }
     }
   }
   return map;
 };
+
+export const fetchMappingData = async (): Promise<ApiReferenceMap> =>
+  adaptMapping(Object.values(mappingFiles)[0] ?? {});

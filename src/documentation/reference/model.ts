@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { PortableText, SimpleImage, Slug } from "../../common/sanity";
+import { PortableText, SimpleImage, Slug } from "../../common/portable-text";
 import { HasCompatibility } from "../common/model";
 
 export interface Toolkit {
@@ -55,8 +55,10 @@ export interface ToolkitTopicEntry extends HasCompatibility {
 }
 
 export interface ToolkitInternalLink {
-  reference: ToolkitTopicEntry;
-  targetType: string;
+  /**
+   * The sidebar section id, if given in the link.
+   */
+  section?: string;
   slug: Slug;
 }
 

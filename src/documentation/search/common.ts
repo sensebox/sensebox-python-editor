@@ -10,13 +10,28 @@ import type { ApiDocsResponse } from "../../language-server/apidocs";
 import type { RouterState } from "../../router-hooks";
 import type { Toolkit } from "../reference/model";
 
+/**
+ * A sidebar section's content for indexing.
+ */
+export interface SearchableSection {
+  id: string;
+  title: string;
+  toolkit: Toolkit;
+}
+
 export interface Search {
   search(text: string): Promise<SearchResults>;
-  index(reference: Toolkit, api: ApiDocsResponse): void;
+  index(sections: SearchableSection[], api: ApiDocsResponse): void;
+}
+
+export interface SectionResults {
+  id: string;
+  title: string;
+  results: Result[];
 }
 
 export interface SearchResults {
-  reference: Result[];
+  sections: SectionResults[];
   api: Result[];
 }
 
@@ -40,7 +55,7 @@ export interface Extracts {
 
 export interface IndexMessage {
   kind: "index";
-  reference: Toolkit;
+  sections: SearchableSection[];
   api: ApiDocsResponse;
 }
 

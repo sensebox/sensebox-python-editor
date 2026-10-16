@@ -8,13 +8,10 @@ import BlockContent from "@sanity/block-content-to-react";
 import React, { ReactNode, useContext, useMemo } from "react";
 import { RiExternalLinkLine } from "react-icons/ri";
 import { Box, Stack } from "styled-system/jsx";
-import { runtimeAspectRatioClass } from "../../common/documentation-styles";
-import {
-  getAspectRatioPadding,
-  imageUrlBuilder,
-} from "../../common/imageUrlBuilder";
-import { PortableText, SimpleImage } from "../../common/sanity";
+import { PortableText, SimpleImage } from "../../common/portable-text";
 import { useRouterState } from "../../router-hooks";
+import { useDocumentation } from "../documentation-hooks";
+import { findSectionForSlug } from "../sections/content";
 import {
   ToolkitApiLink,
   ToolkitCode,
@@ -43,6 +40,10 @@ interface DocumentationContextValue {
   parentSlug?: string;
   toolkitType?: string;
   title?: string;
+  /**
+   * The sidebar section the content belongs to.
+   */
+  sectionId?: string;
 }
 
 const DocumentationContext = React.createContext<DocumentationContextValue>({});
@@ -91,17 +92,26 @@ const DocumentationInternalLinkMark = (
   props: SerializerMarkProps<ToolkitInternalLink>
 ) => {
   const [state, setState] = useRouterState();
+  const { sections } = useDocumentation();
+  const { sectionId } = useContext(DocumentationContext);
   return (
     <Link
       color="brand.600"
       onClick={(e) => {
         e.preventDefault();
+        const slug = props.mark.slug.current;
+        const tab =
+          props.mark.section ??
+          (sections.status === "ok"
+            ? findSectionForSlug(sections.content, slug)
+            : undefined) ??
+          sectionId;
         setState(
           {
             ...state,
-            tab: "reference",
+            tab,
             slug: {
-              id: props.mark.slug.current,
+              id: slug,
             },
           },
           "user"
@@ -204,21 +214,10 @@ const serializers = {
       <ContextualCodeEmbed code={main} />
     ),
     simpleImage: (props: SerializerNodeProps<SimpleImage>) => {
-      const padding = getAspectRatioPadding(props.node.asset._ref);
       return (
-        <Box
-          width="300px"
-          maxWidth="100%"
-          className={padding ? runtimeAspectRatioClass : undefined}
-          // Runtime value derived from the image reference.
-          style={{ "--aspect-ratio-padding": padding } as React.CSSProperties}
-        >
+        <Box width="300px" maxWidth="100%">
           <ImageWithFallback
-            src={imageUrlBuilder
-              .image(props.node.asset)
-              .width(300)
-              .fit("max")
-              .url()}
+            src={props.node.src}
             ignoreFallback={navigator.onLine}
             fallback={<OfflineImageFallback width={300} />}
             alt={props.node.alt}
