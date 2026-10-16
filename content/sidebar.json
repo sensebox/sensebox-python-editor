@@ -19,6 +19,12 @@
       "title": { "de": "Sensoren", "en": "Sensors" }
     },
     {
+      "id": "module",
+      "layout": "reference",
+      "icon": "RiCpuLine",
+      "title": { "de": "Module", "en": "Modules" }
+    },
+    {
       "id": "projekte",
       "layout": "cards",
       "icon": "RiLightbulbFlashLine",
