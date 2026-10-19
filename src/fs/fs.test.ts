@@ -6,6 +6,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { vi } from "vitest";
 import * as fs from "fs";
 import * as fsp from "fs/promises";
 import { ConsoleLogging } from "../deployment/default/logging";
@@ -223,6 +224,24 @@ describe("Filesystem", () => {
 
   it("creates board-specific data for flashing V2", async () => {
     await ufs.asFlashDataSource()("V2");
+  });
+
+  it("computes CircuitPython transfer statistics without loading HEX firmware", async () => {
+    const source = vi.fn().mockRejectedValue(new Error("Firmware unavailable"));
+    const filesystem = new FileSystem(logging, host, source);
+    await filesystem.write(MAIN_FILE, "print(123)\n", VersionAction.MAINTAIN);
+    await filesystem.write(
+      "data.bin",
+      new Uint8Array(100_000),
+      VersionAction.INCREMENT
+    );
+    expect(await filesystem.fileStatistics()).toMatchObject({
+      files: 2,
+      storageUsed: 100_011,
+      lines: 2,
+      magicModules: 0,
+    });
+    expect(source).not.toHaveBeenCalled();
   });
 
   it("gives useful stats", async () => {

@@ -14,6 +14,8 @@ import { ConnectionStatusChange } from "@microbit/microbit-connection";
 import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 import { DeviceContextProvider } from "./device/device-hooks";
 import { MockDeviceConnection } from "./device/mock";
+import { flushCircuitPythonHostFiles } from "./device/circuitpython-host-flush";
+import { createCircuitPythonLibraryLoader } from "./device/circuitpython-libraries";
 import { WebFileSystemConnection } from "./device/web-file-system-device";
 import DocumentationProvider from "./documentation/documentation-hooks";
 import SearchProvider from "./documentation/search/search-hooks";
@@ -46,7 +48,14 @@ const fs = new FileSystem(logging, host, fetchMicroPython);
 
 const device: MicrobitUSBConnection = isMockDeviceMode()
   ? new MockDeviceConnection()
-  : new WebFileSystemConnection({ logging, files: () => fs.files() });
+  : new WebFileSystemConnection({
+      logging,
+      files: () => fs.files(),
+      libraryFiles: createCircuitPythonLibraryLoader(import.meta.env.BASE_URL),
+      flushHostFiles: import.meta.env.DEV
+        ? flushCircuitPythonHostFiles
+        : undefined,
+    });
 
 // If this fails then we retry on access.
 fs.initializeInBackground();

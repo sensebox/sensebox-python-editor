@@ -119,7 +119,9 @@ const useManagedTermimal = (
     terminal.onData((data: string) => {
       if (!isUnmounted()) {
         // Async for internal error handling, we don't need to wait.
-        device.serialWrite(data);
+        device
+          .serialWrite(data)
+          .catch((e) => actionFeedback.unexpectedError(e));
       }
     });
 

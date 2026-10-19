@@ -107,6 +107,88 @@
     "defaultMessage": "Replace main code with {source}",
     "description": "Shown in load dialog to confirm actions"
   },
+  "circuitpython-connect-action": {
+    "defaultMessage": "Connect senseBox",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-console-clear": {
+    "defaultMessage": "Clear console",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-directory-help": {
+    "defaultMessage": "In the next window, select the root folder of the CIRCUITPY drive and confirm the folder selection. Do not select a file or subfolder. Then allow write access.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-directory-reuse": {
+    "defaultMessage": "The editor remembers this folder until you disconnect. Transferring overwrites project files with the same names, including code.py. Connecting at the top right never transfers code.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-directory-select": {
+    "defaultMessage": "Select CIRCUITPY folder",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-directory-title": {
+    "defaultMessage": "Select the senseBox CIRCUITPY drive",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-connect": {
+    "defaultMessage": "Could not open the serial port. Check the USB cable, select the senseBox and close other programs using its serial port. Then connect again at the top right.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-directory": {
+    "defaultMessage": "Could not access the CIRCUITPY folder. Check that the drive is connected and allow write access. Select the folder again.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-filesystem-state": {
+    "defaultMessage": "The operating system refused to modify {fileName}. CIRCUITPY may be mounted read-only or the file may be locked. Close other programs writing to it. Disconnect and mount CIRCUITPY normally again, then reselect its folder. Reselecting the folder alone does not resolve this state.",
+    "description": "Actionable CircuitPython filesystem write error; fileName is the project file that could not be saved"
+  },
+  "circuitpython-error-library": {
+    "defaultMessage": "The required library {moduleName} could not be prepared. Check the connection to the editor and that the senseBox uses CircuitPython 10.x. code.py has not been rewritten."
+  },
+  "circuitpython-error-not-connected": {
+    "defaultMessage": "First connect the senseBox using the button at the top right. Then use the lower button to transfer code.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-permission": {
+    "defaultMessage": "The browser no longer has write permission for {fileName}. Transfer again, select the CIRCUITPY root folder and allow write access.",
+    "description": "Actionable CircuitPython filesystem write error; fileName is the project file that could not be saved"
+  },
+  "circuitpython-error-repl": {
+    "defaultMessage": "The senseBox did not respond to the stop command. Check that the serial port and CIRCUITPY drive belong to the same board. Reconnect the board and try again.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-start": {
+    "defaultMessage": "The files were transferred and a restart was requested. CircuitPython could not read code.py afterwards (input/output error, Errno 5). Wait briefly and transfer again. See the serial monitor for more information."
+  },
+  "circuitpython-error-storage-full": {
+    "defaultMessage": "There is not enough free space on CIRCUITPY to save {fileName}. Back up your files and free space on the drive before transferring again.",
+    "description": "Actionable CircuitPython filesystem write error; fileName is the project file that could not be saved"
+  },
+  "circuitpython-error-sync": {
+    "defaultMessage": "The files were saved by the computer, but the senseBox has not confirmed their full contents yet. No restart was requested. Wait briefly and transfer again. Check the USB connection if this continues.",
+    "description": "Host writes have not yet become readable on the board; no soft reset is sent"
+  },
+  "circuitpython-error-title": {
+    "defaultMessage": "senseBox connection or transfer failed",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-unsupported": {
+    "defaultMessage": "Use a desktop browser that supports Web Serial and folder access, such as Chrome or Edge.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-write": {
+    "defaultMessage": "Could not finish writing the project files. Check the USB connection, write permission and free space on CIRCUITPY. Transfer again and reselect the drive. The project may be only partly written.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-error-wrong-directory": {
+    "defaultMessage": "Please select the root folder of the CIRCUITPY drive containing boot_out.txt. Files, subfolders and other drives are not accepted.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
+  "circuitpython-transfer-complete": {
+    "defaultMessage": "Project files transferred to CIRCUITPY. Restart requested.",
+    "description": "CircuitPython connection, console and project transfer UI"
+  },
   "clear": {
     "defaultMessage": "Clear",
     "description": "Aria label for the search input"
@@ -336,11 +418,11 @@
     "description": "Hover text over flash button"
   },
   "flashing-code": {
-    "defaultMessage": "Sending code (flashing)",
+    "defaultMessage": "Transferring code",
     "description": "Progress dialog text for partial flashes (quick)"
   },
   "flashing-full-flash-detail": {
-    "defaultMessage": "Your code is being sent (flashed) to your micro:bit. This can take a while the first time but it will be quicker after that.",
+    "defaultMessage": "Your project files are being transferred to the senseBox. Please wait for the transfer to finish.",
     "description": "Message shown after the title in the progress dialog for a full flash"
   },
   "flashing-micropython": {
@@ -675,11 +757,11 @@
     "description": "Aria label for searching documentation"
   },
   "send-action": {
-    "defaultMessage": "Send to micro:bit",
+    "defaultMessage": "Transfer code",
     "description": "Send to micro:bit button text"
   },
   "send-hover": {
-    "defaultMessage": "Connect via WebUSB then flash code onto micro:bit",
+    "defaultMessage": "Transfer project files to the connected senseBox CIRCUITPY drive",
     "description": "Send button hover text"
   },
   "serial-collapse": {
@@ -699,7 +781,7 @@
     "description": "Action label to expand the serial console/REPL area"
   },
   "serial-flashed": {
-    "defaultMessage": "micro:bit flashed",
+    "defaultMessage": "Code transferred",
     "description": "Shown when your program is in sync with the micro:bit"
   },
   "serial-help-ctrl-c": {
@@ -731,7 +813,7 @@
     "description": "Aria label for serial area menu"
   },
   "serial-ready-to-flash": {
-    "defaultMessage": "micro:bit ready to flash",
+    "defaultMessage": "Ready to transfer",
     "description": "Shown when your program is out of sync with the micro:bit"
   },
   "serial-running": {

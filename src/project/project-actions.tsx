@@ -76,6 +76,11 @@ import {
 } from "./project-utils";
 import ProjectNameQuestion from "./ProjectNameQuestion";
 import WebUSBErrorDialog from "../workbench/connect-dialogs/WebUSBErrorDialog";
+import {
+  CircuitPythonError,
+  WebFileSystemConnection,
+} from "../device/web-file-system-device";
+import CircuitPythonDirectoryDialog from "../workbench/connect-dialogs/CircuitPythonDirectoryDialog";
 import reconnectWebm from "../workbench/connect-dialogs/reconnect.webm";
 import reconnectMp4 from "../workbench/connect-dialogs/reconnect.mp4";
 
@@ -150,6 +155,10 @@ export class ProjectActions {
     userAction: ConnectionAction,
     finalFocusRef: FinalFocusRef
   ): Promise<boolean | undefined> => {
+    // Keep requestPort in the original button gesture; no project work here.
+    if (this.device instanceof WebFileSystemConnection) {
+      return this.connectInternal(userAction, finalFocusRef);
+    }
     const availability = await this.device.checkAvailability();
     if (availability !== "available") {
       this.webusbNotSupportedError(finalFocusRef);
@@ -226,6 +235,7 @@ export class ProjectActions {
     });
     try {
       await this.device.connect();
+      if (this.device.status !== ConnectionStatus.Connected) return false;
       if (task === "connect") {
         // For a download the terminal success is the flash itself.
         this.logging.event({
@@ -234,7 +244,7 @@ export class ProjectActions {
         });
       }
       finalFocusRef?.current?.focus();
-      return true;
+      return this.device.status === ConnectionStatus.Connected;
     } catch (e) {
       this.logging.event({
         type: "device_failure",
@@ -553,6 +563,35 @@ export class ProjectActions {
       throw new Error("Device connection doesn't support flash");
     }
 
+    if (this.device instanceof WebFileSystemConnection) {
+      if (this.device.status !== ConnectionStatus.Connected) {
+        this.handleWebUSBError(
+          new CircuitPythonError("not-connected"),
+          ConnectionAction.FLASH,
+          finalFocusRef
+        );
+        return;
+      }
+      if (!("showDirectoryPicker" in window)) {
+        this.handleWebUSBError(
+          new CircuitPythonError("unsupported"),
+          ConnectionAction.FLASH,
+          finalFocusRef
+        );
+        return;
+      }
+      if (!this.device.hasDirectory) {
+        const device = this.device;
+        const ready = await this.dialogs.show<boolean>((callback) => (
+          <CircuitPythonDirectoryDialog
+            device={device}
+            callback={callback}
+            finalFocusRef={finalFocusRef}
+          />
+        ));
+        if (!ready) return;
+      }
+    }
     if (
       this.device.status === ConnectionStatus.NoAuthorizedDevice ||
       this.device.status === ConnectionStatus.Disconnected
@@ -568,14 +607,14 @@ export class ProjectActions {
     }
 
     const task: AnalyticsTask = "download";
-    const stats = await this.projectStats();
-    this.logging.event({
-      type: "device_step",
-      detail: { task, step: "flashing", transport },
-    });
     const flashStart = Date.now();
     const flashingCode = this.intl.formatMessage({ id: "flashing-code" });
     try {
+      const stats = await this.projectStats();
+      this.logging.event({
+        type: "device_step",
+        detail: { task, step: "flashing", transport },
+      });
       const firstFlashNotice = (
         <Text fontSize="lg">
           <FormattedMessage id="flashing-full-flash-detail" />
@@ -597,6 +636,11 @@ export class ProjectActions {
       await this.device.flash(this.fs.asFlashDataSource(), {
         partial: true,
         progress,
+      });
+      this.actionFeedback.success({
+        title: this.intl.formatMessage({
+          id: "circuitpython-transfer-complete",
+        }),
       });
       this.logging.event({
         type: "device_success",
@@ -914,6 +958,29 @@ export class ProjectActions {
     userAction: ConnectionAction,
     finalFocusRef: FinalFocusRef
   ) {
+    if (e instanceof CircuitPythonError) {
+      this.logging.error(
+        "CircuitPython device operation failed",
+        e,
+        e.file
+          ? {
+              file_name: e.file.fileName,
+              operation: e.file.operation,
+              error_name: e.cause instanceof Error ? e.cause.name : "unknown",
+            }
+          : undefined
+      );
+      this.actionFeedback.expectedError({
+        title: this.intl.formatMessage({ id: "circuitpython-error-title" }),
+        description: this.intl.formatMessage(
+          {
+            id: `circuitpython-error-${e.code}`,
+          },
+          { fileName: e.file?.fileName ?? "", moduleName: e.moduleName ?? "" }
+        ),
+      });
+      return;
+    }
     if (e instanceof DeviceError) {
       switch (e.code) {
         case "unsupported":
@@ -1053,7 +1120,9 @@ export class ProjectActions {
 
   private async projectStats(): Promise<ProjectStatistics> {
     return {
-      ...(await this.fs.statistics()),
+      ...(this.device instanceof WebFileSystemConnection
+        ? await this.fs.fileStatistics()
+        : await this.fs.statistics()),
       errorCount: this.client?.errorCount() ?? 0,
     };
   }

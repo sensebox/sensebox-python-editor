@@ -1,0 +1,195 @@
+/**
+ * (c) 2026, Micro:bit Educational Foundation and contributors
+ *
+ * SPDX-License-Identifier: MIT
+ */
+import { afterEach, expect, it, vi } from "vitest";
+import { createHash, webcrypto } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import {
+  createCircuitPythonLibraryLoader,
+  pythonImports,
+  requiredCircuitPythonLibraries,
+} from "./circuitpython-libraries";
+import catalog from "./libraries/catalog.json";
+
+const project = (code: string) => ({
+  "code.py": new TextEncoder().encode(code),
+});
+afterEach(() => vi.unstubAllGlobals());
+function setup(version = "10.3.0") {
+  vi.stubGlobal("crypto", webcrypto);
+  const fetch = vi.fn(async (url: string) => {
+    const bytes = new Uint8Array(
+      await readFile(
+        join(process.cwd(), "public", url.replace(/^\/test\//, ""))
+      )
+    );
+    return { ok: true, arrayBuffer: async () => bytes.buffer };
+  });
+  vi.stubGlobal("fetch", fetch);
+  const getFileHandle = vi.fn(async () => ({
+    getFile: async () => ({
+      text: async () => `Adafruit CircuitPython ${version}`,
+    }),
+  }));
+  return {
+    fetch,
+    getFileHandle,
+    directory: { getFileHandle } as unknown as FileSystemDirectoryHandle,
+    load: createCircuitPythonLibraryLoader("/test/"),
+  };
+}
+
+it("parses nested, multiline, dotted and aliased imports without strings or comments", () => {
+  expect(
+    pythonImports(
+      `# import adafruit_fake\ntext = "import adafruit_wrong"\nimport board, adafruit_mpu6050 as sensor\nif True:\n    from adafruit_dps310.basic import (DPS310 as Pressure, Other)\nfrom . import helper\n`
+    )
+  ).toEqual([
+    "board",
+    "adafruit_mpu6050",
+    "adafruit_dps310.basic",
+    "adafruit_dps310.basic.DPS310",
+    "adafruit_dps310.basic.Other",
+    ".",
+    ".helper",
+  ]);
+});
+
+it("includes transitive dependencies once, before the requested modules", () => {
+  expect(
+    requiredCircuitPythonLibraries(
+      project(
+        "import adafruit_ssd1306\nfrom adafruit_ssd1306 import SSD1306_I2C"
+      )
+    )
+  ).toEqual(["adafruit_bus_device", "adafruit_framebuf", "adafruit_ssd1306"]);
+  expect(
+    requiredCircuitPythonLibraries(
+      project(
+        "from adafruit_dps310.basic import DPS310\nimport adafruit_mpu6050\nimport neopixel"
+      )
+    )
+  ).toEqual(
+    expect.arrayContaining([
+      "adafruit_dps310",
+      "adafruit_mpu6050",
+      "adafruit_register",
+      "adafruit_bus_device",
+      "neopixel",
+      "adafruit_pixelbuf",
+    ])
+  );
+});
+
+it("follows reachable project modules, package initializers and relative imports with cycles", () => {
+  const encode = (text: string) => new TextEncoder().encode(text);
+  const files = {
+    ...project("import pkg.helper"),
+    "pkg/__init__.py": encode("import neopixel"),
+    "pkg/helper.py": encode("from . import other"),
+    "pkg/other.py": encode("import adafruit_mpu6050\nfrom . import helper"),
+    "unused.py": encode("import adafruit_ssd1306"),
+  };
+  const result = requiredCircuitPythonLibraries(files);
+  expect(result).toEqual(
+    expect.arrayContaining(["neopixel", "adafruit_mpu6050"])
+  );
+  expect(result).not.toContain("adafruit_ssd1306");
+});
+
+it("preserves a user module shadowing a catalog library", () => {
+  expect(
+    requiredCircuitPythonLibraries({
+      ...project("import adafruit_ssd1306"),
+      "adafruit_ssd1306.py": new TextEncoder().encode("import board"),
+    })
+  ).toEqual([]);
+  const result = requiredCircuitPythonLibraries({
+    ...project("import adafruit_ssd1306"),
+    "lib/adafruit_framebuf.py": new TextEncoder().encode("import neopixel"),
+  });
+  expect(result).not.toContain("adafruit_framebuf");
+  expect(result).toContain("neopixel");
+});
+
+it("does not fetch libraries or read the board for firmware-only imports", async () => {
+  const { load, directory, fetch, getFileHandle } = setup("9.0.0");
+  expect(
+    await load(project("import board, time, wifi, digitalio"), directory)
+  ).toEqual({});
+  expect(fetch).not.toHaveBeenCalled();
+  expect(getFileHandle).not.toHaveBeenCalled();
+});
+
+it("loads compiled OLED libraries, package files and the default font, caching asset downloads", async () => {
+  const { load, directory, fetch, getFileHandle } = setup();
+  const files = await load(project("import adafruit_ssd1306"), directory);
+  expect(files["lib/adafruit_ssd1306.mpy"].slice(0, 2)).toEqual(
+    new Uint8Array([67, 6])
+  );
+  expect(files["lib/adafruit_framebuf.mpy"]).toBeDefined();
+  expect(files["lib/adafruit_bus_device/i2c_device.mpy"]).toBeDefined();
+  expect(files["font5x8.bin"].length).toBe(1282);
+  expect(files["code.py"]).toBeUndefined();
+  await load(project("import adafruit_ssd1306"), directory);
+  expect(fetch).toHaveBeenCalledTimes(3);
+  expect(getFileHandle).toHaveBeenCalledTimes(2);
+});
+
+it("refuses an incompatible firmware before downloading anything", async () => {
+  const { load, directory, fetch } = setup("8.2.0");
+  await expect(
+    load(project("import neopixel"), directory)
+  ).rejects.toMatchObject({
+    cause: { message: "The library bundle requires CircuitPython 10.x" },
+  });
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+it("rejects damaged payloads and can retry failed downloads", async () => {
+  const { load, directory, fetch } = setup();
+  fetch.mockRejectedValueOnce(new Error("Offline"));
+  await expect(
+    load(project("import neopixel"), directory)
+  ).rejects.toMatchObject({ moduleName: "adafruit_pixelbuf" });
+  const result = await load(project("import neopixel"), directory);
+  expect(result["lib/neopixel.mpy"]).toBeDefined();
+  const other = setup();
+  other.fetch.mockResolvedValueOnce({
+    ok: true,
+    arrayBuffer: async () => new Uint8Array([1, 2]).buffer,
+  });
+  await expect(
+    other.load(project("import neopixel"), other.directory)
+  ).rejects.toMatchObject({
+    cause: { message: "Library payload checksum mismatch" },
+  });
+});
+
+it("ships a complete catalog with matching immutable payload and file hashes", async () => {
+  for (const [name, module] of Object.entries(catalog.modules)) {
+    for (const dependency of module.dependencies)
+      expect(catalog.modules).toHaveProperty(dependency);
+    const bytes = await readFile(
+      join(process.cwd(), "public", catalog.assetRoot, `${name}.json`)
+    );
+    expect(createHash("sha256").update(bytes).digest("hex"), name).toBe(
+      module.sha256
+    );
+    const payload = JSON.parse(bytes.toString("utf8")) as {
+      name: string;
+      files: { path: string; data: string; sha256: string }[];
+    };
+    expect(payload.name).toBe(name);
+    for (const file of payload.files)
+      expect(
+        createHash("sha256")
+          .update(Buffer.from(file.data, "base64"))
+          .digest("hex"),
+        file.path
+      ).toBe(file.sha256);
+  }
+});

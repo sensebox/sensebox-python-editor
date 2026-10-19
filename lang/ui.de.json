@@ -80,6 +80,69 @@
   "choose-main-source-replace-main-code": {
     "defaultMessage": "Hauptcode durch {source} ersetzen"
   },
+  "circuitpython-connect-action": {
+    "defaultMessage": "senseBox verbinden"
+  },
+  "circuitpython-console-clear": {
+    "defaultMessage": "Konsole leeren"
+  },
+  "circuitpython-directory-help": {
+    "defaultMessage": "Wähle im nächsten Fenster das Hauptverzeichnis des Laufwerks CIRCUITPY aus und bestätige die Ordnerauswahl. Klicke keine Datei und keinen Unterordner an. Erlaube anschließend den Schreibzugriff."
+  },
+  "circuitpython-directory-reuse": {
+    "defaultMessage": "Der Editor merkt sich dieses Verzeichnis bis zum Trennen der Verbindung. Beim Übertragen werden gleichnamige Projektdateien einschließlich code.py überschrieben. Das Verbinden oben rechts überträgt keinen Code."
+  },
+  "circuitpython-directory-select": {
+    "defaultMessage": "CIRCUITPY-Verzeichnis auswählen"
+  },
+  "circuitpython-directory-title": {
+    "defaultMessage": "CIRCUITPY-Laufwerk der senseBox auswählen"
+  },
+  "circuitpython-error-connect": {
+    "defaultMessage": "Der serielle Port konnte nicht geöffnet werden. Prüfe das USB-Kabel, wähle die senseBox und schließe andere Programme, die ihren seriellen Port verwenden. Verbinde dich danach erneut oben rechts."
+  },
+  "circuitpython-error-directory": {
+    "defaultMessage": "Auf das CIRCUITPY-Verzeichnis konnte nicht zugegriffen werden. Prüfe, ob das Laufwerk verbunden ist, und erlaube den Schreibzugriff. Wähle das Verzeichnis erneut aus."
+  },
+  "circuitpython-error-filesystem-state": {
+    "defaultMessage": "Das Betriebssystem verweigert Änderungen an {fileName}. CIRCUITPY ist möglicherweise schreibgeschützt eingebunden oder die Datei gesperrt. Schließe andere Programme mit Schreibzugriff. Trenne die Verbindung und binde CIRCUITPY regulär neu ein. Wähle das Verzeichnis danach neu aus. Ein erneutes Auswählen des Verzeichnisses allein behebt diesen Zustand nicht."
+  },
+  "circuitpython-error-library": {
+    "defaultMessage": "Die benötigte Bibliothek {moduleName} konnte nicht vorbereitet werden. Prüfe die Verbindung zum Editor und ob die senseBox CircuitPython 10.x verwendet. code.py wurde nicht neu geschrieben."
+  },
+  "circuitpython-error-not-connected": {
+    "defaultMessage": "Verbinde die senseBox zuerst mit dem Button oben rechts. Übertrage den Code danach mit dem unteren Button."
+  },
+  "circuitpython-error-permission": {
+    "defaultMessage": "Der Browser hat keine Schreibberechtigung mehr für {fileName}. Übertrage erneut, wähle das CIRCUITPY-Hauptverzeichnis und erlaube den Schreibzugriff."
+  },
+  "circuitpython-error-repl": {
+    "defaultMessage": "Die senseBox hat auf den Stoppbefehl nicht geantwortet. Prüfe, ob der serielle Port und das CIRCUITPY-Laufwerk zum selben Board gehören. Verbinde das Board neu und versuche es erneut."
+  },
+  "circuitpython-error-start": {
+    "defaultMessage": "Die Dateien wurden übertragen und ein Neustart wurde angefordert. CircuitPython konnte code.py danach nicht lesen (Eingabe-/Ausgabefehler, Errno 5). Warte kurz und übertrage erneut. Weitere Informationen stehen im seriellen Monitor."
+  },
+  "circuitpython-error-storage-full": {
+    "defaultMessage": "Auf CIRCUITPY ist nicht genügend Speicher zum Speichern von {fileName} frei. Sichere deine Dateien und schaffe Platz auf dem Laufwerk, bevor du erneut überträgst."
+  },
+  "circuitpython-error-sync": {
+    "defaultMessage": "Die Dateien wurden am Rechner gespeichert, aber die senseBox bestätigt ihren vollständigen Inhalt noch nicht. Es wurde kein Neustart angefordert. Warte kurz und übertrage erneut. Prüfe die USB-Verbindung, falls das weiterhin auftritt."
+  },
+  "circuitpython-error-title": {
+    "defaultMessage": "senseBox-Verbindung oder Übertragung fehlgeschlagen"
+  },
+  "circuitpython-error-unsupported": {
+    "defaultMessage": "Verwende einen Desktop-Browser mit Web Serial und Verzeichniszugriff, zum Beispiel Chrome oder Edge."
+  },
+  "circuitpython-error-write": {
+    "defaultMessage": "Die Projektdateien konnten nicht vollständig geschrieben werden. Prüfe USB-Verbindung, Schreibberechtigung und freien Speicher auf CIRCUITPY. Übertrage erneut und wähle das Laufwerk neu aus. Das Projekt ist möglicherweise nur teilweise geschrieben."
+  },
+  "circuitpython-error-wrong-directory": {
+    "defaultMessage": "Bitte wähle das Hauptverzeichnis des Laufwerks CIRCUITPY aus. Dort liegt boot_out.txt. Dateien, Unterordner und andere Laufwerke werden nicht akzeptiert."
+  },
+  "circuitpython-transfer-complete": {
+    "defaultMessage": "Projektdateien auf CIRCUITPY übertragen. Neustart angefordert."
+  },
   "clear": {
     "defaultMessage": "Löschen"
   },
@@ -252,10 +315,10 @@
     "defaultMessage": "Das Projekt direkt auf den den micro:bit flashen"
   },
   "flashing-code": {
-    "defaultMessage": "Sende Code (flashen)"
+    "defaultMessage": "Code wird übertragen"
   },
   "flashing-full-flash-detail": {
-    "defaultMessage": "Dein Code wird an deinen micro:bit gesendet (geflasht). Das kann beim ersten Mal eine Weile dauern, aber danach geht es schneller."
+    "defaultMessage": "Deine Projektdateien werden auf die senseBox übertragen. Bitte warte, bis die Übertragung abgeschlossen ist."
   },
   "flashing-micropython": {
     "defaultMessage": "MicroPython flashen"
@@ -507,10 +570,10 @@
     "defaultMessage": "Suche"
   },
   "send-action": {
-    "defaultMessage": "An micro:bit senden"
+    "defaultMessage": "Code übertragen"
   },
   "send-hover": {
-    "defaultMessage": "Verbindung über WebUSB herstellen und Code auf micro:bit flashen"
+    "defaultMessage": "Projektdateien auf das CIRCUITPY-Laufwerk der verbundenen senseBox übertragen"
   },
   "serial-collapse": {
     "defaultMessage": "Serielle Ausgabe ausblenden"
@@ -525,7 +588,7 @@
     "defaultMessage": "Serielle Schnittstelle anzeigen"
   },
   "serial-flashed": {
-    "defaultMessage": "micro:bit geflasht"
+    "defaultMessage": "Code übertragen"
   },
   "serial-help-ctrl-c": {
     "defaultMessage": "Verwende den Tastenkürzel <kbd>Strg</kbd> + <kbd>C</kbd> um das Programm anzuhalten. Danach kannst du Python-Befehle eingeben, die MicroPython ausführen soll. Das ist eine großartige Möglichkeit, mit etwas Neuem zu experimentieren."
@@ -549,7 +612,7 @@
     "defaultMessage": "Serielles Menü"
   },
   "serial-ready-to-flash": {
-    "defaultMessage": "micro:bit bereit zum Flashen"
+    "defaultMessage": "Bereit zur Übertragung"
   },
   "serial-running": {
     "defaultMessage": "Ausführen..."

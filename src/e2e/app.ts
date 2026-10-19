@@ -269,7 +269,7 @@ export class App {
       "more-connect-options"
     );
     this.sendToMicrobitButton = this.page.getByRole("button", {
-      name: "Send to micro:bit",
+      name: "Transfer code",
     });
     this.simulator = new Simulator(this.page);
     this.sidebar = new SideBar(this.page);
