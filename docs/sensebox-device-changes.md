@@ -700,3 +700,50 @@ library-installation or transfer logic was changed.
   root selection without choosing a file. Application TypeScript, targeted ESLint,
   i18n compile/tidy and formatting/diff checks passed. No physical browser/USB test
   was performed; localhost browser automation remains unavailable in this runtime.
+
+## 2026-10-20 — Add BME680 sensor building blocks
+
+Request: add the supplied BME680 snippet under Sensors, split it into useful,
+clearly named blocks, and record all changes.
+
+- Added `content/de/sensoren/bme680.md` as “Umweltsensor (BME680)”, with a subtitle
+  covering air temperature, relative humidity, pressure and air quality. The
+  existing content glob automatically discovers this topic in the Sensors tab;
+  no sidebar configuration, routes or theme changes are necessary. German content
+  follows the same fallback behavior as the existing sensor topics.
+- Split the supplied example into seven entries with explicit, section-unique
+  `bme680-…` slugs: initialization, air temperature, relative humidity, pressure,
+  gas resistance, optional altitude estimation, and a complete repeating example.
+  Each entry has one draggable/copyable Python code block. The topic explains how
+  to combine initialization and individual measurements, or use the full example
+  alone. Individual measurements expose clearly named German variables and units.
+- Preserved `board.I2C()`, I²C address `0x76`, reference pressure `1013.25 hPa` for
+  altitude, and the full example's two-second interval. Translated comments and
+  output labels. Explained how to reuse an existing `i2c` object when combining
+  sensors, rather than setting up the bus repeatedly.
+- Named the air-quality measurement precisely as gas resistance in Ohms; the
+  provided driver does not calculate a calibrated air-quality index. Kept altitude
+  as an optional derived quantity and explained that it needs the region's current
+  sea-level reference pressure, whereas the four other properties do not depend
+  on that altitude calibration. Units/properties were checked against the primary
+  [Adafruit BME680 API documentation](https://docs.circuitpython.org/projects/bme680/en/stable/api.html).
+- `adafruit_bme680` version 3.7.16 and its `adafruit_bus_device` dependency are
+  already in the pinned catalog. The new import therefore uses the existing
+  automatic library installation without changing library assets or the transfer
+  code. No connection, filesystem, firmware, analytics, or unrelated sensor content
+  was changed. The new Markdown source includes the project licensing notice.
+
+Validation:
+
+- All 13 existing bundled-content and library-resolver/asset-integrity tests passed.
+- Ran the actual Markdown topic parser against the new file: topic name, all seven
+  entries, unique expected slugs, and a Python block for each entry were verified.
+- Python parsed all seven snippets. Executed the modular combination and one loop
+  iteration of the complete example using simulated board/sensor/time modules:
+  address `0x76`, all five output values/units, reference pressure and the two-second
+  sleep were verified. No Python sensor imports or USB writes were performed on a
+  real board. A physical BME680 measurement test was not performed.
+- Production build passed and includes the new `bme680` content chunk. Targeted
+  Prettier and `git diff --check` passed. Build warnings were the existing large
+  JavaScript chunk notice and a sandbox-blocked Panda update-config check; code
+  generation and bundling completed successfully.
