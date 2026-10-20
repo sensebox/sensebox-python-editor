@@ -1,5 +1,46 @@
 # senseBox connection and code transfer
 
+## Follow-up: HDC1080 temperature example (2026-10-20)
+
+- `content/de/sensoren/temperatur.md`: replaces the temperature placeholder
+  with a runnable HDC1080 example for temperature and relative humidity.
+- The block enables the senseBox connections, initializes the sensor over I²C,
+  prints both readings with two decimal places and repeats every two seconds.
+  Its title and short user-facing explanation now describe both measured values
+  without adding unnecessary technical detail. The existing entry slug remains
+  unchanged so links to the block continue to work.
+
+## Follow-up: LED matrix module block (2026-10-20)
+
+- `content/de/module/led-matrix.md`: adds a clearly named **LED-Matrix** topic
+  to the **Module** section. Its runnable block scrolls text across the 12 × 8
+  matrix connected to port A.
+- The example keeps the required senseBox power, NeoPixel and matrix setup, but
+  uses short German variable names and limits the explanation to connection,
+  text, color, brightness and scrolling speed. The existing alphabetical module
+  ordering places it before the OLED display without a sidebar configuration
+  change.
+- The imported `neopixel` and `adafruit_pixel_framebuf` libraries already exist
+  in the pinned CircuitPython 10.x library catalog, so no generated library
+  assets were changed.
+- The documentation content test passed. The broader library-integrity test
+  still reports checksum mismatches in the existing generated CircuitPython
+  payloads (including `adafruit_24lc32`, `adafruit_ssd1306` and `neopixel`);
+  those hash-verified assets were not modified as part of this change.
+
+## Follow-up: Time-of-Flight (ToF) sensor blocks (2026-10-20)
+
+- `content/de/sensoren/vl53l8cx.md`: adds the sensor as **Time-of-Flight (ToF)
+  Sensor** to the **Sensoren** reference section. The page provides clearly
+  named, composable blocks for initialization, starting an 8 × 8 measurement
+  and reading valid distance values, plus a complete runnable example based on
+  the supplied code.
+- The hardware explanation and Python setup only describe and configure the I²C
+  connection. The optional low-level LPn and `D3` configuration was removed to
+  keep the blocks approachable.
+- This is documentation content only. It does not change device connection,
+  transfer, synchronization or automatic CircuitPython library resolution.
+
 Change record: 2026-10-19. This file records the requested behavior and the
 implementation decisions so they remain available in later work sessions.
 
