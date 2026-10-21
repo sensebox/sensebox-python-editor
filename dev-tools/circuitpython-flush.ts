@@ -4,11 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 import { createHash } from "node:crypto";
+import { execFile as execFileCallback } from "node:child_process";
 import { constants } from "node:fs";
-import { open, readFile } from "node:fs/promises";
+import { lstat, open, readFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { basename, join } from "node:path";
+import { basename, join, relative } from "node:path";
+import { promisify } from "node:util";
 import type { Plugin } from "vite";
 import type { CircuitPythonFlushRequest } from "../src/device/circuitpython-flush-protocol";
 
@@ -21,8 +23,7 @@ function validRequest(value: unknown): value is CircuitPythonFlushRequest {
   const request = value as CircuitPythonFlushRequest;
   return (
     typeof request.directoryName === "string" &&
-    request.directoryName.length > 0 &&
-    request.directoryName.length <= 255 &&
+    request.directoryName.toUpperCase() === "CIRCUITPY" &&
     typeof request.bootOut === "string" &&
     request.bootOut.length <= 8192 &&
     request.bootOut.includes("CircuitPython") &&
@@ -60,45 +61,94 @@ function validRequest(value: unknown): value is CircuitPythonFlushRequest {
   );
 }
 
-/** Discover actual mounted FAT volumes; never accept a host path from the browser. */
+const execFile = promisify(execFileCallback);
+
+async function windowsCircuitPythonRoots(): Promise<string[]> {
+  // Avoid probing A: through Z: with Node. An empty removable-media drive can
+  // block an fs call for minutes. PowerShell's provider skips those promptly.
+  const { stdout } = await execFile(
+    "powershell.exe",
+    [
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      "Get-PSDrive -PSProvider FileSystem | Where-Object { Test-Path -LiteralPath (Join-Path $_.Root 'boot_out.txt') -PathType Leaf } | ForEach-Object { $_.Root }",
+    ],
+    { timeout: 5000, windowsHide: true }
+  );
+  return stdout
+    .split(/\r?\n/)
+    .map((root) => root.trim())
+    .filter((root) => /^[A-Za-z]:\\$/.test(root));
+}
+
+async function matchingMarker(
+  target: string,
+  request: CircuitPythonFlushRequest
+): Promise<boolean> {
+  try {
+    const markerPath = join(target, "boot_out.txt");
+    if ((await lstat(markerPath)).isSymbolicLink()) return false;
+    const marker = await open(
+      markerPath,
+      constants.O_RDONLY | constants.O_NOFOLLOW
+    );
+    try {
+      const stat = await marker.stat();
+      return (
+        stat.isFile() &&
+        stat.size <= 8192 &&
+        (await marker.readFile("utf8")) === request.bootOut
+      );
+    } finally {
+      await marker.close();
+    }
+  } catch {
+    return false;
+  }
+}
+
+/** Discover actual mounted volumes; never accept a host path from the browser. */
 export async function flushMatchingCircuitPythonFiles(
   request: CircuitPythonFlushRequest,
-  mountInfo?: string
+  mountInfo?: string,
+  platform?: NodeJS.Platform,
+  driveRoots?: string[]
 ): Promise<boolean> {
   if (!validRequest(request)) return false;
-  mountInfo ??= await readFile("/proc/self/mountinfo", "utf8");
+  const hostPlatform =
+    platform ?? (mountInfo === undefined ? process.platform : "linux");
+  const canSyncDirectories = process.platform !== "win32";
   const candidates = new Set<string>();
-  for (const line of mountInfo.split("\n")) {
-    const fields = line.split(" ");
-    const separator = fields.indexOf("-");
-    if (separator < 6 || fields[separator + 1] !== "vfat") continue;
-    const target = fields[4].replace(/\\([0-7]{3})/g, (_, octal: string) =>
-      String.fromCharCode(parseInt(octal, 8))
+  if (hostPlatform === "win32") {
+    // Windows does not expose /proc/mountinfo. Probe only drive roots and bind
+    // the browser request to the physical volume by its complete boot marker.
+    const roots = driveRoots ?? (await windowsCircuitPythonRoots());
+    const matches = await Promise.all(
+      roots.map(async (target) => ({
+        target,
+        matches: await matchingMarker(target, request),
+      }))
     );
-    if (
-      target === "/" ||
-      basename(target) !== request.directoryName ||
-      !fields[5].split(",").includes("rw")
-    )
-      continue;
-    try {
-      const marker = await open(
-        join(target, "boot_out.txt"),
-        constants.O_RDONLY | constants.O_NOFOLLOW
+    for (const match of matches) {
+      if (match.matches) candidates.add(match.target);
+    }
+  } else {
+    mountInfo ??= await readFile("/proc/self/mountinfo", "utf8");
+    for (const line of mountInfo.split("\n")) {
+      const fields = line.split(" ");
+      const separator = fields.indexOf("-");
+      if (separator < 6 || fields[separator + 1] !== "vfat") continue;
+      const target = fields[4].replace(/\\([0-7]{3})/g, (_, octal: string) =>
+        String.fromCharCode(parseInt(octal, 8))
       );
-      try {
-        const stat = await marker.stat();
-        if (
-          stat.isFile() &&
-          stat.size <= 8192 &&
-          (await marker.readFile("utf8")) === request.bootOut
-        )
-          candidates.add(target);
-      } finally {
-        await marker.close();
-      }
-    } catch {
-      /* A missing/unreadable/non-CircuitPython volume is not a match. */
+      if (
+        target === "/" ||
+        basename(target) !== request.directoryName ||
+        !fields[5].split(",").includes("rw")
+      )
+        continue;
+      if (await matchingMarker(target, request)) candidates.add(target);
     }
   }
   if (candidates.size !== 1) return false;
@@ -106,13 +156,17 @@ export async function flushMatchingCircuitPythonFiles(
   const handles: FileHandle[] = [];
   const directories = new Map<string, FileHandle>();
   try {
-    handles.push(
-      await open(
-        target,
-        constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
-      )
-    );
-    directories.set(target, handles[0]);
+    // Windows cannot open directories for fsync. FileHandle.sync() maps to
+    // FlushFileBuffers there and is the important cache barrier for CIRCUITPY.
+    if (canSyncDirectories) {
+      handles.push(
+        await open(
+          target,
+          constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
+        )
+      );
+      directories.set(target, handles[0]);
+    }
     const files: FileHandle[] = [];
     for (const file of request.files) {
       const parts = file.name.split("/");
@@ -120,6 +174,10 @@ export async function flushMatchingCircuitPythonFiles(
       for (const part of parts.slice(0, -1)) {
         parent = join(parent, part);
         if (!directories.has(parent)) {
+          if ((await lstat(parent)).isSymbolicLink()) return false;
+          if (!canSyncDirectories) {
+            continue;
+          }
           const directory = await open(
             parent,
             constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW
@@ -128,9 +186,13 @@ export async function flushMatchingCircuitPythonFiles(
           handles.push(directory);
         }
       }
+      const filePath = join(target, file.name);
+      if (relative(target, filePath).startsWith("..")) return false;
+      if ((await lstat(filePath)).isSymbolicLink()) return false;
       const handle = await open(
-        join(target, file.name),
-        constants.O_RDONLY | constants.O_NOFOLLOW
+        filePath,
+        (process.platform === "win32" ? constants.O_RDWR : constants.O_RDONLY) |
+          constants.O_NOFOLLOW
       );
       handles.push(handle);
       files.push(handle);
@@ -145,10 +207,12 @@ export async function flushMatchingCircuitPythonFiles(
     }
     // Flush file data first, then the directory entry changed by Chrome's rename.
     for (const handle of files) await handle.sync();
-    for (const [, directory] of Array.from(directories).sort(
-      ([a], [b]) => b.split("/").length - a.split("/").length
-    ))
-      await directory.sync();
+    if (canSyncDirectories) {
+      for (const [, directory] of Array.from(directories).sort(
+        ([a], [b]) => b.split("/").length - a.split("/").length
+      ))
+        await directory.sync();
+    }
     return true;
   } catch {
     return false;
@@ -240,7 +304,7 @@ export function circuitPythonHostFlushPlugin(): Plugin {
     name: "circuitpython-local-host-flush",
     apply: "serve",
     configureServer(server) {
-      if (process.platform !== "linux") return;
+      if (!["linux", "win32"].includes(process.platform)) return;
       server.middlewares.use(
         circuitPythonFlushMiddleware(`${server.config.base}__sensebox__/flush`)
       );

@@ -80,7 +80,6 @@ import {
   CircuitPythonError,
   WebFileSystemConnection,
 } from "../device/web-file-system-device";
-import CircuitPythonDirectoryDialog from "../workbench/connect-dialogs/CircuitPythonDirectoryDialog";
 import reconnectWebm from "../workbench/connect-dialogs/reconnect.webm";
 import reconnectMp4 from "../workbench/connect-dialogs/reconnect.mp4";
 
@@ -555,6 +554,24 @@ export class ProjectActions {
   /**
    * Flash the device, reporting progress via a dialog.
    */
+  selectCircuitPythonDirectory = async (
+    finalFocusRef: FinalFocusRef
+  ): Promise<boolean> => {
+    if (!(this.device instanceof WebFileSystemConnection)) return false;
+    try {
+      return await this.device.selectDirectory();
+    } catch (e) {
+      await this.handleWebUSBError(
+        e instanceof CircuitPythonError
+          ? e
+          : new CircuitPythonError("directory", e),
+        ConnectionAction.FLASH,
+        finalFocusRef
+      );
+      return false;
+    }
+  };
+
   flash = async (
     finalFocusRef: FinalFocusRef,
     tryAgain?: boolean
@@ -581,15 +598,12 @@ export class ProjectActions {
         return;
       }
       if (!this.device.hasDirectory) {
-        const device = this.device;
-        const ready = await this.dialogs.show<boolean>((callback) => (
-          <CircuitPythonDirectoryDialog
-            device={device}
-            callback={callback}
-            finalFocusRef={finalFocusRef}
-          />
-        ));
-        if (!ready) return;
+        this.handleWebUSBError(
+          new CircuitPythonError("directory"),
+          ConnectionAction.FLASH,
+          finalFocusRef
+        );
+        return;
       }
     }
     if (

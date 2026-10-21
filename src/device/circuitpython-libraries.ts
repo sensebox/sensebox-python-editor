@@ -155,6 +155,22 @@ async function sha256(bytes: Uint8Array): Promise<string> {
   ).join("");
 }
 
+/**
+ * Git can check generated text assets out with a final CRLF on Windows even
+ * though their pinned digest was generated with LF. Normalize only that one
+ * generated line ending; all other byte changes still fail integrity checks.
+ */
+function canonicalLibraryPayload(bytes: Uint8Array): Uint8Array {
+  const length = bytes.length;
+  if (length >= 2 && bytes[length - 2] === 0x0d && bytes[length - 1] === 0x0a) {
+    const canonical = new Uint8Array(length - 1);
+    canonical.set(bytes.subarray(0, length - 2));
+    canonical[length - 2] = 0x0a;
+    return canonical;
+  }
+  return bytes;
+}
+
 export function createCircuitPythonLibraryLoader(baseUrl: string) {
   const cache = new Map<string, Promise<Record<string, Uint8Array>>>();
   const load = (name: string): Promise<Record<string, Uint8Array>> => {
@@ -169,7 +185,9 @@ export function createCircuitPythonLibraryLoader(baseUrl: string) {
             { signal: controller.signal }
           );
           if (!response.ok) throw new Error(`Library HTTP ${response.status}`);
-          const bytes = new Uint8Array(await response.arrayBuffer());
+          const bytes = canonicalLibraryPayload(
+            new Uint8Array(await response.arrayBuffer())
+          );
           if ((await sha256(bytes)) !== catalog.modules[name].sha256)
             throw new Error("Library payload checksum mismatch");
           const payload: LibraryPayload = JSON.parse(

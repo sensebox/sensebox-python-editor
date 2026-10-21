@@ -73,6 +73,28 @@ it("flushes a unique matching mounted board without changing its bytes", async (
   expect(await readFile(join(volume, "boot_out.txt"), "utf8")).toBe(marker);
 });
 
+it("flushes a unique matching Windows drive without Linux mount information", async () => {
+  expect(
+    await flushMatchingCircuitPythonFiles(request, undefined, "win32", [
+      join(root, "missing"),
+      volume,
+    ])
+  ).toBe(true);
+  expect(await readFile(join(volume, "code.py"))).toEqual(contents);
+});
+
+it("refuses ambiguous matching Windows drives", async () => {
+  const other = join(root, "other");
+  await mkdir(other);
+  await writeFile(join(other, "boot_out.txt"), marker);
+  expect(
+    await flushMatchingCircuitPythonFiles(request, undefined, "win32", [
+      volume,
+      other,
+    ])
+  ).toBe(false);
+});
+
 it.each(["size", "checksum", "marker", "readonly", "filesystem"])(
   "refuses a %s mismatch",
   async (mismatch) => {
@@ -114,12 +136,15 @@ it.each(["../code.py", "..", ".", "lib/code.py", "lib\\code.py", "bad\0name"])(
   }
 );
 
-it("refuses symlinks, missing files and duplicate entries", async () => {
+it.skipIf(process.platform === "win32")("refuses symlinked files", async () => {
   request.files[0].name = "alias.py";
   await symlink(join(volume, "code.py"), join(volume, "alias.py"));
   expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
     false
   );
+});
+
+it("refuses missing files and duplicate entries", async () => {
   request.files[0].name = "missing.py";
   expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
     false
@@ -248,7 +273,11 @@ it("flushes nested library files and all parent directories", async () => {
 });
 
 it("refuses symlinked library directories and nested traversal", async () => {
-  await symlink(volume, join(volume, "alias"));
+  await symlink(
+    volume,
+    join(volume, "alias"),
+    process.platform === "win32" ? "junction" : undefined
+  );
   request.files[0].name = "alias/code.py";
   expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
     false

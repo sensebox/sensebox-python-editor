@@ -197,6 +197,13 @@ it("connects once without selecting a folder or transferring any code", async ()
   await device.connect();
   expect(device.status).toBe(ConnectionStatus.Connected);
   expect(requestPort).toHaveBeenCalledTimes(1);
+  expect(requestPort).toHaveBeenCalledWith({
+    filters: [
+      { usbVendorId: 0x303a, usbProductId: 0x81b8 },
+      { usbVendorId: 0x303a, usbProductId: 0x81b9 },
+      { usbVendorId: 0x303a, usbProductId: 0x81ba },
+    ],
+  });
   expect(picker).not.toHaveBeenCalled();
   expect(files).not.toHaveBeenCalled();
   expect(operations).toEqual([]);
@@ -264,17 +271,11 @@ it("rejects a folder without the CircuitPython marker without creating any file"
   expect(getFileHandle).toHaveBeenCalledExactlyOnceWith("boot_out.txt");
 });
 
-it.each([
-  ["file", "code.py"],
-  ["file", "CIRCUITPY"],
-  ["directory", "lib"],
-  ["directory", "Downloads"],
-  ["directory", "CIRCUITPY_BACKUP"],
-])(
-  "rejects a %s named %s before reading or writing files",
-  async (kind, name) => {
+it.each(["code.py", "CIRCUITPY"])(
+  "rejects a file handle named %s before reading or writing files",
+  async (name) => {
     const { device, picker, getFileHandle, operations } = setup();
-    picker.mockResolvedValueOnce({ kind, name, getFileHandle });
+    picker.mockResolvedValueOnce({ kind: "file", name, getFileHandle });
     await expect(device.selectDirectory()).rejects.toMatchObject({
       code: "wrong-directory",
     });
@@ -284,6 +285,23 @@ it.each([
     // A corrected root selection succeeds without selecting any individual file.
     expect(await device.selectDirectory()).toBe(true);
     expect(device.hasDirectory).toBe(true);
+  }
+);
+
+it.each(["lib", "Downloads", "CIRCUITPY_BACKUP"])(
+  "rejects a directory named %s when it has no CircuitPython marker",
+  async (name) => {
+    const { device, picker, getFileHandle, operations } = setup();
+    picker.mockResolvedValueOnce({ kind: "directory", name, getFileHandle });
+    getFileHandle.mockRejectedValueOnce(
+      new DOMException("Missing", "NotFoundError")
+    );
+    await expect(device.selectDirectory()).rejects.toMatchObject({
+      code: "wrong-directory",
+    });
+    expect(device.hasDirectory).toBe(false);
+    expect(getFileHandle).toHaveBeenCalledExactlyOnceWith("boot_out.txt");
+    expect(operations).toEqual([]);
   }
 );
 
@@ -303,6 +321,22 @@ it("accepts the CIRCUITPY root using only the directory picker, regardless of ca
   expect(device.hasDirectory).toBe(true);
   expect(operations).toEqual([]);
 });
+
+it.each(["D:", "d:\\", "CIRCUITPY (D:)", "USB Drive"])(
+  "accepts a Windows drive-root display name %s when it contains the CircuitPython marker",
+  async (name) => {
+    const { device, picker, getFileHandle, operations } = setup();
+    picker.mockResolvedValue({
+      kind: "directory",
+      name,
+      getFileHandle,
+    });
+    expect(await device.selectDirectory()).toBe(true);
+    expect(getFileHandle).toHaveBeenCalledExactlyOnceWith("boot_out.txt");
+    expect(device.hasDirectory).toBe(true);
+    expect(operations).toEqual([]);
+  }
+);
 
 it("handles picker cancellation without claiming a connection or directory", async () => {
   const { device, requestPort, picker } = setup();

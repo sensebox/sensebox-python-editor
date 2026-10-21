@@ -61,6 +61,15 @@ interface WebFileSystemEventMap {
   serialreset: void;
 }
 
+// senseBox MCU-S2 firmware uses one PID for each supported USB interface mode.
+// Keeping all three accepts its firmware variants without exposing unrelated
+// Espressif, Bluetooth, modem and debug ports in the browser chooser.
+const senseBoxSerialFilters: SerialPortFilter[] = [
+  { usbVendorId: 0x303a, usbProductId: 0x81b8 },
+  { usbVendorId: 0x303a, usbProductId: 0x81b9 },
+  { usbVendorId: 0x303a, usbProductId: 0x81ba },
+];
+
 /** One serial connection for the console and a remembered CIRCUITPY directory. */
 export class WebFileSystemConnection
   extends SimpleEventTarget<WebFileSystemEventMap>
@@ -115,7 +124,9 @@ export class WebFileSystemConnection
     if (!("serial" in navigator)) throw new CircuitPythonError("unsupported");
     this.connecting = true;
     try {
-      const port = await navigator.serial.requestPort();
+      const port = await navigator.serial.requestPort({
+        filters: senseBoxSerialFilters,
+      });
       await port.open({ baudRate: 115200 });
       this.port = port;
       this.dispatchEvent("serialreset");
@@ -171,10 +182,11 @@ export class WebFileSystemConnection
         mode: "readwrite",
         id: "circuitpy",
       });
-      if (
-        directory.kind !== "directory" ||
-        directory.name.toUpperCase() !== "CIRCUITPY"
-      ) {
+      // Chromium does not expose Windows drive-root names consistently. Depending
+      // on its version and the picker view, this can be the volume label, a drive
+      // letter or another shell display name. The marker contents are therefore
+      // the authoritative identity check.
+      if (directory.kind !== "directory") {
         throw new CircuitPythonError("wrong-directory");
       }
       let marker: File;

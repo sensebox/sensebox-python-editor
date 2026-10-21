@@ -37,7 +37,10 @@ export async function flushCircuitPythonHostFiles(
       }))
     );
     const body: CircuitPythonFlushRequest = {
-      directoryName: directory.name,
+      // A Windows root handle can be named "D:" even when its volume label is
+      // CIRCUITPY. Selection already validated the marker, and the server binds
+      // this semantic name back to the complete boot_out.txt contents.
+      directoryName: "CIRCUITPY",
       bootOut,
       files,
     };

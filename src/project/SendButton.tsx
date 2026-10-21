@@ -12,7 +12,13 @@ import {
   MoreMenuButton,
   Tooltip,
 } from "@microbit/ui";
-import React, { ForwardedRef, useCallback, useRef, useState } from "react";
+import React, {
+  ForwardedRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { RiUsbLine } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
 import { HStack } from "styled-system/jsx";
@@ -41,6 +47,13 @@ const SendButton = React.forwardRef(
     const [busy, setBusy] = useState(false);
     const status = useConnectionStatus();
     const connected = status === ConnectionStatus.Connected;
+    const isCircuitPython = device instanceof WebFileSystemConnection;
+    const [directorySelected, setDirectorySelected] = useState(
+      isCircuitPython && device.hasDirectory
+    );
+    useEffect(() => {
+      setDirectorySelected(isCircuitPython && device.hasDirectory);
+    }, [device, isCircuitPython, status]);
     const actions = useProjectActions();
     const handleToggleConnected = useCallback(async () => {
       if (connected) {
@@ -68,6 +81,7 @@ const SendButton = React.forwardRef(
         try {
           await actions.flash(finalFocusRef);
         } finally {
+          setDirectorySelected(isCircuitPython && device.hasDirectory);
           setBusy(false);
           flashing.current = {
             flashing: false,
@@ -75,9 +89,19 @@ const SendButton = React.forwardRef(
           };
         }
       },
-      [flashing, actions]
+      [flashing, actions, device, isCircuitPython]
     );
     const menuButtonRef = useRef<HTMLButtonElement>(null);
+    const handleSelectDirectory = useCallback(async () => {
+      if (!isCircuitPython || busy) return;
+      setBusy(true);
+      try {
+        await actions.selectCircuitPythonDirectory(sendButtonRef);
+      } finally {
+        setDirectorySelected(device.hasDirectory);
+        setBusy(false);
+      }
+    }, [actions, busy, device, isCircuitPython, sendButtonRef]);
     const activeElementRef = useRef<HTMLElement | null>(null);
     const handleSendToMicrobitShortcut = useCallback(() => {
       activeElementRef.current = document.activeElement as HTMLElement;
@@ -90,6 +114,11 @@ const SendButton = React.forwardRef(
     );
     return (
       <HStack>
+        {isCircuitPython && (
+          <Button isDisabled={busy} size={size} onPress={handleSelectDirectory}>
+            <FormattedMessage id="circuitpython-directory-select" />
+          </Button>
+        )}
         <ButtonGroup isAttached>
           <Tooltip
             hasArrow
@@ -100,7 +129,7 @@ const SendButton = React.forwardRef(
           >
             <Button
               ref={ref}
-              isDisabled={busy}
+              isDisabled={busy || (isCircuitPython && !directorySelected)}
               size={size}
               variant="primary"
               startIcon={<RiUsbLine />}
@@ -109,7 +138,7 @@ const SendButton = React.forwardRef(
               <FormattedMessage id="send-action" />
             </Button>
           </Tooltip>
-          {!(device instanceof WebFileSystemConnection) && (
+          {!isCircuitPython && (
             <MenuTrigger>
               <MoreMenuButton
                 ref={menuButtonRef}

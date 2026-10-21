@@ -86,17 +86,8 @@
   "circuitpython-console-clear": {
     "defaultMessage": "Konsole leeren"
   },
-  "circuitpython-directory-help": {
-    "defaultMessage": "Wähle im nächsten Fenster das Hauptverzeichnis des Laufwerks CIRCUITPY aus und bestätige die Ordnerauswahl. Klicke keine Datei und keinen Unterordner an. Erlaube anschließend den Schreibzugriff."
-  },
-  "circuitpython-directory-reuse": {
-    "defaultMessage": "Der Editor merkt sich dieses Verzeichnis bis zum Trennen der Verbindung. Beim Übertragen werden gleichnamige Projektdateien einschließlich code.py überschrieben. Das Verbinden oben rechts überträgt keinen Code."
-  },
   "circuitpython-directory-select": {
     "defaultMessage": "CIRCUITPY-Verzeichnis auswählen"
-  },
-  "circuitpython-directory-title": {
-    "defaultMessage": "CIRCUITPY-Laufwerk der senseBox auswählen"
   },
   "circuitpython-error-connect": {
     "defaultMessage": "Der serielle Port konnte nicht geöffnet werden. Prüfe das USB-Kabel, wähle die senseBox und schließe andere Programme, die ihren seriellen Port verwenden. Verbinde dich danach erneut oben rechts."

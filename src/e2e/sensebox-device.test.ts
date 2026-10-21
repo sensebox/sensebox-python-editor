@@ -8,6 +8,16 @@ import { test, expect } from "@playwright/test";
 // Includes loading the editor and language server on cold dev-server starts.
 test.setTimeout(90000);
 
+const replaceEditorCode = async (
+  page: import("@playwright/test").Page,
+  code: string
+) => {
+  const editor = page.locator(".cm-content").first();
+  await editor.click();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.insertText(code);
+};
+
 declare global {
   interface Window {
     senseboxTest: {
@@ -23,6 +33,7 @@ declare global {
       startFailure: boolean;
       writes: number;
       hostFlushes: number;
+      directoryName: string;
     };
   }
 }
@@ -52,6 +63,7 @@ test.beforeEach(async ({ page, context }) => {
       startFailure: false,
       writes: 0,
       hostFlushes: 0,
+      directoryName: "CIRCUITPY",
     };
     window.senseboxTest = state;
     Object.defineProperty(navigator, "serial", {
@@ -109,7 +121,7 @@ test.beforeEach(async ({ page, context }) => {
       const directory = (prefix = ""): FileSystemDirectoryHandle =>
         ({
           kind: "directory",
-          name: prefix ? prefix.split("/").slice(-2)[0] : "CIRCUITPY",
+          name: prefix ? prefix.split("/").slice(-2)[0] : state.directoryName,
           getDirectoryHandle: async (name: string) =>
             directory(prefix + name + "/"),
           getFileHandle: async (
@@ -196,14 +208,17 @@ test("connects without writing and transfers the latest code only from the lower
       page.evaluate(() => window.senseboxTest.commands.includes("\x03"))
     )
     .toBe(true);
-  await page.locator(".cm-content").first().fill('print("transfer-test")');
-  await page
-    .getByRole("button", { name: "Code übertragen", exact: true })
-    .click();
-  await expect(page.getByRole("dialog")).toContainText("Hauptverzeichnis");
+  await replaceEditorCode(page, 'print("transfer-test")');
+  const transfer = page.getByRole("button", {
+    name: "Code übertragen",
+    exact: true,
+  });
+  await expect(transfer).toBeDisabled();
   await page
     .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
+  await expect(transfer).toBeEnabled();
+  await transfer.click();
   await expect(page.getByRole("dialog")).toContainText("Code wird übertragen");
   await expect
     .poll(() => page.evaluate(() => window.senseboxTest.written["code.py"]))
@@ -235,9 +250,41 @@ test("connects without writing and transfers the latest code only from the lower
   );
 });
 
+test("accepts a Windows drive-root display name and enables the separate transfer button", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.senseboxTest.directoryName = "CIRCUITPY (D:)";
+  });
+  await page
+    .getByRole("button", { name: "senseBox verbinden", exact: true })
+    .click();
+  const select = page.getByRole("button", {
+    name: "CIRCUITPY-Verzeichnis auswählen",
+  });
+  const transfer = page.getByRole("button", {
+    name: "Code übertragen",
+    exact: true,
+  });
+  await expect(transfer).toBeDisabled();
+  await select.click();
+  await expect(select).toBeVisible();
+  await expect(transfer).toBeEnabled();
+  await transfer.click();
+  await expect
+    .poll(() => page.evaluate(() => window.senseboxTest.restarts))
+    .toBe(1);
+  expect(await page.evaluate(() => window.senseboxTest.hostFlushes)).toBe(
+    process.env.CI ? 0 : 1
+  );
+});
+
 test("explains a wrong directory and reports write failure without a generic translation key", async ({
   page,
 }) => {
+  await page
+    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .click();
   await page
     .getByRole("button", { name: "Code übertragen", exact: true })
     .click();
@@ -251,14 +298,13 @@ test("explains a wrong directory and reports write failure without a generic tra
     window.senseboxTest.validFolder = false;
   });
   await page
-    .getByRole("button", { name: "Code übertragen", exact: true })
-    .click();
-  await page
     .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
-  await expect(page.getByRole("dialog")).toContainText(
-    "Bitte wähle das Hauptverzeichnis des Laufwerks CIRCUITPY aus."
-  );
+  await expect(
+    page.getByText(
+      "Bitte wähle das Hauptverzeichnis des Laufwerks CIRCUITPY aus."
+    )
+  ).toBeVisible();
   expect(await page.evaluate(() => window.senseboxTest.written)).toEqual({});
   await page.evaluate(() => {
     window.senseboxTest.validFolder = true;
@@ -266,6 +312,9 @@ test("explains a wrong directory and reports write failure without a generic tra
   });
   await page
     .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .click();
+  await page
+    .getByRole("button", { name: "Code übertragen", exact: true })
     .click();
   await expect(
     page.getByText(
@@ -289,10 +338,10 @@ test("reports a read-only CIRCUITPY drive before writing and never requests a re
     window.senseboxTest.readOnly = true;
   });
   await page
-    .getByRole("button", { name: "Code übertragen", exact: true })
+    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
   await page
-    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .getByRole("button", { name: "Code übertragen", exact: true })
     .click();
   await expect(
     page.getByText("Das Betriebssystem verweigert Änderungen an code.py.", {
@@ -320,10 +369,10 @@ test("reports the immediate post-reboot read error after saving instead of trans
   });
   await page.locator(".cm-content").first().fill('print("load-error-test")');
   await page
-    .getByRole("button", { name: "Code übertragen", exact: true })
+    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
   await page
-    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .getByRole("button", { name: "Code übertragen", exact: true })
     .click();
   await expect(
     page.getByText("CircuitPython konnte code.py danach nicht lesen", {
@@ -354,10 +403,10 @@ test("falls back to MCU verification when the optional local flush is unavailabl
     .click();
   await page.locator(".cm-content").first().fill('print("flush-fallback")');
   await page
-    .getByRole("button", { name: "Code übertragen", exact: true })
+    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
   await page
-    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .getByRole("button", { name: "Code übertragen", exact: true })
     .click();
   await expect
     .poll(() => page.evaluate(() => window.senseboxTest.restarts))
@@ -381,10 +430,10 @@ test("installs imported libraries, their dependencies and resources before code.
     .first()
     .fill("import board\nimport adafruit_ssd1306\n");
   await page
-    .getByRole("button", { name: "Code übertragen", exact: true })
+    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
   await page
-    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .getByRole("button", { name: "Code übertragen", exact: true })
     .click();
   await expect
     .poll(() => page.evaluate(() => window.senseboxTest.restarts))
@@ -423,10 +472,10 @@ test("reports a library download failure before changing the board or requesting
     .click();
   await page.locator(".cm-content").first().fill("import neopixel\n");
   await page
-    .getByRole("button", { name: "Code übertragen", exact: true })
+    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
   await page
-    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .getByRole("button", { name: "Code übertragen", exact: true })
     .click();
   await expect(
     page.getByText(

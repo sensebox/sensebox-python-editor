@@ -115,20 +115,8 @@
     "defaultMessage": "Clear console",
     "description": "CircuitPython connection, console and project transfer UI"
   },
-  "circuitpython-directory-help": {
-    "defaultMessage": "In the next window, select the root folder of the CIRCUITPY drive and confirm the folder selection. Do not select a file or subfolder. Then allow write access.",
-    "description": "CircuitPython connection, console and project transfer UI"
-  },
-  "circuitpython-directory-reuse": {
-    "defaultMessage": "The editor remembers this folder until you disconnect. Transferring overwrites project files with the same names, including code.py. Connecting at the top right never transfers code.",
-    "description": "CircuitPython connection, console and project transfer UI"
-  },
   "circuitpython-directory-select": {
     "defaultMessage": "Select CIRCUITPY folder",
-    "description": "CircuitPython connection, console and project transfer UI"
-  },
-  "circuitpython-directory-title": {
-    "defaultMessage": "Select the senseBox CIRCUITPY drive",
     "description": "CircuitPython connection, console and project transfer UI"
   },
   "circuitpython-error-connect": {

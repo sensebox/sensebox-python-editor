@@ -12,7 +12,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.useRealTimers();
 });
-function setup(hostname = "localhost") {
+function setup(hostname = "localhost", directoryName = "CIRCUITPY") {
   vi.stubGlobal("location", new URL(`http://${hostname}:3000/`));
   vi.stubGlobal("crypto", webcrypto);
   vi.stubEnv("BASE_URL", "/editor/");
@@ -22,7 +22,7 @@ function setup(hostname = "localhost") {
     getFile: async () => ({ text: async () => "Adafruit CircuitPython" }),
   }));
   const directory = {
-    name: "CIRCUITPY",
+    name: directoryName,
     getFileHandle,
   } as unknown as FileSystemDirectoryHandle;
   return { fetch, directory, getFileHandle };
@@ -46,6 +46,16 @@ it("sends the selected directory identity and binary SHA-256 without program con
       },
     ],
   });
+});
+
+it("normalizes a Windows drive-root handle to the CIRCUITPY volume identity", async () => {
+  const { directory, fetch } = setup("localhost", "D:");
+  await flushCircuitPythonHostFiles(directory, [
+    ["code.py", new Uint8Array([1])],
+  ]);
+  expect(JSON.parse(fetch.mock.calls[0][1].body).directoryName).toBe(
+    "CIRCUITPY"
+  );
 });
 
 it("does not contact a helper on a hosted editor", async () => {

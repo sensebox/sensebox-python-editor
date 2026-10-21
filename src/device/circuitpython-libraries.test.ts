@@ -42,6 +42,20 @@ function setup(version = "10.3.0") {
   };
 }
 
+const canonicalPayload = (bytes: Uint8Array): Uint8Array => {
+  if (
+    bytes.length >= 2 &&
+    bytes[bytes.length - 2] === 0x0d &&
+    bytes[bytes.length - 1] === 0x0a
+  ) {
+    const result = new Uint8Array(bytes.length - 1);
+    result.set(bytes.subarray(0, bytes.length - 2));
+    result[result.length - 1] = 0x0a;
+    return result;
+  }
+  return bytes;
+};
+
 it("parses nested, multiline, dotted and aliased imports without strings or comments", () => {
   expect(
     pythonImports(
@@ -139,6 +153,27 @@ it("loads compiled OLED libraries, package files and the default font, caching a
   expect(getFileHandle).toHaveBeenCalledTimes(2);
 });
 
+it("accepts the final CRLF introduced by a Windows Git checkout", async () => {
+  const { load, directory, fetch } = setup();
+  const path = join(
+    process.cwd(),
+    "public",
+    catalog.assetRoot,
+    "adafruit_bus_device.json"
+  );
+  const canonical = canonicalPayload(new Uint8Array(await readFile(path)));
+  const windowsBytes = new Uint8Array(canonical.length + 1);
+  windowsBytes.set(canonical.subarray(0, canonical.length - 1));
+  windowsBytes[windowsBytes.length - 2] = 0x0d;
+  windowsBytes[windowsBytes.length - 1] = 0x0a;
+  fetch.mockResolvedValueOnce({
+    ok: true,
+    arrayBuffer: async () => windowsBytes.buffer,
+  });
+  const files = await load(project("import adafruit_bus_device"), directory);
+  expect(files["lib/adafruit_bus_device/i2c_device.mpy"]).toBeDefined();
+});
+
 it("refuses an incompatible firmware before downloading anything", async () => {
   const { load, directory, fetch } = setup("8.2.0");
   await expect(
@@ -176,7 +211,8 @@ it("ships a complete catalog with matching immutable payload and file hashes", a
     const bytes = await readFile(
       join(process.cwd(), "public", catalog.assetRoot, `${name}.json`)
     );
-    expect(createHash("sha256").update(bytes).digest("hex"), name).toBe(
+    const canonical = canonicalPayload(bytes);
+    expect(createHash("sha256").update(canonical).digest("hex"), name).toBe(
       module.sha256
     );
     const payload = JSON.parse(bytes.toString("utf8")) as {

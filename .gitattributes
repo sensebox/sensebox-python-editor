@@ -1,0 +1,3 @@
+# Preserve the canonical LF bytes used by the generated payload checksums.
+public/circuitpython/**/*.json text eol=lf
+src/device/libraries/catalog.json text eol=lf

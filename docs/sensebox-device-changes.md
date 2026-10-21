@@ -49,14 +49,17 @@ implementation decisions so they remain available in later work sessions.
 - The button at the top right connects to the senseBox serial port once. It does
   not select a drive, read project files or transfer code. Opening a serial port
   can show output from code already on the board; that is not a code transfer.
-- The lower **Code übertragen / Transfer code** button transfers the current
-  project. Without a connection it explains that the upper button must be used
-  first.
-- On the first transfer, an app dialog explains that the user must select the
-  root of the connected board's **CIRCUITPY** drive and allow write access. Do not
-  select `lib`, Downloads or a bootloader drive.
+- The lower **CIRCUITPY-Verzeichnis auswählen / Select CIRCUITPY folder** button
+  opens the native directory picker and remembers the selected drive. It does not
+  transfer code. The adjacent **Code übertragen / Transfer code** button transfers
+  the current project and remains disabled until a directory has been selected.
+  Without a serial connection, transfer explains that the upper button must be
+  used first.
+- Select the root of the board's **CIRCUITPY** drive and allow write access. Do
+  not select `lib`, Downloads or a bootloader drive.
 - The directory must contain `boot_out.txt` identifying CircuitPython. A wrong
-  selection can be corrected inside the dialog. Cancelling never transfers code.
+  selection reports an error and can be corrected with the directory button.
+  Cancelling never transfers code.
 - The directory is remembered for this connection. Disconnecting, unplugging or
   a file write failure discards it. The browser serial port and the selected drive
   must belong to the same board; the browser APIs do not provide a shared identity
@@ -80,15 +83,13 @@ implementation decisions so they remain available in later work sessions.
   project connect/disconnect actions and the existing xterm terminal, including
   keyboard input, Ctrl-C, Ctrl-D and ANSI rendering. Clear only clears the console.
 - `src/project/project-actions.tsx`: keeps the serial picker in the connect button
-  gesture; uses the CircuitPython directory dialog instead of the micro:bit USB
-  wizard; handles CircuitPython errors explicitly; catches statistics failures and
-  confirms successful transfer. A cancelled serial picker is not logged as success.
-- `src/workbench/connect-dialogs/CircuitPythonDirectoryDialog.tsx`: explains and
-  validates directory selection; starts the native picker directly from the
-  selection button to preserve browser user activation; shows selection errors.
+  gesture; exposes directory selection independently from transfer; handles
+  CircuitPython errors explicitly; catches statistics failures and confirms
+  successful transfer. A cancelled serial picker is not logged as success.
 - `src/project/SendButton.tsx`: marks transfer as busy and disables repeat clicks;
-  removes the second connect menu for the CircuitPython device. The upper button
-  is the connection control.
+  renders separate directory-selection and transfer buttons for CircuitPython,
+  and disables transfer until a directory is selected. The upper button remains
+  the connection control.
 - `src/fs/fs.ts`: adds file-based CircuitPython statistics, avoiding micro:bit HEX
   firmware downloads and HEX size constraints on the transfer path.
 - `src/common/use-action-feedback.tsx`: fixes the generic error heading to use the
@@ -788,3 +789,93 @@ Validation:
   Prettier and `git diff --check` passed. Build warnings were the existing large
   JavaScript chunk notice and a sandbox-blocked Panda update-config check; code
   generation and bundling completed successfully.
+
+## 2026-10-21 — Windows transfer flush and senseBox serial filtering
+
+- The Web Serial chooser now filters for the senseBox MCU-S2 USB vendor ID
+  (`0x303a`) and its three application product IDs (`0x81b8`, `0x81b9`,
+  `0x81ba`). The vendor follows the senseBox flash tool while the product IDs
+  narrow this editor's chooser to senseBox firmware variants, hiding unrelated
+  Espressif, serial, Bluetooth and modem devices.
+- The loopback-only Vite transfer helper is now enabled on Windows as well as
+  Linux. Windows has no `/proc/mountinfo`, so the helper probes drive roots and
+  accepts exactly one drive whose complete `boot_out.txt` matches the
+  browser-selected CIRCUITPY volume. It never accepts a browser-supplied path.
+- On Windows the helper verifies every changed file's size and SHA-256, rejects
+  links and ambiguous matching boards, then calls the host file flush primitive.
+  Linux retains its VFAT mount checks and file-plus-directory flush ordering.
+- The helper acknowledgement remains only a cache-visibility acceleration. The
+  transfer still waits for CircuitPython itself to report matching lengths and
+  checksums, restores the normal REPL prompt, and only then requests restart.
+
+Windows host validation:
+
+- The attached board was identified as `CIRCUITPY` on `D:` (FAT) and as
+  `VID_303A&PID_81B9` on `COM8`; unrelated Intel, Bluetooth and USB serial ports
+  were present on the same host and are excluded by the new picker filters.
+- A physical-drive smoke test resolved `D:` through the production Windows
+  discovery path, verified the existing 750-byte `code.py`, flushed it and read
+  back identical bytes. The test did not modify the board file. Targeted device,
+  host-flush and middleware tests passed (77 passed; one file-symlink case skipped
+  because Windows Developer Mode is disabled).
+- The Playwright browser tests could not start on this host because the configured
+  Chromium headless-shell binary is not installed. No physical browser transfer
+  was claimed.
+
+## 2026-10-21 — Accept Windows drive-root directory handles
+
+- Chromium can return a Windows drive root selected in `showDirectoryPicker()`
+  with a handle name such as `D:` instead of its Explorer volume label
+  `CIRCUITPY`. The prior exact-name check rejected that valid selection and left
+  the directory dialog open with the wrong-directory message.
+- Directory selection now accepts either the `CIRCUITPY` volume label or a
+  Windows drive-root name. It still requires a directory containing a readable
+  `boot_out.txt` that identifies CircuitPython; ordinary folders and files remain
+  rejected before any project write.
+- The local host-flush request now sends the validated semantic volume identity
+  `CIRCUITPY`, rather than the platform-specific handle name, so the Windows
+  helper can locate and flush the selected board after the dialog closes.
+- Unit coverage includes both `D:` and `d:\\` handle names plus request
+  normalization; the targeted device, host-flush and middleware suites pass with
+  80 tests (one Windows file-symlink case skipped). A browser regression also
+  checks that selecting a `D:` handle closes the dialog and continues transfer.
+- The browser suite was run with the installed system Chrome. The Windows
+  drive-root regression and all non-library transfer scenarios passed. The
+  bundled Playwright Chromium remains unavailable on this host.
+
+## 2026-10-21 — Separate directory selection from code transfer
+
+- The lower action area now has two independent CircuitPython controls. Selecting
+  the CIRCUITPY directory invokes only the native directory picker and stores the
+  validated handle. It never starts a transfer. The adjacent transfer button is
+  disabled until that selection succeeds.
+- `Code übertragen` no longer opens or returns to an intermediate application
+  dialog. It operates only on the already selected directory. Invalid selection
+  feedback is shown through the existing device-error notification, and the user
+  can retry with the directory button.
+- The old `CircuitPythonDirectoryDialog` and its unused explanatory strings were
+  removed. Browser coverage now selects the directory before transfer and checks
+  that a Windows `D:` root enables the separate transfer button.
+- Windows does not expose a stable drive-root handle name in every Chromium
+  version and picker view. Directory identity now relies on the readable
+  CircuitPython `boot_out.txt` marker instead of the shell display name. The UI
+  stores the result in React state explicitly, so a successful selection always
+  enables the transfer button and disconnect/write failures disable it again.
+- Targeted device, host-flush and middleware tests pass (82 passed, one skipped),
+  as do TypeScript, targeted ESLint, formatting and diff checks.
+
+## 2026-10-21 — Normalize Windows library-asset line endings
+
+- Git checked the generated one-line library payloads out with a final CRLF on
+  Windows, while their pinned SHA-256 values were generated from the original LF
+  bytes. Integrity verification therefore rejected the first required dependency,
+  commonly `adafruit_bus_device`, before any board file was changed.
+- The browser loader now canonicalizes only a final CRLF to LF before checking the
+  payload digest and parsing it. All other byte changes still fail verification;
+  the individual decoded library files retain their own SHA-256 checks.
+- `.gitattributes` pins the generated catalog and payload JSON to LF for future
+  checkouts; runtime normalization also repairs existing Windows working trees.
+- The complete payload-integrity suite now passes on the Windows checkout. A
+  dedicated CRLF regression test passes, and both automatic-library scenarios
+  pass in the installed Windows system Chrome, including dependency/resource
+  installation before `code.py` and failure without partial board writes.
