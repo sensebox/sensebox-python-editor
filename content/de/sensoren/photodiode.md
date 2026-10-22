@@ -1,7 +1,8 @@
 ---
 name: Photodiode
 subtitle: Werte der Photodiode auslesen
-image:
+image: ../../images/photodiode.svg
+imageAlt: Photodiode mit einfallenden Lichtstrahlen
 ---
 
 Die Photodiode ist auf der MCU S2 verbaut! Du musst hier also nichts weiter anschließen.
@@ -68,4 +69,3 @@ while True:
 
 Die Werte kannst du mit [print](doc:grundlagen/ausgabe) ausgeben.
 Weitere Informationen findest du in der [senseBox-Dokumentation](https://docs.sensebox.de).
-

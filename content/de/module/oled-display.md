@@ -1,7 +1,8 @@
 ---
 name: OLED Display
 subtitle: Informationen auf dem Display ausgeben
-image: 
+image: ../../images/oled-display.svg
+imageAlt: OLED-Bildschirm mit Textzeilen
 ---
 
 Die Komponente wird am I2C Port angeschlossen.

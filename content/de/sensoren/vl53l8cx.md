@@ -1,7 +1,8 @@
 ---
 name: Time-of-Flight (ToF) Sensor
 subtitle: Entfernungen in einem 8 × 8-Raster messen
-image: 
+image: ../../images/tof-sensor.svg
+imageAlt: Entfernungsmessung in einem Raster
 ---
 
 <!--

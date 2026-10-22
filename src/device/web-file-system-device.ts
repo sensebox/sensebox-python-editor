@@ -490,6 +490,48 @@ export class WebFileSystemConnection
     fileName: string,
     content: Uint8Array
   ): Promise<boolean> {
+    let mayHaveChanged = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const changed = await this.writeProjectFileOnce(
+          directory,
+          fileName,
+          content
+        );
+        return mayHaveChanged || changed;
+      } catch (error) {
+        // Chromium replaces files through a temporary swap file. On Windows,
+        // removable FAT volumes can briefly reject an otherwise valid open,
+        // write or replacement while the USB mass-storage state settles. The
+        // API reports those failures with generic DOMException names, commonly
+        // NotFoundError or UnknownError. Reopen the handles and compare again:
+        // close() may have committed the replacement before reporting failure.
+        // Permanent filesystem, permission and quota failures have specific
+        // error codes and must still be reported immediately.
+        if (
+          attempt === 2 ||
+          !(error instanceof CircuitPythonError) ||
+          error.code !== "write" ||
+          !(error.cause instanceof DOMException)
+        ) {
+          throw error;
+        }
+        mayHaveChanged ||=
+          error.file?.operation === "write-file" ||
+          error.file?.operation === "close-file";
+        await new Promise((resolve) =>
+          setTimeout(resolve, 100 * (attempt + 1))
+        );
+      }
+    }
+    throw new Error("Unreachable");
+  }
+
+  private async writeProjectFileOnce(
+    directory: FileSystemDirectoryHandle,
+    fileName: string,
+    content: Uint8Array
+  ): Promise<boolean> {
     let operation: FileWriteOperation = "open-file";
     let writable: FileSystemWritableFileStream | undefined;
     try {

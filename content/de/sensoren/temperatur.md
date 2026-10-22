@@ -2,6 +2,7 @@
 name: Temperatur
 subtitle: Temperatur und Luftfeuchtigkeit messen
 image: ../../images/temperatur.svg
+imageAlt: Temperaturanzeige in Grad Celsius
 ---
 
 Der HDC1080 misst Temperatur und Luftfeuchtigkeit. Schließe ihn an einen I²C-Anschluss der senseBox an.
@@ -22,6 +23,9 @@ from hdc1080 import HDC1080
 io_enable_pin = digitalio.DigitalInOut(board.IO_POWER)
 io_enable_pin.direction = digitalio.Direction.OUTPUT
 io_enable_pin.value = False
+
+# Warten, bis die Stromversorgung des Sensors stabil ist
+time.sleep(0.1)
 
 # Sensor verbinden
 i2c = board.I2C()

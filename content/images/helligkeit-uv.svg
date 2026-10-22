@@ -1,0 +1,8 @@
+<!-- (c) 2026, Micro:bit Educational Foundation and contributors. SPDX-License-Identifier: MIT -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <rect width="160" height="160" rx="24" fill="#e39a24"/>
+  <g stroke="#fff" stroke-width="8" stroke-linecap="round">
+    <path d="M80 24v17m0 78v17M24 80h17m78 0h17M40 40l12 12m56 56 12 12m0-80-12 12m-56 56-12 12"/>
+  </g>
+  <circle cx="80" cy="80" r="27" fill="#fff"/>
+</svg>

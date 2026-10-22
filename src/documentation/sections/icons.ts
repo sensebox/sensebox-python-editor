@@ -9,31 +9,43 @@
  */
 import { IconType } from "react-icons";
 import {
+  RiBracesLine,
   RiBookOpenLine,
+  RiCalculatorLine,
   RiCompass3Line,
   RiCpuLine,
   RiDashboard3Line,
   RiFlaskLine,
+  RiGitBranchLine,
   RiLightbulbFlashLine,
+  RiLoopRightLine,
   RiPlantLine,
   RiRocketLine,
   RiSensorLine,
   RiTempHotLine,
+  RiText,
+  RiTimeLine,
   RiWifiLine,
 } from "react-icons/ri";
 import { VscLibrary } from "react-icons/vsc";
 
 const sectionIcons: Record<string, IconType> = {
+  RiBracesLine,
   RiBookOpenLine,
+  RiCalculatorLine,
   RiCompass3Line,
   RiCpuLine,
   RiDashboard3Line,
   RiFlaskLine,
+  RiGitBranchLine,
   RiLightbulbFlashLine,
+  RiLoopRightLine,
   RiPlantLine,
   RiRocketLine,
   RiSensorLine,
   RiTempHotLine,
+  RiText,
+  RiTimeLine,
   RiWifiLine,
   VscLibrary,
 };

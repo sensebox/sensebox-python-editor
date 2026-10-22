@@ -1,7 +1,8 @@
 ---
 name: Luftdruck
 subtitle: Luftdruck messen
-image: 
+image: ../../images/luftdruck.svg
+imageAlt: Messanzeige für den Luftdruck
 ---
 
 Der Luftdruck- und Temperatursensor wird über I²C angeschlossen.

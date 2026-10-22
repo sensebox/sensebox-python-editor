@@ -1,7 +1,8 @@
 ---
 name: Helligkeit und UV
 subtitle: Helligkeit und UV-Werte messen
-image: 
+image: ../../images/helligkeit-uv.svg
+imageAlt: Sonne für Helligkeit und UV-Strahlung
 ---
 
 Der Helligkeits- und UV-Sensor wird über I²C angeschlossen.

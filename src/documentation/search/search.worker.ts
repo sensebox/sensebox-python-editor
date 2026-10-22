@@ -43,7 +43,11 @@ export const supportedSearchLanguages = [
   "nl",
   "ja",
   "ko",
+  "pt-br",
 ];
+
+export const isSearchLanguageSupported = (languageId: string): boolean =>
+  supportedSearchLanguages.includes(languageId.toLowerCase());
 
 // Supress warning issued when changing languages.
 const lunrWarn = lunr.utils.warn;

@@ -37,6 +37,7 @@ export interface Pane {
   title: string;
   contents: ReactNode;
   color: string;
+  accentColor?: string;
   mb?: string;
 }
 
@@ -88,6 +89,7 @@ const SideBar = ({
             icon: sectionIcon(entry.icon),
             contents: <DocsSectionArea section={entry} />,
             color: "gray.75",
+            accentColor: entry.accentColor,
           }
     );
     if (docsPanes.length > 0) {
@@ -221,14 +223,23 @@ const SideBar = ({
         className={css({
           display: "flex",
           flexDirection: "row",
-          flex: "1 0 auto",
+          flex: "1 1 0",
           minHeight: 0,
+          overflow: "hidden",
         })}
       >
         {/* The tab strip: spacer + tabs + settings/help menus over the
             branded background (a wrapper because react-aria's TabList may
             only contain tabs). */}
-        <Flex direction="column" background="sidebarTablistBg">
+        <Flex
+          direction="column"
+          background="sidebarTablistBg"
+          height="100%"
+          minHeight="0"
+          width="6.375rem"
+          flexShrink="0"
+          overflow="hidden"
+        >
           <Box flex="1" maxHeight="8.9rem" minHeight="8"></Box>
           <TabList
             // Flexes so the API tab's mb:auto pushes the project tab (and
@@ -238,6 +249,25 @@ const SideBar = ({
               display: "flex",
               flexDirection: "column",
               flex: "1 1 auto",
+              width: "100%",
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(255, 255, 255, 0.55) transparent",
+              "&::-webkit-scrollbar": {
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "rgba(255, 255, 255, 0.55)",
+                borderRadius: "full",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.78)",
+              },
             })}
           >
             {panes.map((pane, current) => (

@@ -40,6 +40,13 @@ const SearchDialog = ({
 }: SearchDialogProps) => {
   const intl = useIntl();
   const ref = useRef<HTMLInputElement>(null);
+  const populatedSections =
+    results?.sections.filter((section) => section.results.length > 0) ?? [];
+  const resultCount =
+    populatedSections.reduce(
+      (sum, section) => sum + section.results.length,
+      0
+    ) + (showApi ? results?.api.length ?? 0 : 0);
   const handleClear = useCallback(() => {
     onClear();
     if (ref.current) {
@@ -107,16 +114,10 @@ const SearchDialog = ({
             <Text px="3" fontSize="2xl">
               <FormattedMessage
                 id="results-count"
-                values={{
-                  count:
-                    results.sections.reduce(
-                      (sum, s) => sum + s.results.length,
-                      0
-                    ) + (showApi ? results.api.length : 0),
-                }}
+                values={{ count: resultCount }}
               />
             </Text>
-            {results.sections.map((section) => (
+            {populatedSections.map((section) => (
               <SearchResultList
                 key={section.id}
                 title={section.title}
@@ -125,7 +126,7 @@ const SearchDialog = ({
                 onViewResult={onViewResult}
               />
             ))}
-            {showApi && (
+            {showApi && results.api.length > 0 && (
               <SearchResultList
                 title={intl.formatMessage({ id: "api-tab" })}
                 results={results.api}

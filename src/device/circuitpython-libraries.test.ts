@@ -153,6 +153,34 @@ it("loads compiled OLED libraries, package files and the default font, caching a
   expect(getFileHandle).toHaveBeenCalledTimes(2);
 });
 
+it("installs the senseBox HDC1080 driver for the documented import", async () => {
+  const { load, directory } = setup();
+  expect(
+    requiredCircuitPythonLibraries(project("from hdc1080 import HDC1080"))
+  ).toEqual(["adafruit_bus_device", "adafruit_register", "hdc1080"]);
+  const files = await load(project("from hdc1080 import HDC1080"), directory);
+  const source = new TextDecoder().decode(files["lib/hdc1080.py"]);
+  expect(source).toContain("class HDC1080:");
+  expect(source).toContain("I2CDevice(i2c, address)");
+  expect(source).toContain("def temperature(self):");
+  expect(source).toContain("def humidity(self):");
+  expect(files["lib/adafruit_bus_device/i2c_device.mpy"]).toBeDefined();
+  expect(files["lib/adafruit_register/__init__.mpy"]).toBeDefined();
+});
+
+it("installs the libraries used by the RTC and NTP time blocks", () => {
+  expect(
+    requiredCircuitPythonLibraries(
+      project("import adafruit_ds3231\nimport adafruit_ntp")
+    )
+  ).toEqual([
+    "adafruit_bus_device",
+    "adafruit_register",
+    "adafruit_ds3231",
+    "adafruit_ntp",
+  ]);
+});
+
 it("accepts the final CRLF introduced by a Windows Git checkout", async () => {
   const { load, directory, fetch } = setup();
   const path = join(

@@ -1,7 +1,8 @@
 ---
 name: RGB-LED
 subtitle: verschiedene Farben darstellen
-image: 
+image: ../../images/rgb-led.svg
+imageAlt: Rot, grün und blau leuchtende LED
 ---
 
 Die RGB-LED ist auf der MCU S2 verbaut! Du musst hier also nichts weiter anschließen.

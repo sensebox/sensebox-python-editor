@@ -1,6 +1,8 @@
 ---
 name: LED-Matrix
 subtitle: Text über die LED-Matrix laufen lassen
+image: ../../images/led-matrix.svg
+imageAlt: Leuchtende Punkte einer LED-Matrix
 ---
 
 <!--

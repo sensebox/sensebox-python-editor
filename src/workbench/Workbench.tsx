@@ -34,7 +34,7 @@ import SideBar from "./SideBar";
 import { WorkbenchSelection, useSelection } from "./use-selection";
 import { flags } from "../flags";
 
-const minimums: [number, number] = [380, 580];
+const minimums: [number, number] = [400, 580];
 const simulatorMinimums: [number, number] = [275, 0];
 
 const defaultSelection = (
@@ -152,7 +152,7 @@ const Workbench = () => {
               Math.floor(window.innerWidth * sidebarToWidthRatio)
             )
           )}
-          compactSize={86}
+          compactSize={102}
           mode={sidebarShown ? "open" : "compact"}
         >
           <SplitViewSized>

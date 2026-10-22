@@ -1,5 +1,185 @@
 # senseBox connection and code transfer
 
+## 2026-10-22 — Remove temporary test artifacts
+
+- Removed the ignored `test-results/` directory containing failed-run metadata,
+  browser screenshots and an end-to-end error context generated during local
+  verification.
+- Removed the ignored `playwright-report/` directory containing the generated
+  HTML test report and its copied error-context data.
+- Retained `node_modules/`, `styled-system/`, compiled message catalogs and
+  generated MicroPython type stubs. Although ignored by Git, these are active
+  dependencies or build outputs required by the installed development setup and
+  are recreated by the documented npm workflows.
+- Retained `reports/` because its `.gitkeep` files are tracked project structure,
+  and retained every modified or untracked source, content, icon, catalog and
+  library asset belonging to the implemented editor changes.
+- A repository-wide scan found no remaining temporary, backup, rejected-patch,
+  swap-file or operating-system metadata files outside dependencies.
+
+## 2026-10-22 — Use match/case for logic case distinctions
+
+- The **Fallunterscheidung** entry in the Logik category now demonstrates
+  Python's `match`/`case` syntax directly. It includes two named modes and a
+  wildcard `case _` fallback instead of translating the example to an
+  `if`/`elif`/`else` chain.
+
+## 2026-10-22 — Refine documentation navigation and search
+
+- Every topic in **Sensoren** and **Module** now has a distinct local SVG icon
+  and German alternative text. The ten new illustrations cover acceleration,
+  environmental data, brightness/UV, air pressure, the photodiode, ToF ranging,
+  the LED matrix, OLED display, RGB LED and Wi-Fi; the existing temperature
+  illustration also gained alternative text. These repository-owned icons were
+  created for this editor.
+- **Text**, **Logik**, **Schleifen**, **Mathematik** and **Variablen** use the new
+  `direct` section option. Because each contains one topic, selecting its tab now
+  opens the draggable blocks immediately instead of showing a redundant topic
+  card first. Multi-topic sections such as **Zeit**, **Sensoren** and **Module**
+  retain their navigation level. The option is validated in the sidebar config
+  and documented in `docs/content.md`.
+- The tab rail is wider, while each tab is slightly shorter, so long names such
+  as Mathematik and Variablen remain readable. The open sidebar has a slightly
+  larger minimum width and initial screen-width share. At short viewport heights
+  the rail scrolls independently with a narrow translucent thumb, transparent
+  track and brighter hover state matching the branded background. The rail and
+  every tab now derive their width from the available sidebar space; horizontal
+  overflow is clipped so only the intended vertical scrollbar can appear.
+- Documentation search is indexed as soon as section content is ready. It no
+  longer remains unavailable while the independently generated API reference is
+  absent or still loading; API results are added when that index becomes ready.
+  Search-language checks are case-insensitive, and Portuguese (`pt-BR`) now uses
+  its existing worker. Empty result groups are hidden, and the `docs_search`
+  event is emitted once per search session instead of from a React state updater.
+  The analytics event name and parameter contract did not change.
+- Validation includes section/search unit tests, TypeScript and lint. Browser
+  checks in German at 1440 × 900 and 1024 × 700 confirmed direct block access,
+  all seven sensor icons, the independently scrolling rail, successful HDC1080
+  search navigation and a single analytics event.
+
+## 2026-10-22 — Add Python categories
+
+### Reference and colours
+
+- The new **Text**, **Logik**, **Schleifen**, **Zeit**, **Mathematik** and
+  **Variablen** sidebar sections provide the corresponding Python building
+  blocks as draggable examples.
+- Category hues are converted to CSS hex colours for the Python editor:
+
+  | Category   | Hue | Sidebar colour |
+  | ---------- | --: | -------------- |
+  | Text       | 160 | `#5ba68d`      |
+  | Logik      | 210 | `#5b80a6`      |
+  | Schleifen  |  10 | `#a6685b`      |
+  | Zeit       | 140 | `#5ba674`      |
+  | Mathematik | 230 | `#5b68a6`      |
+  | Variablen  | 330 | `#a65b80`      |
+
+### Block coverage and Python mapping
+
+- **Text** provides text literals, joining/coercing values, appending to a
+  variable, length and empty checks.
+- **Logik** provides `if`, `if`/`else`, `if`/`elif`/`else`, all six comparison
+  operators, `and`, `or`, `not`, Boolean values and a Python `match`/`case`
+  `match`/`case` equivalent for a switch-style case distinction.
+- **Schleifen** is now a separate category instead of a Grundlagen page. It
+  provides fixed repetition, `while`, `until`, an inclusive counter loop with
+  positive or negative step size, `break` and `continue`.
+- **Zeit** covers all six general time blocks from the MCU toolbox: delays in
+  milliseconds and microseconds, elapsed milliseconds and microseconds,
+  indefinite waiting and periodic intervals. Separate pages implement the
+  external DS3231 RTC blocks, CircuitPython's internal RTC blocks and the NTP
+  blocks. The external RTC example powers the senseBox I²C ports and waits
+  100 ms before the first bus access.
+- **Mathematik** covers the 14 toolbox block groups and their field variants:
+  number literals, arithmetic, negation, scalar functions, trigonometry,
+  constants, number-property tests, variable changes, rounding, remainder,
+  limiting, integer and floating-point random values and range mapping.
+- **Variablen** provides the dynamic set/get blocks and examples for the six
+  senseBox variable types: character, text, Boolean, number, large number and
+  decimal number. Python values are dynamically typed, so the type-selection
+  examples document suitable initial values instead of adding artificial type
+  declarations.
+- All entries are draggable Python source blocks. The generated code uses
+  CircuitPython-compatible standard modules and syntax. Static imports in the
+  DS3231 and NTP examples are handled by the existing transfer-time dependency
+  resolver; the pinned catalog already supplies `adafruit_ds3231`,
+  `adafruit_ntp`, `adafruit_bus_device` and `adafruit_register`.
+
+### Editor and content changes
+
+- `content/sidebar.json` registers the six sections, their order, descriptions,
+  icons and accent colours. `accentColor` is an optional, validated six-digit
+  hex property in the documentation section configuration and is documented in
+  `docs/content.md`.
+- The sidebar forwards the accent colour to each tab and renders it behind the
+  tab icon. Its tab list can now shrink and scroll vertically, keeping all
+  documentation categories and the project tab reachable at smaller viewport
+  heights.
+- Sidebar symbols use existing Remix Icon components from `react-icons`. The
+  coloured topic illustrations in `content/images/` are original repository
+  SVGs created for these pages.
+- New German reference pages live below `content/de/text`, `logik`, `schleifen`,
+  `zeit`, `mathematik` and `variablen`. Other languages continue to use the
+  configured German fallback until translated pages are added. The former
+  Grundlagen loop page was moved, and its BME680 cross-reference was updated.
+- No analytics event was added or changed.
+
+### Validation and hardware limits
+
+- 39 targeted documentation, sidebar/configuration and CircuitPython library
+  tests passed. TypeScript type checking, the full lint run and
+  `git diff --check` also passed.
+- 97 Python snippets across the affected category pages were parsed
+  successfully. A Chromium layout check at 1440 × 900 confirmed that the page
+  itself does not overflow and that the sidebar tab list scrolls to the project
+  tab.
+- The DS3231 examples require the external RTC on the powered I²C bus. NTP
+  requires an active network connection and a configured socket pool. Read
+  snippets that refer to `externe_uhr`, `interne_uhr` or `ntp` must be combined
+  with their matching initialization block first.
+
+## 2026-10-22 — Install the HDC1080 sensor module
+
+- The temperature example imports `HDC1080` from `hdc1080`, but that module is
+  not part of CircuitPython itself or the pinned Adafruit 10.x bundle. The import
+  was therefore left unresolved and failed on the board.
+- The published MIT-licensed senseBox `circuitpython-hdc1080` 1.0.0 wheel is now
+  included in the generated library catalog with its pinned SHA-256. Static
+  `from hdc1080 import HDC1080` imports automatically install `lib/hdc1080.py`,
+  `adafruit_bus_device` and `adafruit_register` before `code.py` is written.
+- The example waits 100 ms after enabling the senseBox I²C port power before
+  creating the sensor. Without this settling time, the first I²C access can fail
+  with `OSError: [Errno 5]`, even though the module was installed correctly.
+- The payload participates in the existing host comparison, MCU checksum gate
+  and restart sequence.
+- Validation: all 408 catalog payloads and their embedded file hashes passed the
+  integrity test. The documented import resolves the published driver and both
+  declared dependencies before transfer.
+
+## 2026-10-22 — Retry transient Windows removable-drive writes
+
+- Chromium replaces a file through a temporary swap file. On Windows, a
+  connected and writable FAT-based CIRCUITPY volume can briefly reject one of
+  the open, write or replacement operations with a generic `DOMException`,
+  including `NotFoundError` or `UnknownError`.
+- A generic browser filesystem failure is now retried up to two times with a
+  short delay. Each attempt reacquires the file and directory handles and reads
+  the current target bytes again. This also handles a `close()` call that
+  committed the replacement before reporting failure.
+- Known permanent errors are not retried: read-only or locked filesystems,
+  revoked permissions and insufficient space retain their existing specific
+  messages. A persistent generic failure still discards the selected directory,
+  requests no restart and reports that the project may be partially written.
+- The retry does not weaken transfer verification. Changed files still pass
+  through the optional local host flush and must be confirmed by CircuitPython
+  with matching sizes and checksums before the normal REPL is restored and the
+  final soft restart is requested.
+- Validation: all 54 device-transfer unit tests passed, including a transient
+  write failure and a `close()` failure reported after the replacement was
+  already committed. The host-flush suite, TypeScript and targeted ESLint also
+  passed.
+
 ## Follow-up: HDC1080 temperature example (2026-10-20)
 
 - `content/de/sensoren/temperatur.md`: replaces the temperature placeholder
@@ -707,7 +887,6 @@ Validation for this change:
   passed. The production build passed and includes the static library assets;
   its existing large-chunk warning remains.
 
-
 ## 2026-10-19 — Restore the original transfer dialog
 
 At the user’s request, both recent dialog revisions were reverted. The original
@@ -717,8 +896,7 @@ library-installation or transfer logic was changed.
 
 ## 2026-10-19 — Accept only the CIRCUITPY root directory
 
-- `selectDirectory()` continues to use `showDirectoryPicker({ mode: "readwrite",
-  id: "circuitpy" })` directly from the selection button. There is no file picker
+- `selectDirectory()` continues to use `showDirectoryPicker({ mode: "readwrite", id: "circuitpy" })` directly from the selection button. There is no file picker
   and no requirement to select an individual file. Before reading the boot marker,
   the returned handle must now be a directory named `CIRCUITPY` (case-insensitive).
   It must also contain a readable `boot_out.txt` identifying CircuitPython.

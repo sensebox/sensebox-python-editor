@@ -30,6 +30,7 @@ content/
       "id": "grundlagen",
       "layout": "reference",
       "icon": "VscLibrary",
+      "accentColor": "#a6685b",
       "title": { "de": "Grundlagen", "en": "Basics" },
       "description": { "de": "…", "en": "…" },
       "order": ["ausgabe", "schleifen"]
@@ -57,6 +58,11 @@ content/
 - **`icon`**: one of the names in `src/documentation/sections/icons.ts`. To
   use another [react-icons](https://react-icons.github.io/react-icons/) icon,
   add it there.
+- **`accentColor`**: optional six-digit hex colour shown behind the sidebar
+  icon. Use it when a section mirrors the colour of an external block category.
+- **`direct`** (optional): when `true` and the section contains exactly one
+  reference topic, show that topic's blocks immediately without an intermediate
+  topic list.
 - **`title`** / **`description`**: a string, or an object with a value per
   language.
 - **`order`** (optional): file names without `.md`. Files that aren't listed

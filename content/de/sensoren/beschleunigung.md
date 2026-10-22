@@ -1,7 +1,8 @@
 ---
 name: Beschleunigung
 subtitle: Beschleunigung messen
-image:
+image: ../../images/beschleunigung.svg
+imageAlt: Drei Achsen für Beschleunigung und Drehung
 ---
 
 Der Beschleunigungssensor ist auf der MCU S2 verbaut! Du musst hier also nichts weiter anschließen.

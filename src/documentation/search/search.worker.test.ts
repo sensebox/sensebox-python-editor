@@ -11,6 +11,7 @@ import lunrJa from "lunr-languages/lunr.ja";
 import {
   buildIndex,
   buildSearchIndex,
+  isSearchLanguageSupported,
   LunrWithLanguages,
   SearchableContent,
   SearchWorker,
@@ -97,6 +98,15 @@ describe("Search", () => {
     expect(search.search("which").length).toEqual(0);
 
     expect(search.search("while").length).toEqual(2);
+  });
+});
+
+describe("supported search languages", () => {
+  it("accepts canonical language-id casing", () => {
+    expect(isSearchLanguageSupported("de")).toBe(true);
+    expect(isSearchLanguageSupported("es-ES")).toBe(true);
+    expect(isSearchLanguageSupported("pt-BR")).toBe(true);
+    expect(isSearchLanguageSupported("zh-CN")).toBe(false);
   });
 });
 

@@ -26,6 +26,10 @@ export interface DocsSectionConfig {
   id: string;
   layout: SectionLayout;
   icon?: string;
+  /** Optional category accent colour. */
+  accentColor?: string;
+  /** Show the entries immediately when this section contains one topic. */
+  direct?: boolean;
   title: LocalizedString;
   description?: LocalizedString;
   /**
@@ -80,6 +84,12 @@ export const parseSidebarConfig = (raw: any): SidebarConfig => {
       id: s.id,
       layout: s.layout,
       icon: s.icon,
+      accentColor:
+        typeof s.accentColor === "string" &&
+        /^#[0-9a-f]{6}$/i.test(s.accentColor)
+          ? s.accentColor
+          : undefined,
+      direct: s.direct === true,
       title: s.title,
       description: s.description,
       order: s.order,

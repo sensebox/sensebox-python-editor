@@ -19,6 +19,17 @@ INPUTS = {
     "py.zip": (f"adafruit-circuitpython-bundle-py-{RELEASE}.zip", "9ce340d9d64ef05d10c7828096a883245715874ab4adb1ab3eb454e2794555b4"),
 }
 ROOT = Path(__file__).resolve().parents[1]
+EXTRA_INPUTS = {
+    "hdc1080": {
+        "version": "1.0.0",
+        "repo": "https://github.com/sensebox/CircuitPython_HDC1080",
+        "url": "https://files.pythonhosted.org/packages/90/71/514aff96e2bb29daf4eecdb83b2ccec53b4c148b8821b9396048fc16b296/circuitpython_hdc1080-1.0.0-py3-none-any.whl",
+        "sha256": "a53fe3633452a07de7945d3f4f098196557895de58ba591da99921cebf29c3b1",
+        "dependencies": ["adafruit_bus_device", "adafruit_register"],
+        "member": "hdc1080.py",
+        "destination": "lib/hdc1080.py",
+    }
+}
 
 def encoded(value):
     return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode()
@@ -87,6 +98,26 @@ def main():
             source_dir = assets / "sources"
             source_dir.mkdir(exist_ok=True)
             (source_dir / (name + ".json")).write_bytes(encoded({"name": name, "files": sources}))
+    for name, info in EXTRA_INPUTS.items():
+        wheel_path = args.cache_dir / (name + ".whl")
+        if not wheel_path.exists():
+            wheel_path.write_bytes(urllib.request.urlopen(info["url"], timeout=60).read())
+        if digest(wheel_path.read_bytes()) != info["sha256"]:
+            raise ValueError(f"Incorrect SHA-256: {wheel_path}")
+        wheel = zipfile.ZipFile(wheel_path)
+        data = wheel.read(info["member"])
+        files = [{"path": info["destination"], "data": base64.b64encode(data).decode(), "sha256": digest(data)}]
+        header = []
+        for line in data.decode("utf8").splitlines():
+            if line.startswith("#") or not line.strip():
+                header.append(line)
+            else:
+                break
+        payload = encoded({"name": name, "files": files})
+        (assets / (name + ".json")).write_bytes(payload)
+        modules[name] = {"version": info["version"], "dependencies": info["dependencies"], "sha256": digest(payload)}
+        notice["modules"][name] = {"repo": info["repo"], "version": info["version"], "headers": {info["member"]: "\n".join(header)}}
+        license_ids.add("MIT")
     licenses = assets / "LICENSES"
     licenses.mkdir(exist_ok=True)
     for identifier in sorted(license_ids):
@@ -94,7 +125,7 @@ def main():
         if not target.exists():
             target.write_bytes(urllib.request.urlopen(f"https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/{identifier}.txt", timeout=30).read())
     (assets / "NOTICES.json").write_bytes(encoded(notice))
-    (assets / "README.txt").write_text(f"Unmodified library files from Adafruit's CircuitPython 10.x bundle {RELEASE}.\nEach module retains its own license; see NOTICES.json and LICENSES/.\nPython source files for copyleft modules are in sources/; complete original source: {notice['sourceBundle']}\nGenerated with tools/prepare-circuitpython-libraries.py; only requested modules are copied to the board.\n")
+    (assets / "README.txt").write_text(f"Library files from Adafruit's CircuitPython 10.x bundle {RELEASE}, plus pinned published senseBox modules listed in NOTICES.json.\nEach module retains its own license; see NOTICES.json and LICENSES/.\nPython source files for copyleft modules are in sources/; complete Adafruit source: {notice['sourceBundle']}\nGenerated with tools/prepare-circuitpython-libraries.py; only requested modules are copied to the board.\n")
     (ROOT / "src/device/libraries/catalog.json").write_bytes(encoded({"release": RELEASE, "firmwareMajor": 10, "assetRoot": f"circuitpython/adafruit-10-{RELEASE}/", "modules": modules}))
     print(f"Prepared {len(modules)} libraries, {sum(p.stat().st_size for p in assets.rglob('*') if p.is_file())} bytes")
 

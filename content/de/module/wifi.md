@@ -1,7 +1,8 @@
 ---
 name: WiFi
 subtitle: Mit dem Internet verbinden
-image: 
+image: ../../images/wifi.svg
+imageAlt: Funkwellen einer WLAN-Verbindung
 ---
 
 Das WiFi-Modul ist auf der MCU S2 verbaut! Du musst hier also nichts weiter anschließen.
@@ -22,7 +23,7 @@ CIRCUITPY_WIFI_PASSWORD = "Password"
 # Verbindung zum WiFi herstellen
 print(f"Connecting to {CIRCUITPY_WIFI_SSID}")
 wifi.radio.connect(
-  CIRCUITPY_WIFI_SSID, 
+  CIRCUITPY_WIFI_SSID,
   CIRCUITPY_WIFI_PASSWORD
 )
 print(f"Connected!")

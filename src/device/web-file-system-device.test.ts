@@ -19,6 +19,8 @@ afterEach(async () => {
 function setup({
   reply = true,
   failWrite = false,
+  failWriteCount = 0,
+  failCloseAfterCommitCount = 0,
   failAt = "",
   failureName = "NoModificationAllowedError",
   replySync = true,
@@ -43,6 +45,8 @@ function setup({
   let raw = startInRaw;
   let rawSource = "";
   const sources: string[] = [];
+  let remainingWriteFailures = failWriteCount;
+  let remainingCloseFailures = failCloseAfterCommitCount;
   const deliver = (text: string) => {
     const parts = fragmentResponses ? Array.from(text) : [text];
     for (const part of parts) incoming.enqueue(new TextEncoder().encode(part));
@@ -131,7 +135,7 @@ function setup({
           return {
             write: async (data: Uint8Array) => {
               fail("write-file");
-              if (failWrite)
+              if (failWrite || remainingWriteFailures-- > 0)
                 throw new DOMException("Device removed", "NotFoundError");
               pending = data.slice();
               operations.push(`${name}:${new TextDecoder().decode(data)}`);
@@ -139,6 +143,11 @@ function setup({
             close: async () => {
               fail("close-file");
               if (pending) stored.set(name, pending);
+              if (remainingCloseFailures-- > 0)
+                throw new DOMException(
+                  "Replacement status lost",
+                  "UnknownError"
+                );
               operations.push(`close:${name}`);
             },
             abort: vi.fn(async () => {
@@ -373,6 +382,40 @@ it("reports write failure, forgets the stale directory and does not restart or r
   expect(device.hasDirectory).toBe(false);
   expect(operations).not.toContain("soft-reboot");
   expect(flashed).not.toHaveBeenCalled();
+});
+
+it("retries a transient Windows removable-drive write failure", async () => {
+  const { device, operations, stored } = setup({ failWriteCount: 1 });
+  await device.connect();
+  await device.selectDirectory();
+  await device.flash(vi.fn(), {});
+  expect(stored.get("sensor.py")).toEqual(
+    new TextEncoder().encode("value = 1")
+  );
+  expect(operations).toContain("soft-reboot");
+  expect(device.hasDirectory).toBe(true);
+});
+
+it("rechecks the file when Windows reports failure after committing close", async () => {
+  const flushHostFiles = vi.fn<
+    NonNullable<
+      ConstructorParameters<typeof WebFileSystemConnection>[0]["flushHostFiles"]
+    >
+  >(async () => {});
+  const { device, files, stored } = setup({
+    failCloseAfterCommitCount: 1,
+    flushHostFiles,
+  });
+  await device.connect();
+  await device.selectDirectory();
+  await device.flash(vi.fn(), {});
+  expect(stored.get("sensor.py")).toEqual(
+    new TextEncoder().encode("value = 1")
+  );
+  expect(flushHostFiles.mock.calls[0][1]).toContainEqual([
+    "sensor.py",
+    (await files())["sensor.py"],
+  ]);
 });
 
 it("clears the connection and folder when unplugged", async () => {
