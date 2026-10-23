@@ -7,29 +7,63 @@ imageAlt: Sonne für Helligkeit und UV-Strahlung
 
 Der Helligkeits- und UV-Sensor wird über I²C angeschlossen.
 
-## UV-Intensität messen
+Füge zuerst **UV-Sensor initialisieren** und danach **UV-Intensität und Risikolevel auslesen** ein. Alternativ enthält **UV-Sensor vollständig auslesen** ein direkt ausführbares Gesamtbeispiel.
+
+## UV-Sensor initialisieren
+
+<!-- @slug uv-sensor-initialisieren -->
+
+Richte den I²C-Bus und den UV-Sensor ein:
+
+```python
+import board
+from adafruit_veml6070 import VEML6070
+
+i2c = board.I2C()
+uv = VEML6070(i2c)
+```
+
+<!-- @details -->
+
+Der Block legt den Sensor unter dem Namen `uv` an. Verwende dieses Objekt auch in den folgenden Blöcken.
+
+## UV-Intensität und Risikolevel auslesen
 
 <!-- @slug uv-intensitaet-messen -->
 
-Dieses Beispiel gibt die UV-Intensität und das Risikolevel in der Konsole aus:
+Lies den UV-Rohwert aus und bestimme das zugehörige Risikolevel:
+
+```python
+uv_rohwert = uv.uv_raw
+risikolevel = uv.get_index(uv_rohwert)
+print("UV-Wert: {0} | Risikolevel: {1}".format(uv_rohwert, risikolevel))
+```
+
+<!-- @details -->
+
+Der Block setzt voraus, dass `uv` zuvor initialisiert wurde. Die Werte kannst du mit [print](doc:text/werte-ausgeben) ausgeben.
+
+## UV-Sensor vollständig auslesen
+
+<!-- @slug uv-sensor-vollstaendig-auslesen -->
+
+Dieses vollständige Beispiel initialisiert den Sensor und führt zehn Messungen im Abstand von einer Sekunde durch:
 
 ```python
 import time
 import board
 from adafruit_veml6070 import VEML6070
 
-with board.I2C() as i2c:
-  uv = VEML6070(i2c)
+i2c = board.I2C()
+uv = VEML6070(i2c)
 
-  # Führt 10 Messungen durch
-  for j in range(10):
-      uv_raw = uv.uv_raw
-      risk_level = uv.get_index(uv_raw)
-      print('Reading: {0} | Risk Level: {1}'.format(uv_raw, risk_level))
-      time.sleep(1)
+for messung in range(10):
+    uv_rohwert = uv.uv_raw
+    risikolevel = uv.get_index(uv_rohwert)
+    print("UV-Wert: {0} | Risikolevel: {1}".format(uv_rohwert, risikolevel))
+    time.sleep(1)
 ```
 
 <!-- @details -->
 
-Die Werte kannst du mit [print](doc:grundlagen/ausgabe) ausgeben.
 Weitere Informationen findest du in der [senseBox-Dokumentation](https://docs.sensebox.de).

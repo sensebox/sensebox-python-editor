@@ -52,37 +52,37 @@ else:
 ### Gleich
 
 ```python
-ergebnis = 5 == 5
+5 == 5
 ```
 
 ### Ungleich
 
 ```python
-ergebnis = 5 != 3
+5 != 3
 ```
 
 ### Kleiner
 
 ```python
-ergebnis = 3 < 5
+3 < 5
 ```
 
 ### Größer
 
 ```python
-ergebnis = 5 > 3
+5 > 3
 ```
 
 ### Kleiner oder gleich
 
 ```python
-ergebnis = 3 <= 5
+3 <= 5
 ```
 
 ### Größer oder gleich
 
 ```python
-ergebnis = 5 >= 3
+5 >= 3
 ```
 
 ## Bedingungen verknüpfen
@@ -95,7 +95,9 @@ Beide Bedingungen müssen wahr sein.
 
 ```python
 temperatur = 20
-ergebnis = temperatur > 0 and temperatur < 30
+if temperatur > 0 and temperatur < 30:
+    print("Temperatur liegt im gewünschten Bereich")
+
 ```
 
 ### Oder
@@ -103,47 +105,8 @@ ergebnis = temperatur > 0 and temperatur < 30
 Mindestens eine Bedingung muss wahr sein.
 
 ```python
-temperatur = 20
-ergebnis = temperatur < 0 or temperatur > 30
+temperatur = -3
+if temperatur < 0 or temperatur > 30:
+    print("Eine der gewünschten Bedingungen wurde erfüllt")
 ```
 
-## Nicht
-
-`not` kehrt einen Wahrheitswert um.
-
-```python
-sensor_bereit = False
-ergebnis = not sensor_bereit
-```
-
-## Wahrheitswert
-
-<!-- @alternatives Wert -->
-
-### Wahr
-
-```python
-wert = True
-```
-
-### Falsch
-
-```python
-wert = False
-```
-
-## Fallunterscheidung
-
-Mit `match` wird ein Wert geprüft. Der erste passende `case`-Zweig wird ausgeführt; `_` fängt alle übrigen Werte ab.
-
-```python
-modus = "messen"
-
-match modus:
-    case "messen":
-        print("Messung starten")
-    case "kalibrieren":
-        print("Sensor kalibrieren")
-    case _:
-        print("Unbekannter Modus")
-```

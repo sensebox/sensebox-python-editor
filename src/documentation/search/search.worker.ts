@@ -35,16 +35,7 @@ export type LunrWithLanguages = typeof lunr &
   };
 const lunrWithLanguages = lunr as LunrWithLanguages;
 
-export const supportedSearchLanguages = [
-  "de",
-  "en",
-  "es-es",
-  "fr",
-  "nl",
-  "ja",
-  "ko",
-  "pt-br",
-];
+export const supportedSearchLanguages = ["de", "en"];
 
 export const isSearchLanguageSupported = (languageId: string): boolean =>
   supportedSearchLanguages.includes(languageId.toLowerCase());

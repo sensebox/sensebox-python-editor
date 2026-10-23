@@ -2,17 +2,6 @@
   "fallbackLanguage": "de",
   "sections": [
     {
-      "id": "grundlagen",
-      "layout": "reference",
-      "icon": "VscLibrary",
-      "title": { "de": "Grundlagen", "en": "Basics" },
-      "description": {
-        "de": "Die wichtigsten Python-Bausteine für die senseBox.",
-        "en": "The most important Python building blocks for the senseBox."
-      },
-      "order": ["ausgabe"]
-    },
-    {
       "id": "text",
       "layout": "reference",
       "icon": "RiText",
@@ -112,7 +101,6 @@
         "de": "Fertige Projekte zum Ausprobieren und Weiterentwickeln.",
         "en": "Complete projects to try out and build on."
       }
-    },
-    { "builtin": "api" }
+    }
   ]
 }

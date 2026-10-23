@@ -115,48 +115,69 @@ const SendButton = React.forwardRef(
     return (
       <HStack>
         {isCircuitPython && (
+          <Button
+            ref={menuButtonRef}
+            isDisabled={busy}
+            size={size}
+            onPress={handleToggleConnected}
+          >
+            <FormattedMessage
+              id={
+                connected ? "disconnect-action" : "circuitpython-connect-action"
+              }
+            />
+          </Button>
+        )}
+        {isCircuitPython && !directorySelected && (
           <Button isDisabled={busy} size={size} onPress={handleSelectDirectory}>
             <FormattedMessage id="circuitpython-directory-select" />
           </Button>
         )}
-        <ButtonGroup isAttached>
-          <Tooltip
-            hasArrow
-            placement="top start"
-            label={intl.formatMessage({
-              id: "send-hover",
-            })}
-          >
-            <Button
-              ref={ref}
-              isDisabled={busy || (isCircuitPython && !directorySelected)}
-              size={size}
-              variant="primary"
-              startIcon={<RiUsbLine />}
-              onPress={() => handleSendToMicrobit(sendButtonRef)}
+        {(!isCircuitPython || directorySelected) && (
+          <ButtonGroup isAttached>
+            <Tooltip
+              hasArrow
+              placement="top start"
+              label={intl.formatMessage({
+                id: "send-hover",
+              })}
             >
-              <FormattedMessage id="send-action" />
-            </Button>
-          </Tooltip>
-          {!isCircuitPython && (
-            <MenuTrigger>
-              <MoreMenuButton
-                ref={menuButtonRef}
-                variant="primary"
-                aria-label={intl.formatMessage({ id: "more-connect-options" })}
-                data-testid="more-connect-options"
+              <Button
+                ref={ref}
+                isDisabled={busy}
                 size={size}
-              />
-              <MenuList>
-                <MenuItem icon={<RiUsbLine />} onAction={handleToggleConnected}>
-                  <FormattedMessage
-                    id={connected ? "disconnect-action" : "connect-action"}
-                  />
-                </MenuItem>
-              </MenuList>
-            </MenuTrigger>
-          )}
-        </ButtonGroup>
+                variant="primary"
+                startIcon={<RiUsbLine />}
+                onPress={() => handleSendToMicrobit(sendButtonRef)}
+              >
+                <FormattedMessage id="send-action" />
+              </Button>
+            </Tooltip>
+            {!isCircuitPython && (
+              <MenuTrigger>
+                <MoreMenuButton
+                  ref={menuButtonRef}
+                  variant="primary"
+                  aria-label={intl.formatMessage({
+                    id: "more-connect-options",
+                  })}
+                  data-testid="more-connect-options"
+                  size={size}
+                />
+                <MenuList>
+                  <MenuItem
+                    icon={<RiUsbLine />}
+                    onAction={handleToggleConnected}
+                  >
+                    <FormattedMessage
+                      id={connected ? "disconnect-action" : "connect-action"}
+                    />
+                  </MenuItem>
+                </MenuList>
+              </MenuTrigger>
+            )}
+          </ButtonGroup>
+        )}
       </HStack>
     );
   }

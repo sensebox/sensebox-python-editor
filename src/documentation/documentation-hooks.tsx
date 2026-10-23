@@ -13,11 +13,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { apiDocs, ApiDocsContent } from "../language-server/apidocs";
-import { useLanguageServerClient } from "../language-server/language-server-hooks";
 import { useLogging } from "../logging/logging-hooks";
 import { useSettings } from "../settings/settings";
-import { pullModulesToTop } from "./api/apidocs-util";
 import dragImage from "./drag-image.svg";
 import { ApiReferenceMap, fetchMappingData } from "./mapping/content";
 import { DocsSections, fetchSections } from "./sections/content";
@@ -60,30 +57,7 @@ const useContent = <T,>(
   return state;
 };
 
-const useApiDocumentation = (): ApiDocsContent | undefined => {
-  const client = useLanguageServerClient();
-  const [apidocs, setApiDocs] = useState<ApiDocsContent | undefined>();
-  useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      if (client) {
-        const docs = await apiDocs(client);
-        pullModulesToTop(docs);
-        if (!ignore) {
-          setApiDocs(docs);
-        }
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [client]);
-  return apidocs;
-};
-
 export interface DocumentationContextValue {
-  api: ApiDocsContent | undefined;
   /**
    * Content for the sections configured in content/sidebar.json.
    */
@@ -107,12 +81,11 @@ export const useDocumentation = (): DocumentationContextValue => {
 };
 
 const DocumentationProvider = ({ children }: { children: ReactNode }) => {
-  const api = useApiDocumentation();
   const sections = useContent(fetchSections);
   const apiReferenceMap = useContent(fetchMappingData);
   const value: DocumentationContextValue = useMemo(() => {
-    return { sections, api, apiReferenceMap };
-  }, [sections, api, apiReferenceMap]);
+    return { sections, apiReferenceMap };
+  }, [sections, apiReferenceMap]);
   return (
     <DocumentationContext.Provider value={value}>
       {children}

@@ -5,7 +5,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { docsSections } from "./config";
+import { docsSections, sidebarConfig } from "./config";
 import {
   candidateLanguages,
   fetchSections,
@@ -88,6 +88,13 @@ describe("bundled content", () => {
     };
     const sections = await fetchSections("de");
 
+    expect(docsSections.some((section) => section.id === "grundlagen")).toBe(
+      false
+    );
+    expect(sidebarConfig.entries.some((entry) => entry.id === "api")).toBe(
+      false
+    );
+
     for (const [id, expectation] of Object.entries(expected)) {
       expect(
         docsSections.find((section) => section.id === id)?.accentColor
@@ -107,12 +114,11 @@ describe("bundled content", () => {
       key === "parent" ? undefined : value
     );
     expect(serialized).toContain("text +=");
+    expect(serialized).toContain('print(\\"Hallo senseBox!\\")');
     expect(serialized).toContain("if temperatur < 0:");
-    expect(serialized).toContain("match modus:");
-    expect(serialized).toContain('case \\"messen\\":');
-    expect(serialized).toContain("case _:");
     expect(serialized).toContain("time.monotonic() * 1000");
-    expect(serialized).toContain("adafruit_ds3231.DS3231(i2c)");
+    expect(serialized).toContain("uhr = rtc.RTC()");
+    expect(serialized).not.toContain("adafruit_ds3231");
     expect(serialized).toContain("adafruit_ntp.NTP(pool, tz_offset=0)");
     expect(serialized).toContain("random.randint(1, 100)");
     expect(serialized).toContain("messwert = 23.5");
@@ -142,7 +148,7 @@ describe("bundled content", () => {
 
 describe("candidateLanguages", () => {
   it("prefers the user's language then the fallback", () => {
-    expect(candidateLanguages("pt-BR")).toEqual(["pt-br", "pt", "de"]);
+    expect(candidateLanguages("en-GB")).toEqual(["en-gb", "en", "de"]);
   });
 });
 

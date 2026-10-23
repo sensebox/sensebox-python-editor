@@ -168,17 +168,28 @@ it("installs the senseBox HDC1080 driver for the documented import", async () =>
   expect(files["lib/adafruit_register/__init__.mpy"]).toBeDefined();
 });
 
-it("installs the libraries used by the RTC and NTP time blocks", () => {
+it("installs the senseBox ToF driver and its firmware files", async () => {
+  const { load, directory } = setup();
   expect(
-    requiredCircuitPythonLibraries(
-      project("import adafruit_ds3231\nimport adafruit_ntp")
-    )
-  ).toEqual([
-    "adafruit_bus_device",
-    "adafruit_register",
-    "adafruit_ds3231",
-    "adafruit_ntp",
-  ]);
+    requiredCircuitPythonLibraries(project("from vl53lxcx import VL53L8CX"))
+  ).toEqual(["adafruit_bus_device", "adafruit_register", "vl53lxcx"]);
+  const files = await load(project("from vl53lxcx import VL53L8CX"), directory);
+  expect(files["lib/vl53lxcx/__init__.py"]).toBeDefined();
+  expect(files["lib/vl53lxcx/vl53l5cx_fw.bin"]).toBeDefined();
+  expect(files["lib/vl53lxcx/vl53l8cx_fw.bin"]).toBeDefined();
+  expect(files["lib/vl53lxcx/vl_fw_config.bin"]).toBeDefined();
+});
+
+it("installs the ICM20948 IMU library for the documented import", () => {
+  expect(
+    requiredCircuitPythonLibraries(project("import adafruit_icm20x"))
+  ).toEqual(["adafruit_bus_device", "adafruit_register", "adafruit_icm20x"]);
+});
+
+it("does not install a library for the built-in RTC time blocks", () => {
+  expect(
+    requiredCircuitPythonLibraries(project("import rtc\nimport adafruit_ntp"))
+  ).toEqual(["adafruit_ntp"]);
 });
 
 it("accepts the final CRLF introduced by a Windows Git checkout", async () => {

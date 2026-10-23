@@ -173,7 +173,7 @@ const createDocumentationResolver =
       if (id) {
         const referenceLink = getLinkToReference(id, apiReferenceMap);
         code.innerText = removeFullyQualifiedName(code.innerText);
-        return wrapWithDocumentationButton(intl, node, id, referenceLink);
+        return wrapWithDocumentationButton(intl, node, referenceLink);
       }
     }
     return node;

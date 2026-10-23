@@ -23,10 +23,14 @@ Richte die Verbindung zum Sensor ein:
 ```python
 import board
 import busio
+from digitalio import DigitalInOut, Direction
 from vl53lxcx import VL53L8CX
 
 i2c = busio.I2C(board.SCL, board.SDA, frequency=1_000_000)
-tof = VL53L8CX(i2c)
+lpn = DigitalInOut(board.D3)
+lpn.direction = Direction.OUTPUT
+lpn.value = True
+tof = VL53L8CX(i2c, lpn=lpn)
 tof.reset()
 
 if not tof.is_alive():
@@ -65,6 +69,7 @@ Warte auf neue Daten und gib für jedes gültige Messfeld die Entfernung in Mill
 
 ```python
 from vl53lxcx import STATUS_VALID
+import time
 
 while True:
     if tof.check_data_ready():
@@ -75,6 +80,8 @@ while True:
         for messfeld, entfernung in enumerate(distance):
             if status[messfeld] == STATUS_VALID:
                 print("Messfeld %d: %d mm" % (messfeld, entfernung))
+
+    time.sleep(0.01)
 ```
 
 <!-- @details -->
@@ -88,18 +95,17 @@ Die Nummern der 64 Messfelder reichen von `0` bis `63`. Ein Entfernungswert wird
 Dieses vollständige Beispiel initialisiert den Sensor, startet die Messung und gibt fortlaufend alle gültigen Entfernungen aus:
 
 ```python
-from vl53lxcx import (
-    DATA_DISTANCE_MM,
-    DATA_TARGET_STATUS,
-    RESOLUTION_8X8,
-    STATUS_VALID,
-    VL53L8CX,
-)
+from vl53lxcx import DATA_DISTANCE_MM, DATA_TARGET_STATUS, RESOLUTION_8X8, STATUS_VALID, VL53L8CX
 import busio
 import board
+import time
+from digitalio import DigitalInOut, Direction
 
 i2c = busio.I2C(board.SCL, board.SDA, frequency=1_000_000)
-tof = VL53L8CX(i2c)
+lpn = DigitalInOut(board.D3)
+lpn.direction = Direction.OUTPUT
+lpn.value = True
+tof = VL53L8CX(i2c, lpn=lpn)
 
 
 def main():
@@ -121,6 +127,8 @@ def main():
             for messfeld, entfernung in enumerate(distance):
                 if status[messfeld] == STATUS_VALID:
                     print("Messfeld %d: %d mm" % (messfeld, entfernung))
+
+        time.sleep(0.01)
 
 
 main()

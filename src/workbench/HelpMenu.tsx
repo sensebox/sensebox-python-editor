@@ -99,7 +99,7 @@ const HelpMenu = ({ size }: HelpMenuProps) => {
             </MenuItem>
           )}
           <MenuItem
-            href="https://microbit-micropython.readthedocs.io/en/v2-docs/"
+            href="https://docs.circuitpython.org/"
             target="_blank"
             rel="noopener"
             icon={<RiExternalLinkLine />}

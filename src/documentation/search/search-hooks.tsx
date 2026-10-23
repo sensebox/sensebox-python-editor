@@ -39,7 +39,7 @@ export const useSearch = (): UseSearch => {
 };
 
 const SearchProvider = ({ children }: { children: ReactNode }) => {
-  const { sections, api } = useDocumentation();
+  const { sections } = useDocumentation();
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<SearchResults | undefined>();
   const isUnmounted = useIsUnmounted();
@@ -56,15 +56,13 @@ const SearchProvider = ({ children }: { children: ReactNode }) => {
       setResults(undefined);
       searchLogged.current = false;
     }
-    // Documentation search must not wait for the independently loaded API
-    // reference. Reindex with API entries when they become available.
     if (sections.status === "ok" && sections.languageId === languageId) {
       search.current.index(
         searchableSections(sections.content, languageId),
-        api?.languageId === languageId ? api.content : {}
+        {}
       );
     }
-  }, [languageId, sections, api]);
+  }, [languageId, sections]);
 
   const debouncedSearch = useMemo(
     () =>

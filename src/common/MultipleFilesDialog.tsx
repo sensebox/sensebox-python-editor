@@ -10,6 +10,7 @@ import { FormattedMessage } from "react-intl";
 import DialogHeading from "../common/DialogHeading";
 import { GenericDialog, GenericDialogFooter } from "../common/GenericDialog";
 import { useProject } from "../project/project-hooks";
+import type { FinalFocusRef } from "../project/project-actions";
 
 export const enum MultipleFilesChoice {
   CloseDontShowAgain,
@@ -18,7 +19,7 @@ export const enum MultipleFilesChoice {
 
 interface MultipleFilesDialogProps {
   callback: (value: MultipleFilesChoice) => void;
-  finalFocusRef: React.RefObject<HTMLButtonElement>;
+  finalFocusRef: FinalFocusRef;
 }
 
 export const MultipleFilesDialog = ({

@@ -49,3 +49,28 @@ Ein Text ist leer, wenn seine Länge `0` ist. Der Vergleich liefert `True` oder 
 text = ""
 ist_leer = len(text) == 0
 ```
+
+## Text ausgeben
+
+Schreibe den Text in Anführungszeichen:
+
+```python
+print("Hallo senseBox!")
+```
+
+<!-- @details -->
+
+Die Ausgabe siehst du in der **Konsole** unterhalb des Editors, sobald die senseBox verbunden ist.
+
+## Werte ausgeben
+
+<!-- @slug werte-ausgeben -->
+
+Du kannst auch Zahlen und Variablen ausgeben. Mehrere Werte trennst du mit Kommas:
+
+```python
+temperatur = 21.5
+print("Temperatur:", temperatur)
+```
+
+Mehr über Messwerte erfährst du unter [Temperatur](doc:sensoren/temperatur).

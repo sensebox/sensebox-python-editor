@@ -157,7 +157,7 @@ back/forward and typed URLs don't fire it (they are `page_view` only).
 | Param     | Values                                                                                                                                     |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `via`     | `user` (clicked in the sidebar), `search` (picked a search result), `code` (from a code hover/help link), `simulator` (from the simulator) |
-| `surface` | The sidebar section id from `content/sidebar.json` (e.g. `grundlagen`) or `api`                                                            |
+| `surface` | The sidebar section id from `content/sidebar.json` (for example `text`)                                                                    |
 | `id`      | The page slug, e.g. `buttons`; absent when navigating to a tab root                                                                        |
 
 ### `docs_search`

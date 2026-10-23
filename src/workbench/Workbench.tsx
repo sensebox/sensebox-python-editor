@@ -10,7 +10,6 @@ import { useIntl } from "react-intl";
 import {
   hideSidebarMediaQuery,
   sidebarToWidthRatio,
-  simulatorToWidthRatio,
   widthToHideSidebar,
 } from "../common/screenWidthUtils";
 import {
@@ -28,14 +27,12 @@ import { useProject } from "../project/project-hooks";
 import ProjectActionBar from "../project/ProjectActionBar";
 import SerialArea from "../serial/SerialArea";
 import { useSettings } from "../settings/settings";
-import ReplWindow from "../repl";
 import Overlay from "./connect-dialogs/Overlay";
 import SideBar from "./SideBar";
 import { WorkbenchSelection, useSelection } from "./use-selection";
 import { flags } from "../flags";
 
 const minimums: [number, number] = [400, 580];
-const simulatorMinimums: [number, number] = [275, 0];
 
 const defaultSelection = (
   selection: WorkbenchSelection,
@@ -86,37 +83,17 @@ const Workbench = () => {
   const [sidebarShown, setSidebarShown] = useState<boolean>(
     () => window.innerWidth > widthToHideSidebar
   );
-  const [simulatorShown, setSimulatorShown] = useState<boolean>(true);
-  const simulatorButtonRef = useRef<HTMLButtonElement>(null);
   const [tabIndex, setTabIndex] = useState<number>(() =>
     window.innerWidth > widthToHideSidebar ? 0 : -1
   );
-  const [simFocus, setSimFocus] = useState<boolean>(true);
-
-  // Sidebar/simulator space management:
+  // Sidebar space management:
   const handleSidebarCollapse = useCallback(() => {
     setTabIndex(-1);
     setSidebarShown(false);
   }, []);
   const handleSidebarExpand = useCallback(() => {
     setSidebarShown(true);
-    // If there's not room for the simulator then hide it.
-    if (window.innerWidth <= widthToHideSidebar) {
-      setSimFocus(false);
-      setSimulatorShown(false);
-    }
   }, []);
-  const handleSimulatorHide = useCallback(() => {
-    setSimFocus(true);
-    setSimulatorShown(false);
-  }, []);
-  const handleSimulatorExpand = useCallback(() => {
-    setSimulatorShown(true);
-    // If there's not room for the sidebar then hide it.
-    if (window.innerWidth <= widthToHideSidebar) {
-      handleSidebarCollapse();
-    }
-  }, [handleSidebarCollapse]);
   const hideSideBarMediaQueryValue = useMediaQuery(hideSidebarMediaQuery);
   useEffect(() => {
     if (hideSideBarMediaQueryValue) {
@@ -131,9 +108,6 @@ const Workbench = () => {
           key={selection.file + "/" + fileVersion}
           selection={selection}
           onSelectedFileChanged={setSelectedFile}
-          onSimulatorExpand={handleSimulatorExpand}
-          simulatorShown={simulatorShown}
-          ref={simulatorButtonRef}
         />
       )}
     </styled.section>
@@ -170,13 +144,7 @@ const Workbench = () => {
           </SplitViewSized>
           <SplitViewDivider />
           <SplitViewRemainder>
-            <EditorWithSimulator
-              editor={editor}
-              onSimulatorHide={handleSimulatorHide}
-              simulatorShown={simulatorShown}
-              showSimulatorButtonRef={simulatorButtonRef}
-              simFocus={simFocus}
-            />
+            <Editor editor={editor} />
           </SplitViewRemainder>
         </SplitView>
       </Flex>
@@ -188,47 +156,6 @@ const Workbench = () => {
 interface EditorProps {
   editor: ReactNode;
 }
-
-interface EditorWithSimulatorProps extends EditorProps {
-  simulatorShown: boolean;
-  showSimulatorButtonRef: React.RefObject<HTMLButtonElement>;
-  onSimulatorHide: () => void;
-  simFocus: boolean;
-}
-
-const EditorWithSimulator = ({
-  editor,
-  simulatorShown,
-  onSimulatorHide,
-}: EditorWithSimulatorProps) => {
-  return (
-    <SplitView
-      direction="row"
-      minimums={simulatorMinimums}
-      css={{ height: "100%" }}
-      mode={simulatorShown ? "open" : "collapsed"}
-      initialSize={Math.min(
-        350,
-        Math.max(
-          simulatorMinimums[0],
-          Math.floor(window.innerWidth * simulatorToWidthRatio)
-        )
-      )}
-    >
-      <SplitViewRemainder>
-        <Editor editor={editor} />
-      </SplitViewRemainder>
-      <SplitViewDivider showBoxShadow={true} />
-      <SplitViewSized>
-        <ReplWindow
-          shown={simulatorShown}
-          onReplHide={onSimulatorHide}
-          minWidth={simulatorMinimums[0]}
-        />
-      </SplitViewSized>
-    </SplitView>
-  );
-};
 
 const Editor = ({ editor }: EditorProps) => {
   const intl = useIntl();
@@ -257,6 +184,7 @@ const Editor = ({ editor }: EditorProps) => {
         <SplitViewDivider />
         <SplitViewSized>
           <SerialArea
+            data-testid="serial-output"
             compact={serialSizedMode === "compact"}
             onSizeChange={setSerialStateWhenOpen}
             aria-label={intl.formatMessage({

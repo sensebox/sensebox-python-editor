@@ -104,9 +104,8 @@ describe("Search", () => {
 describe("supported search languages", () => {
   it("accepts canonical language-id casing", () => {
     expect(isSearchLanguageSupported("de")).toBe(true);
-    expect(isSearchLanguageSupported("es-ES")).toBe(true);
-    expect(isSearchLanguageSupported("pt-BR")).toBe(true);
-    expect(isSearchLanguageSupported("zh-CN")).toBe(false);
+    expect(isSearchLanguageSupported("en")).toBe(true);
+    expect(isSearchLanguageSupported("es-ES")).toBe(false);
   });
 });
 

@@ -1,5 +1,71 @@
 # senseBox connection and code transfer
 
+## 2026-10-23 — Recognise CircuitPython modules in editor diagnostics
+
+- Suppressed missing-import diagnostics only for CircuitPython built-ins and
+  libraries present in the pinned transfer catalog. Unknown imports remain
+  diagnostics.
+- Suppressed the unsupported MicroPython-stub diagnostic for CircuitPython's
+  `time.monotonic` without hiding other diagnostics on the same line.
+
+## 2026-10-23 — Simplify settings and project downloads
+
+- Removed the two checkbox controls from the editor settings.
+- The project save action now downloads the main program as a Python file; the
+  former HEX save action and its extra menu are no longer exposed.
+- Replaced user-visible MicroPython wording with CircuitPython in the German and
+  English editor interface.
+
+## 2026-10-23 — Keep a single serial output
+
+- Removed the separate REPL console from the right side of the editor. Serial
+  input and output now use only the existing panel below the editor.
+- Added a visible **Clear console** action to the lower serial panel and updated
+  the hardware end-to-end checks to target that panel.
+
+## 2026-10-23 — Use the ICM20948 IMU
+
+- Replaced the MPU6050-based acceleration examples with the senseBox's
+  ICM20948 IMU using `adafruit_icm20x` at address `0x68`.
+- The separate acceleration and gyroscope blocks now share an `imu` object,
+  and the gyroscope output uses the library's `rad/s` unit.
+- Added a resolver test for the documented import and its transitive CircuitPython
+  libraries.
+
+## 2026-10-23 — Simplify the documentation navigation for senseBox
+
+- Removed the generated API category and its sidebar, search and editor-hover
+  navigation surfaces.
+- Moved the console output examples from the former **Grundlagen** category
+  into **Text**, updated all documentation links and removed the now-empty
+  category.
+- Replaced user-visible legacy board names and links with senseBox wording in
+  every translated message catalog. The header, help and about surfaces no
+  longer expose legacy board imagery or links. Package names, compatibility
+  types and copyright notices remain unchanged where they are required by the
+  inherited implementation and licences.
+
+## 2026-10-23 — Use inline Wi-Fi credentials in Wi-Fi and NTP examples
+
+- Updated the Wi-Fi connection blocks and the NTP initialization block to use
+  the same explicit `CIRCUITPY_WIFI_SSID` and `CIRCUITPY_WIFI_PASSWORD`
+  variables.
+- The NTP example no longer reads credentials from `settings.toml`; it connects
+  with `wifi.radio.connect(...)` before creating the socket pool and NTP client.
+- Both pages use the same connection status output and warn against sharing code
+  that contains real credentials.
+
+## 2026-10-23 — Use CircuitPython's built-in RTC
+
+- Replaced the external DS3231 examples in `content/de/zeit/rtc.md` with blocks
+  that consistently use CircuitPython's built-in `rtc` module.
+- Initializing, setting, reading individual date/time fields and creating a Unix
+  timestamp now all share one `rtc.RTC()` object. A final complete example
+  combines initialization, setting and reading.
+- The RTC blocks no longer enable the I²C port or import `adafruit_ds3231`, so
+  transferring them does not install an additional RTC driver. The NTP example
+  continues to resolve its own library normally.
+
 ## 2026-10-22 — Remove temporary test artifacts
 
 - Removed the ignored `test-results/` directory containing failed-run metadata,

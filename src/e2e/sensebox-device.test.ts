@@ -200,7 +200,10 @@ test("connects without writing and transfers the latest code only from the lower
     folderSelections: 0,
   });
   await page
-    .getByTestId("sensebox-repl")
+    .getByRole("button", { name: "Serielle Schnittstelle anzeigen" })
+    .click();
+  await page
+    .getByTestId("serial-output")
     .locator("textarea")
     .press("Control+c");
   await expect
@@ -213,10 +216,11 @@ test("connects without writing and transfers the latest code only from the lower
     name: "Code übertragen",
     exact: true,
   });
-  await expect(transfer).toBeDisabled();
+  await expect(transfer).not.toBeVisible();
   await page
     .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
     .click();
+  await expect(transfer).toBeVisible();
   await expect(transfer).toBeEnabled();
   await transfer.click();
   await expect(page.getByRole("dialog")).toContainText("Code wird übertragen");
@@ -242,7 +246,7 @@ test("connects without writing and transfers the latest code only from the lower
   expect(await page.evaluate(() => window.senseboxTest.hostFlushes)).toBe(
     process.env.CI ? 0 : 1
   );
-  await expect(page.getByTestId("sensebox-repl")).toContainText(
+  await expect(page.getByTestId("serial-output")).toContainText(
     "PROGRAM STARTED"
   );
   expect(await page.evaluate(() => window.senseboxTest.folderSelections)).toBe(
@@ -383,7 +387,7 @@ test("reports the immediate post-reboot read error after saving instead of trans
     await page.evaluate(() => window.senseboxTest.written["code.py"])
   ).toBe('print("load-error-test")');
   expect(await page.evaluate(() => window.senseboxTest.restarts)).toBe(1);
-  await expect(page.getByTestId("sensebox-repl")).toContainText(
+  await expect(page.getByTestId("serial-output")).toContainText(
     "OSError: [Errno 5]"
   );
 });
@@ -411,7 +415,7 @@ test("falls back to MCU verification when the optional local flush is unavailabl
   await expect
     .poll(() => page.evaluate(() => window.senseboxTest.restarts))
     .toBe(1);
-  await expect(page.getByTestId("sensebox-repl")).toContainText(
+  await expect(page.getByTestId("serial-output")).toContainText(
     "PROGRAM STARTED"
   );
   expect(

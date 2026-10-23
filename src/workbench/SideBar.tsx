@@ -13,8 +13,6 @@ import { css } from "styled-system/css";
 import { Box, Flex, styled, VStack } from "styled-system/jsx";
 import { SystemStyleObject } from "styled-system/types";
 import ErrorBoundary from "../common/ErrorBoundary";
-import PythonLogo from "../common/PythonLogo";
-import ApiArea from "../documentation/ApiArea";
 import DocsSectionArea from "../documentation/DocsSectionArea";
 import { localize, sidebarConfig } from "../documentation/sections/config";
 import { sectionIcon } from "../documentation/sections/icons";
@@ -74,24 +72,14 @@ const SideBar = ({
   const [{ languageId }] = useSettings();
   const panes: Pane[] = useMemo(() => {
     // Documentation tabs come from content/sidebar.json.
-    const docsPanes: Pane[] = sidebarConfig.entries.map((entry) =>
-      entry.kind === "builtin"
-        ? {
-            id: "api",
-            title: intl.formatMessage({ id: "api-tab" }),
-            icon: PythonLogo as IconType,
-            contents: <ApiArea />,
-            color: "gray.75",
-          }
-        : {
-            id: entry.id,
-            title: localize(entry.title, languageId),
-            icon: sectionIcon(entry.icon),
-            contents: <DocsSectionArea section={entry} />,
-            color: "gray.75",
-            accentColor: entry.accentColor,
-          }
-    );
+    const docsPanes: Pane[] = sidebarConfig.entries.map((entry) => ({
+      id: entry.id,
+      title: localize(entry.title, languageId),
+      icon: sectionIcon(entry.icon),
+      contents: <DocsSectionArea section={entry} />,
+      color: "gray.75",
+      accentColor: entry.accentColor,
+    }));
     if (docsPanes.length > 0) {
       // Pushes the project tab to the bottom.
       docsPanes[docsPanes.length - 1].mb = "auto";
@@ -242,9 +230,8 @@ const SideBar = ({
         >
           <Box flex="1" maxHeight="8.9rem" minHeight="8"></Box>
           <TabList
-            // Flexes so the API tab's mb:auto pushes the project tab (and
-            // the menus below the list) to the bottom, as in the old
-            // single-column tablist.
+            // Flexes so the last documentation tab's mb:auto pushes the
+            // project tab and the menus below the list to the bottom.
             className={css({
               display: "flex",
               flexDirection: "column",

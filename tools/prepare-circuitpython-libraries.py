@@ -28,7 +28,20 @@ EXTRA_INPUTS = {
         "dependencies": ["adafruit_bus_device", "adafruit_register"],
         "member": "hdc1080.py",
         "destination": "lib/hdc1080.py",
-    }
+    },
+    "vl53lxcx": {
+        "version": "0.0.5",
+        "repo": "https://github.com/sensebox/CircuitPython_VL53LxCX",
+        "url": "https://files.pythonhosted.org/packages/72/bd/bb2b5739e348f88e0fcd1369adaf16b19d5c555db1511763e63b999b8e2d/circuitpython_vl53lxcx-0.0.5-py3-none-any.whl",
+        "sha256": "57d94e53b44c1e6f8ce3ffa22fd13ec31036e7ef8f4ddf94b1009fb51aee8e12",
+        "dependencies": ["adafruit_bus_device", "adafruit_register"],
+        "members": {
+            "vl53lxcx/__init__.py": "lib/vl53lxcx/__init__.py",
+            "vl53lxcx/vl53l5cx_fw.bin": "lib/vl53lxcx/vl53l5cx_fw.bin",
+            "vl53lxcx/vl53l8cx_fw.bin": "lib/vl53lxcx/vl53l8cx_fw.bin",
+            "vl53lxcx/vl_fw_config.bin": "lib/vl53lxcx/vl_fw_config.bin",
+        },
+    },
 }
 
 def encoded(value):
@@ -105,10 +118,17 @@ def main():
         if digest(wheel_path.read_bytes()) != info["sha256"]:
             raise ValueError(f"Incorrect SHA-256: {wheel_path}")
         wheel = zipfile.ZipFile(wheel_path)
-        data = wheel.read(info["member"])
-        files = [{"path": info["destination"], "data": base64.b64encode(data).decode(), "sha256": digest(data)}]
+        members = info.get("members")
+        if members is None:
+            members = {info["member"]: info["destination"]}
+        member_data = {member: wheel.read(member) for member in members}
+        files = [
+            {"path": destination, "data": base64.b64encode(member_data[member]).decode(), "sha256": digest(member_data[member])}
+            for member, destination in members.items()
+        ]
         header = []
-        for line in data.decode("utf8").splitlines():
+        source_member = next(member for member in members if member.endswith(".py"))
+        for line in member_data[source_member].decode("utf8").splitlines():
             if line.startswith("#") or not line.strip():
                 header.append(line)
             else:
@@ -116,7 +136,7 @@ def main():
         payload = encoded({"name": name, "files": files})
         (assets / (name + ".json")).write_bytes(payload)
         modules[name] = {"version": info["version"], "dependencies": info["dependencies"], "sha256": digest(payload)}
-        notice["modules"][name] = {"repo": info["repo"], "version": info["version"], "headers": {info["member"]: "\n".join(header)}}
+        notice["modules"][name] = {"repo": info["repo"], "version": info["version"], "headers": {source_member: "\n".join(header)}}
         license_ids.add("MIT")
     licenses = assets / "LICENSES"
     licenses.mkdir(exist_ok=True)
