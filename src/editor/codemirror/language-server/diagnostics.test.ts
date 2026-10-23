@@ -47,10 +47,11 @@ const document = Text.of(["pass", "pass"]);
 const map = (
   diagnostics: LSP.Diagnostic[],
   device: MicrobitUSBConnection = disconnectedDevice,
-  warnOnV2OnlyFeatures: boolean = true
+  warnOnV2OnlyFeatures: boolean = true,
+  source: Text = document
 ) =>
   diagnosticsMapping(
-    document,
+    source,
     diagnostics,
     device,
     warnOnV2OnlyFeatures,
@@ -113,6 +114,107 @@ describe("diagnosticsMapping", () => {
     });
     expect(map([diagnostic])).toEqual([]);
   });
+
+  it("suppresses missing imports for CircuitPython modules", () => {
+    const source = Text.of([
+      "import busio",
+      "import microcontroller",
+      "import adafruit_icm20x",
+    ]);
+    const missingImport = (line: number) =>
+      lspDiagnostic({
+        code: "reportMissingImports",
+        range: {
+          start: { line, character: 7 },
+          end: { line, character: source.line(line + 1).length },
+        },
+      });
+
+    expect(
+      map(
+        [missingImport(0), missingImport(1), missingImport(2)],
+        undefined,
+        true,
+        source
+      )
+    ).toEqual([]);
+  });
+
+  it("keeps missing imports for unknown modules", () => {
+    const source = Text.of(["import not_a_real_module"]);
+    expect(
+      map(
+        [
+          lspDiagnostic({
+            code: "reportMissingImports",
+            range: {
+              start: { line: 0, character: 7 },
+              end: { line: 0, character: 24 },
+            },
+          }),
+        ],
+        undefined,
+        true,
+        source
+      )
+    ).toHaveLength(1);
+  });
+
+  it.each(["monotonic", "struct_time", "mktime"])(
+    "suppresses the CircuitPython time.%s diagnostic",
+    (functionName) => {
+      const source = Text.of([`start = time.${functionName}()`]);
+      expect(
+        map(
+          [
+            lspDiagnostic({
+              code: "reportAttributeAccessIssue",
+              range: {
+                start: { line: 0, character: 8 },
+                end: { line: 0, character: source.line(1).length },
+              },
+            }),
+          ],
+          undefined,
+          true,
+          source
+        )
+      ).toEqual([]);
+    }
+  );
+
+  it.each(["brightness", "pixel_order", "auto_write", "GRB"])(
+    "suppresses CircuitPython NeoPixel diagnostic for %s",
+    (name) => {
+      const source = Text.of([
+        "pixels = neopixel.NeoPixel(",
+        `    board.D2, ${name}=value`,
+        ")",
+      ]);
+      const line = source.line(2);
+      const from = line.from + line.text.indexOf(name);
+      expect(
+        map(
+          [
+            lspDiagnostic({
+              code: "reportCallIssue",
+              range: {
+                start: { line: 1, character: line.text.indexOf(name) },
+                end: {
+                  line: 1,
+                  character: line.text.indexOf(name) + name.length,
+                },
+              },
+            }),
+          ],
+          undefined,
+          true,
+          source
+        )
+      ).toEqual([]);
+      expect(from).toBeGreaterThan(0);
+    }
+  );
 
   describe("micro:bit V2-only API warnings", () => {
     const v2OnlyDiagnostic = lspDiagnostic({

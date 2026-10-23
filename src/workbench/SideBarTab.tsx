@@ -23,11 +23,12 @@ const SideBarTab = ({
   icon,
   title,
   color,
+  accentColor,
   mb,
   handleTabClick,
   active,
 }: SideBarTabProps) => {
-  const width = "5rem";
+  const height = "4.5rem";
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // Override react-aria's roving tabindex so every tab is tabbable.
@@ -46,8 +47,9 @@ const SideBarTab = ({
         css(
           {
             color: color === "gray.50" ? "gray.50" : "gray.75",
-            height: width,
-            width,
+            height,
+            width: "calc(100% - 6px)",
+            flexShrink: "0",
             p: "0",
             position: "relative",
             ml: "6px",
@@ -94,11 +96,28 @@ const SideBarTab = ({
             }}
           />
         )}
-        <VStack gap="1">
-          <Icon css={{ width: "6", height: "6", mt: "3px" }} as={icon} />
+        <VStack gap="0.5" width="100%" px="1">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            width="7"
+            height="7"
+            borderRadius="full"
+            style={
+              accentColor
+                ? { backgroundColor: accentColor, color: "white" }
+                : undefined
+            }
+          >
+            <Icon css={{ width: "5", height: "5" }} as={icon} />
+          </Box>
           <Text
             m="0"
-            fontSize="13px"
+            fontSize="12px"
+            lineHeight="1.1"
+            maxWidth="100%"
+            textAlign="center"
             borderBottom="3px solid transparent"
             css={{
               // Both focus-visible heuristics must agree: native

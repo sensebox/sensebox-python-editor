@@ -21,10 +21,10 @@ import HideSplitViewButton from "../common/SplitView/HideSplitViewButton";
 import { useResizeObserverContentRect } from "../common/use-resize-observer";
 import { useDeployment } from "../deployment";
 import { topBarHeight } from "../deployment/misc";
-import { supportedSearchLanguages } from "../documentation/search/search.worker";
+import { isSearchLanguageSupported } from "../documentation/search/search.worker";
 import { useSearch } from "../documentation/search/search-hooks";
 import SearchDialog from "../documentation/search/SearchDialog";
-import { microbitOrgUrl } from "../external-links";
+import { senseBoxUrl } from "../external-links";
 import { useLogging } from "../logging/logging-hooks";
 import { RouterState, useRouterState } from "../router-hooks";
 import { useSettings } from "../settings/settings";
@@ -71,7 +71,7 @@ const SideBarHeader = ({
   }, [logging, onSidebarToggled, sidebarShown]);
 
   const [{ languageId }] = useSettings();
-  const searchAvailable = supportedSearchLanguages.includes(languageId);
+  const searchAvailable = isSearchLanguageSupported(languageId);
 
   const handleSearchShortcut = useCallback(() => {
     if (searchAvailable) {
@@ -182,7 +182,7 @@ const SideBarHeader = ({
         >
           <Link
             display="block"
-            href={microbitOrgUrl(languageId)}
+            href={senseBoxUrl()}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={intl.formatMessage({ id: "visit-dot-org" })}

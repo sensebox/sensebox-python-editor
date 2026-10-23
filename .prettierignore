@@ -2,3 +2,7 @@ src/editor/codemirror/lint/lint.ts
 styled-system
 src/styled-system.css
 src/micropython/main/typeshed.*.json
+
+# Reproducible, hash-verified third-party library assets.
+/public/circuitpython/
+/src/device/libraries/catalog.json

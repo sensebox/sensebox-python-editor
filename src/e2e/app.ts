@@ -261,7 +261,7 @@ export class App {
     this.projectTab = new ProjectTabPanel(page);
     this.settingsButton = this.page.getByTestId("settings");
     this.saveButton = this.page.getByRole("button", {
-      name: "Save",
+      name: "Save Python script",
       exact: true,
     });
     this.searchButton = this.page.getByRole("button", { name: "Search" });
@@ -269,7 +269,7 @@ export class App {
       "more-connect-options"
     );
     this.sendToMicrobitButton = this.page.getByRole("button", {
-      name: "Send to micro:bit",
+      name: "Transfer code",
     });
     this.simulator = new Simulator(this.page);
     this.sidebar = new SideBar(this.page);
@@ -334,7 +334,7 @@ export class App {
     }
   }
 
-  async switchTab(tabName: "Project" | "API" | "Reference" | "Ideas") {
+  async switchTab(tabName: "Project" | "Reference" | "Ideas") {
     await this.page.getByRole("tab", { name: tabName }).click();
   }
 
@@ -468,12 +468,7 @@ export class App {
   }
 
   async savePythonScript() {
-    await this.page.getByTestId("more-save-options").click();
-    const downloadPromise = this.page.waitForEvent("download");
-    await this.page
-      .getByRole("menuitem", { name: "Save Python script" })
-      .click();
-    await downloadPromise;
+    return this.save();
   }
 
   async expectDialog(text: string) {
@@ -484,15 +479,6 @@ export class App {
     await this.switchTab("Project");
     const fileOptionMenu = await this.projectTab.openFileActionsMenu(filename);
     await fileOptionMenu.delete();
-  }
-
-  async toggleSettingThirdPartyModuleEditing(): Promise<void> {
-    await this.settingsButton.click();
-    await this.page.getByRole("menuitem", { name: "Settings" }).click();
-    await this.page
-      .getByText("Allow editing third-party modules", { exact: true })
-      .click();
-    await this.page.getByRole("button", { name: "Close" }).click();
   }
 
   async closeAndExpectBeforeUnloadDialogVisible(
@@ -745,7 +731,7 @@ export class App {
   }
 
   async followCompletionOrSignatureDocumentionLink(
-    linkName: "Help" | "API"
+    linkName: "Help"
   ): Promise<void> {
     await this.page.getByRole("link", { name: linkName }).click();
   }

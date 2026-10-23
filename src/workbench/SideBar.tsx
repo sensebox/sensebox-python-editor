@@ -13,8 +13,6 @@ import { css } from "styled-system/css";
 import { Box, Flex, styled, VStack } from "styled-system/jsx";
 import { SystemStyleObject } from "styled-system/types";
 import ErrorBoundary from "../common/ErrorBoundary";
-import PythonLogo from "../common/PythonLogo";
-import ApiArea from "../documentation/ApiArea";
 import DocsSectionArea from "../documentation/DocsSectionArea";
 import { localize, sidebarConfig } from "../documentation/sections/config";
 import { sectionIcon } from "../documentation/sections/icons";
@@ -37,6 +35,7 @@ export interface Pane {
   title: string;
   contents: ReactNode;
   color: string;
+  accentColor?: string;
   mb?: string;
 }
 
@@ -73,23 +72,14 @@ const SideBar = ({
   const [{ languageId }] = useSettings();
   const panes: Pane[] = useMemo(() => {
     // Documentation tabs come from content/sidebar.json.
-    const docsPanes: Pane[] = sidebarConfig.entries.map((entry) =>
-      entry.kind === "builtin"
-        ? {
-            id: "api",
-            title: intl.formatMessage({ id: "api-tab" }),
-            icon: PythonLogo as IconType,
-            contents: <ApiArea />,
-            color: "gray.75",
-          }
-        : {
-            id: entry.id,
-            title: localize(entry.title, languageId),
-            icon: sectionIcon(entry.icon),
-            contents: <DocsSectionArea section={entry} />,
-            color: "gray.75",
-          }
-    );
+    const docsPanes: Pane[] = sidebarConfig.entries.map((entry) => ({
+      id: entry.id,
+      title: localize(entry.title, languageId),
+      icon: sectionIcon(entry.icon),
+      contents: <DocsSectionArea section={entry} />,
+      color: "gray.75",
+      accentColor: entry.accentColor,
+    }));
     if (docsPanes.length > 0) {
       // Pushes the project tab to the bottom.
       docsPanes[docsPanes.length - 1].mb = "auto";
@@ -221,23 +211,50 @@ const SideBar = ({
         className={css({
           display: "flex",
           flexDirection: "row",
-          flex: "1 0 auto",
+          flex: "1 1 0",
           minHeight: 0,
+          overflow: "hidden",
         })}
       >
         {/* The tab strip: spacer + tabs + settings/help menus over the
             branded background (a wrapper because react-aria's TabList may
             only contain tabs). */}
-        <Flex direction="column" background="sidebarTablistBg">
+        <Flex
+          direction="column"
+          background="sidebarTablistBg"
+          height="100%"
+          minHeight="0"
+          width="6.375rem"
+          flexShrink="0"
+          overflow="hidden"
+        >
           <Box flex="1" maxHeight="8.9rem" minHeight="8"></Box>
           <TabList
-            // Flexes so the API tab's mb:auto pushes the project tab (and
-            // the menus below the list) to the bottom, as in the old
-            // single-column tablist.
+            // Flexes so the last documentation tab's mb:auto pushes the
+            // project tab and the menus below the list to the bottom.
             className={css({
               display: "flex",
               flexDirection: "column",
               flex: "1 1 auto",
+              width: "100%",
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(255, 255, 255, 0.55) transparent",
+              "&::-webkit-scrollbar": {
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "rgba(255, 255, 255, 0.55)",
+                borderRadius: "full",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.78)",
+              },
             })}
           >
             {panes.map((pane, current) => (

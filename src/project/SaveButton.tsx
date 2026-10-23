@@ -20,21 +20,16 @@ import {
 interface SaveButtonProps extends CollapsibleButtonComposableProps {}
 
 /**
- * Save HEX button.
- *
- * This is the main action for programming the micro:bit if the
- * system does not support WebUSB.
- *
- * Otherwise it's a more minor action.
+ * Save the main Python file.
  */
 const SaveButton = (props: SaveButtonProps) => {
   const actions = useProjectActions();
   const intl = useIntl();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const activeElementRef = useRef<HTMLElement | null>(null);
+  const activeElementRef = useRef<HTMLButtonElement | null>(null);
   const handleSave = useCallback(() => {
-    activeElementRef.current = document.activeElement as HTMLElement;
-    actions.save(activeElementRef);
+    activeElementRef.current = document.activeElement as HTMLButtonElement;
+    actions.saveMainFile(activeElementRef);
   }, [actions]);
   useHotkeys(keyboardShortcuts.saveProject, handleSave, globalShortcutConfig);
   return (
@@ -49,9 +44,9 @@ const SaveButton = (props: SaveButtonProps) => {
         ref={menuButtonRef}
         {...props}
         icon={<RiDownload2Line />}
-        onPress={() => actions.save(menuButtonRef)}
+        onPress={() => actions.saveMainFile(menuButtonRef)}
         text={intl.formatMessage({
-          id: "save-action",
+          id: "save-python-action",
         })}
       />
     </Tooltip>

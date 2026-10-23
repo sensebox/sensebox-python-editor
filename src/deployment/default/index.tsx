@@ -7,8 +7,6 @@ import { BrandConfigFactory } from "..";
 
 const defaultBrandFactory: BrandConfigFactory = () => ({
   product: "python-editor",
-  // This isn't ideal as it's the branded version. You can just remove the field to remove the welcome dialog.
-  welcomeVideoYouTubeId: "mREwMW69qKc",
   horizontalLogo: (
     <img src="https://sensebox.de/images/logos/sensebox_wort_logo.svg" alt="" />
   ),

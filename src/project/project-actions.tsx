@@ -3,9 +3,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Link, List, ListItem, Text, UnorderedList } from "@microbit/ui";
+import { List, ListItem, Text, UnorderedList } from "@microbit/ui";
 import { Box, HStack, Stack, VStack } from "styled-system/jsx";
-import { isMakeCodeForV1Hex as isMakeCodeForV1HexNoErrorHandling } from "@microbit/microbit-universal-hex";
 import { saveAs } from "file-saver";
 import { ReactNode } from "react";
 import { FormattedMessage, IntlShape } from "react-intl";
@@ -29,7 +28,6 @@ import { FileSystem, MAIN_FILE, Statistics, VersionAction } from "../fs/fs";
 import {
   getLowercaseFileExtension,
   isPythonMicrobitModule,
-  readFileAsText,
   readFileAsUint8Array,
 } from "../fs/fs-util";
 import {
@@ -76,6 +74,10 @@ import {
 } from "./project-utils";
 import ProjectNameQuestion from "./ProjectNameQuestion";
 import WebUSBErrorDialog from "../workbench/connect-dialogs/WebUSBErrorDialog";
+import {
+  CircuitPythonError,
+  WebFileSystemConnection,
+} from "../device/web-file-system-device";
 import reconnectWebm from "../workbench/connect-dialogs/reconnect.webm";
 import reconnectMp4 from "../workbench/connect-dialogs/reconnect.mp4";
 
@@ -150,6 +152,10 @@ export class ProjectActions {
     userAction: ConnectionAction,
     finalFocusRef: FinalFocusRef
   ): Promise<boolean | undefined> => {
+    // Keep requestPort in the original button gesture; no project work here.
+    if (this.device instanceof WebFileSystemConnection) {
+      return this.connectInternal(userAction, finalFocusRef);
+    }
     const availability = await this.device.checkAvailability();
     if (availability !== "available") {
       this.webusbNotSupportedError(finalFocusRef);
@@ -226,6 +232,7 @@ export class ProjectActions {
     });
     try {
       await this.device.connect();
+      if (this.device.status !== ConnectionStatus.Connected) return false;
       if (task === "connect") {
         // For a download the terminal success is the flash itself.
         this.logging.event({
@@ -234,7 +241,7 @@ export class ProjectActions {
         });
       }
       finalFocusRef?.current?.focus();
-      return true;
+      return this.device.status === ConnectionStatus.Connected;
     } catch (e) {
       this.logging.event({
         type: "device_failure",
@@ -299,9 +306,6 @@ export class ProjectActions {
   /**
    * Loads files
    *
-   * Replaces the open project if a hex file is opened.
-   * No other files may be opened in the same call as a hex file.
-   *
    * Uses module marker comments to determine if a Python file
    * is a script or a module. At most one script and any number
    * of modules may be opened together. The existing project is
@@ -338,66 +342,11 @@ export class ProjectActions {
     const extensions = new Set(
       files.map((f) => getLowercaseFileExtension(f.name))
     );
-    if (extensions.has("mpy")) {
+    if (Array.from(extensions).some((extension) => extension !== "py")) {
       this.actionFeedback.expectedError({
         title: errorTitle,
-        description: this.intl.formatMessage({ id: "load-error-mpy" }),
+        description: this.intl.formatMessage({ id: "load-error-python" }),
       });
-    } else if (extensions.has("hex")) {
-      if (files.length > 1) {
-        this.actionFeedback.expectedError({
-          title: errorTitle,
-          description: this.intl.formatMessage({ id: "load-error-mixed" }),
-        });
-      } else {
-        if (await this.confirmReplace()) {
-          const file = files[0];
-          const projectName = file.name.replace(/\.hex$/i, "");
-          const hex = await readFileAsText(file);
-          try {
-            await this.fs.replaceWithHexContents(projectName, hex);
-            this.actionFeedback.success({
-              title: this.intl.formatMessage(
-                { id: "loaded-file-feedback" },
-                { filename: file.name }
-              ),
-            });
-          } catch (e: any) {
-            const isMakeCodeHex = isMakeCodeForV1Hex(hex);
-            // Ideally we'd make FormattedMessage work in toasts, but it does not so using intl.
-            this.actionFeedback.expectedError({
-              title: errorTitle,
-              description: isMakeCodeHex ? (
-                <Stack gap="0.5">
-                  <Text>
-                    {this.intl.formatMessage({
-                      id: "load-error-makecode-info",
-                    })}
-                  </Text>
-                  <Text>
-                    {this.intl.formatMessage(
-                      { id: "load-error-makecode-link" },
-                      {
-                        link: (chunks: ReactNode) => (
-                          <Link
-                            target="_blank"
-                            rel="noopener"
-                            href="https://makecode.microbit.org/"
-                          >
-                            {chunks}
-                          </Link>
-                        ),
-                      }
-                    )}
-                  </Text>
-                </Stack>
-              ) : (
-                e.message
-              ),
-            });
-          }
-        }
-      }
     } else {
       const classifiedInputs: ClassifiedFileInput[] = [];
       const hasMainPyFile = files.some((x) => x.name === MAIN_FILE);
@@ -545,6 +494,24 @@ export class ProjectActions {
   /**
    * Flash the device, reporting progress via a dialog.
    */
+  selectCircuitPythonDirectory = async (
+    finalFocusRef: FinalFocusRef
+  ): Promise<boolean> => {
+    if (!(this.device instanceof WebFileSystemConnection)) return false;
+    try {
+      return await this.device.selectDirectory();
+    } catch (e) {
+      await this.handleWebUSBError(
+        e instanceof CircuitPythonError
+          ? e
+          : new CircuitPythonError("directory", e),
+        ConnectionAction.FLASH,
+        finalFocusRef
+      );
+      return false;
+    }
+  };
+
   flash = async (
     finalFocusRef: FinalFocusRef,
     tryAgain?: boolean
@@ -553,6 +520,32 @@ export class ProjectActions {
       throw new Error("Device connection doesn't support flash");
     }
 
+    if (this.device instanceof WebFileSystemConnection) {
+      if (this.device.status !== ConnectionStatus.Connected) {
+        this.handleWebUSBError(
+          new CircuitPythonError("not-connected"),
+          ConnectionAction.FLASH,
+          finalFocusRef
+        );
+        return;
+      }
+      if (!("showDirectoryPicker" in window)) {
+        this.handleWebUSBError(
+          new CircuitPythonError("unsupported"),
+          ConnectionAction.FLASH,
+          finalFocusRef
+        );
+        return;
+      }
+      if (!this.device.hasDirectory) {
+        this.handleWebUSBError(
+          new CircuitPythonError("directory"),
+          ConnectionAction.FLASH,
+          finalFocusRef
+        );
+        return;
+      }
+    }
     if (
       this.device.status === ConnectionStatus.NoAuthorizedDevice ||
       this.device.status === ConnectionStatus.Disconnected
@@ -568,14 +561,14 @@ export class ProjectActions {
     }
 
     const task: AnalyticsTask = "download";
-    const stats = await this.projectStats();
-    this.logging.event({
-      type: "device_step",
-      detail: { task, step: "flashing", transport },
-    });
     const flashStart = Date.now();
     const flashingCode = this.intl.formatMessage({ id: "flashing-code" });
     try {
+      const stats = await this.projectStats();
+      this.logging.event({
+        type: "device_step",
+        detail: { task, step: "flashing", transport },
+      });
       const firstFlashNotice = (
         <Text fontSize="lg">
           <FormattedMessage id="flashing-full-flash-detail" />
@@ -597,6 +590,11 @@ export class ProjectActions {
       await this.device.flash(this.fs.asFlashDataSource(), {
         partial: true,
         progress,
+      });
+      this.actionFeedback.success({
+        title: this.intl.formatMessage({
+          id: "circuitpython-transfer-complete",
+        }),
       });
       this.logging.event({
         type: "device_success",
@@ -698,7 +696,7 @@ export class ProjectActions {
    * There's some debate as to whether this action is more confusing than helpful
    * but leaving it around for a bit so we can try out different UI arrangements.
    */
-  saveMainFile = async (finalFocusRef: React.RefObject<HTMLButtonElement>) => {
+  saveMainFile = async (finalFocusRef: FinalFocusRef) => {
     this.logging.event({
       type: "project_save",
       detail: { format: "py", ...statsParams(await this.projectStats()) },
@@ -914,6 +912,29 @@ export class ProjectActions {
     userAction: ConnectionAction,
     finalFocusRef: FinalFocusRef
   ) {
+    if (e instanceof CircuitPythonError) {
+      this.logging.error(
+        "CircuitPython device operation failed",
+        e,
+        e.file
+          ? {
+              file_name: e.file.fileName,
+              operation: e.file.operation,
+              error_name: e.cause instanceof Error ? e.cause.name : "unknown",
+            }
+          : undefined
+      );
+      this.actionFeedback.expectedError({
+        title: this.intl.formatMessage({ id: "circuitpython-error-title" }),
+        description: this.intl.formatMessage(
+          {
+            id: `circuitpython-error-${e.code}`,
+          },
+          { fileName: e.file?.fileName ?? "", moduleName: e.moduleName ?? "" }
+        ),
+      });
+      return;
+    }
     if (e instanceof DeviceError) {
       switch (e.code) {
         case "unsupported":
@@ -959,7 +980,7 @@ export class ProjectActions {
         showWebUsbNotSupported: false,
       });
     }
-    this.save(finalFocusRef, true);
+    this.saveMainFile(finalFocusRef);
   }
 
   private async handleDeviceInUseError(finalFocusRef: FinalFocusRef) {
@@ -1053,7 +1074,9 @@ export class ProjectActions {
 
   private async projectStats(): Promise<ProjectStatistics> {
     return {
-      ...(await this.fs.statistics()),
+      ...(this.device instanceof WebFileSystemConnection
+        ? await this.fs.fileStatistics()
+        : await this.fs.statistics()),
       errorCount: this.client?.errorCount() ?? 0,
     };
   }
@@ -1089,16 +1112,6 @@ export class ProjectActions {
   };
 }
 
-const isMakeCodeForV1Hex = (hexStr: string) => {
-  try {
-    return isMakeCodeForV1HexNoErrorHandling(hexStr);
-  } catch {
-    // We just use this to give a better message in error scenarios so we don't
-    // care if we failed to parse it etc.
-    return false;
-  }
-};
-
 export const defaultedProject = (
   fs: FileSystem,
   intl: IntlShape
@@ -1114,7 +1127,7 @@ const ReconnectTextAndVideo = () => (
   <HStack alignItems="flex-start">
     <Box flex="1 0 50%">
       <FormattedMessage
-        id="webusb-error-reconnect-microbit-description"
+        id="webusb-error-reconnect-sensebox-description"
         values={{
           p: (chunks: ReactNode) => <Text>{chunks}</Text>,
           li: (chunks: ReactNode) => (

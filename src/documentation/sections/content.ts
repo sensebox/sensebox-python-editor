@@ -38,7 +38,7 @@ const imageFiles = import.meta.glob<string>(
 );
 
 interface ContentFile {
-  // e.g. /content/de/grundlagen/leds.md
+  // e.g. /content/de/text/text.md
   path: string;
   language: string;
   section: string;

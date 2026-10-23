@@ -157,7 +157,7 @@ back/forward and typed URLs don't fire it (they are `page_view` only).
 | Param     | Values                                                                                                                                     |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `via`     | `user` (clicked in the sidebar), `search` (picked a search result), `code` (from a code hover/help link), `simulator` (from the simulator) |
-| `surface` | The sidebar section id from `content/sidebar.json` (e.g. `grundlagen`) or `api`                                                            |
+| `surface` | The sidebar section id from `content/sidebar.json` (for example `text`)                                                                    |
 | `id`      | The page slug, e.g. `buttons`; absent when navigating to a tab root                                                                        |
 
 ### `docs_search`
@@ -263,3 +263,65 @@ reading old dashboards.
 | `sim-user-<sensorId>`                                                                              | Consolidated to `sim_sensor` with the `id` param.                                                                                     |
 | `sim-user-data-log-saved`                                                                          | Renamed `sim_log_save`.                                                                                                               |
 | `WebUSB-time`                                                                                      | Was already dead (the emitter went with the connection-library extraction in Feb 2025). Revived as `duration_ms` on `device_success`. |
+
+### CircuitPython / senseBox connection flow
+
+The top-right button opens the shared Web Serial connection (`task: connect`)
+without transferring project files. Cancelling the serial picker does not emit
+`device_success`. The lower **Transfer code** button writes project files through
+File System Access (`task: download`). The legacy `transport: web_usb` value is
+retained for compatibility; it also covers this combination of browser APIs.
+CircuitPython `storage_used` is the sum of project file bytes, without HEX padding.
+Its statistics do not require loading micro:bit firmware.
+
+CircuitPython failures use the existing `device_failure.code` field with
+`unsupported`, `connect`, `not-connected`, `directory`, `wrong-directory`, `write`,
+`filesystem-state`, `permission`, `storage-full`, `library`, `sync`, `start` or `repl` where an operation reaches the corresponding tracked step. Folder
+selection errors remain in the selection dialog so the user can correct them.
+The diagnostic events `webfilesystem-flash` and `webfilesystem-flash-complete`
+mark the start and successful completion of file transfer. Completion is reported
+after every file has been closed, board-side size/checksum verification has
+succeeded and the serial restart command has been sent;
+it does not assert that the user's program ran successfully.
+
+File-write error reports include flat diagnostic context `file_name`, `operation`
+and `error_name`, without program source. `operation` is `open-file`,
+`read-file`, `create-writer`, `write-file` or `close-file`. `NoModificationAllowedError` maps to
+`filesystem-state` (read-only drive or file lock), `NotAllowedError` / `SecurityError`
+to `permission`, and `QuotaExceededError` to `storage-full`. These same categories
+are retained in `device_failure.code`; cleanup failures do not replace the original
+exception. The browser alone cannot prove why the OS has made a volume read-only.
+
+A `sync` failure means the host save completed but the board did not acknowledge
+matching file lengths and checksums before timeout. It never emits a successful
+transfer event or requests a soft restart. The sync check reads project files on
+the board without executing them or changing filesystem ownership.
+
+The synchronization check uses Raw REPL with complete execution framing. A `sync`
+error may also mean a missing/incomplete raw response or a Python error, whose
+cause is retained for diagnosis. On success the device returns to the confirmed
+normal REPL before Ctrl-D requests the soft reboot. Raw execution Ctrl-D bytes
+are not soft reboots and do not produce separate analytics success events.
+
+The file visibility gate now requires repeated matching reads for at least one
+second, restarting that interval after any mismatch, within a 60-second deadline.
+A `start` failure means the restart was requested but the first second of console
+output contained an immediate, traceback-free `code.py` load error with Errno 5.
+It suppresses the completion/success events, retains the directory and does not
+retry or rewrite files automatically. Other program errors remain console output;
+the short observation does not guarantee successful execution of arbitrary code.
+
+In the local Linux development editor, changed files can be flushed through the
+same-origin Vite helper before MCU verification. This adds no analytics event,
+step or failure code. Host flush acknowledgement is not transfer completion;
+the existing board verification and restart conditions still apply. If the helper
+is absent, rejects the request or times out, transfer uses the original visibility
+wait. The local request contains selected-directory name, boot marker and file
+names/sizes/SHA-256 values; it does not contain program contents or a host path.
+
+Automatic library installation uses the same transfer lifecycle. A `library`
+failure means preparing the required library assets failed (including incompatible
+CircuitPython major version); it happens before REPL entry or any project/library
+writes, and never requests a restart. No extra library analytics events or source
+contents are recorded. `storage_used` still counts only user project bytes, not
+automatically resolved library assets. The board checksum gate covers both.

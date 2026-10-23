@@ -34,6 +34,28 @@ Runs the app in the development mode.
 
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
+On Linux, this local development server also accelerates senseBox transfers by
+flushing the changed CIRCUITPY files and their directory after the browser save.
+This avoids waiting for delayed Linux writeback without changing mount options.
+The helper accepts only local requests from the same origin and checks the selected
+board identity and file hashes. MCU verification still runs before restarting.
+Hosted/production builds use the normal browser transfer and verification path.
+See [the senseBox change record](docs/sensebox-device-changes.md) for measurements
+and limitations.
+
+When transferring to a CircuitPython 10.x senseBox, static imports automatically
+install matching libraries and their dependencies from the pinned Adafruit bundle
+into `CIRCUITPY/lib`. Imports in reachable project modules are included. Built-in
+modules such as `board` need no installation; project-owned modules take priority.
+Unchanged files are compared and skipped. Unknown libraries and dynamic imports
+still require manual installation. The first use needs access to the editor's
+library assets. This also works in hosted builds.
+
+The bundled third-party assets retain their individual licenses and notices under
+[`public/circuitpython/adafruit-10-20261016/`](public/circuitpython/adafruit-10-20261016/README.txt).
+Regenerate the pinned assets with `python3 tools/prepare-circuitpython-libraries.py`;
+the script verifies the upstream archives and regenerates the catalog and hashes.
+
 The page will reload if you make edits.
 
 This does not show TypeScript or lint errors.

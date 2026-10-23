@@ -72,25 +72,28 @@ describe("useRouterState", () => {
   });
 
   it("treats deeper paths as the editor with no tab", () => {
-    renderAt("/api/a/b");
+    renderAt("/reference/a/b");
     expect(state()).toEqual({});
   });
 
   it("navigates, carrying focus in history state, and logs the source", async () => {
     const { router, logging } = renderAt("/");
     await act(async () => {
-      setState({ tab: "api", slug: { id: "microbit" }, focus: true }, "code");
+      setState(
+        { tab: "reference", slug: { id: "display" }, focus: true },
+        "code"
+      );
     });
-    expect(router.state.location.pathname).toEqual("/api/microbit");
+    expect(router.state.location.pathname).toEqual("/reference/display");
     expect(state()).toEqual({
-      tab: "api",
-      slug: { id: "microbit" },
+      tab: "reference",
+      slug: { id: "display" },
       focus: true,
     });
     expect(logging.events).toEqual([
       {
         type: "docs_navigate",
-        detail: { via: "code", surface: "api", id: "microbit" },
+        detail: { via: "code", surface: "reference", id: "display" },
       },
     ]);
   });

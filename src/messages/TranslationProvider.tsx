@@ -5,7 +5,6 @@
  */
 import {
   fallbackLocale,
-  inContextTranslationLangId,
   supportedLanguages,
   useSettings,
 } from "../settings/settings";
@@ -23,10 +22,7 @@ async function loadLocaleData(locale: string): Promise<Messages> {
   // canonical id casing. The catalog file takes the canonical id. Vite
   // splits the template import into a chunk per catalog.
   const lower = locale.toLowerCase();
-  const id =
-    lower === inContextTranslationLangId
-      ? inContextTranslationLangId
-      : supportedLanguages.find((l) => l.id.toLowerCase() === lower)?.id;
+  const id = supportedLanguages.find((l) => l.id.toLowerCase() === lower)?.id;
   if (!id || id === fallbackLocale) {
     return (await import("./ui.en.json")).default;
   }

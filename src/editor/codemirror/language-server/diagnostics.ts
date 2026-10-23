@@ -9,9 +9,80 @@ import { Action, Diagnostic } from "../lint/lint";
 import { positionToOffset } from "./positions";
 import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 import { ConnectionStatus } from "@microbit/microbit-connection";
+import circuitPythonLibraryCatalog from "../../../device/libraries/catalog.json";
 
 const reportMicrobitVersionApiUnsupported =
   "reportMicrobitVersionApiUnsupported";
+
+const circuitPythonBuiltinModules = new Set([
+  "analogbufio",
+  "analogio",
+  "array",
+  "audiobusio",
+  "audiocore",
+  "audiomixer",
+  "audiomp3",
+  "audiopwmio",
+  "board",
+  "busio",
+  "countio",
+  "digitalio",
+  "displayio",
+  "esp32",
+  "keypad",
+  "microcontroller",
+  "pwmio",
+  "rainbowio",
+  "rtc",
+  "socketpool",
+  "storage",
+  "supervisor",
+  "time",
+  "touchio",
+  "usb_cdc",
+  "usb_hid",
+  "wifi",
+]);
+
+const circuitPythonLibraryModules = new Set(
+  Object.keys(circuitPythonLibraryCatalog.modules)
+);
+
+const isCircuitPythonImport = (line: string) => {
+  const match = /^\s*(?:from|import)\s+([\w.]+)/.exec(line);
+  if (!match) return false;
+  const module = match[1].split(".")[0];
+  return (
+    circuitPythonBuiltinModules.has(module) ||
+    circuitPythonLibraryModules.has(module)
+  );
+};
+
+const isCircuitPythonDiagnostic = (
+  document: Text,
+  from: number,
+  to: number,
+  code: LSP.Diagnostic["code"]
+) => {
+  const line = document.lineAt(from).text;
+  const highlighted = document.sliceString(from, to);
+  const timeFunction = /\btime\.(?:monotonic|struct_time|mktime)\b/;
+  const neoPixelOption = /^(?:brightness|pixel_order|auto_write|GRB)$/.test(
+    highlighted
+  );
+  const precedingSource = document.sliceString(Math.max(0, from - 1_000), from);
+  return (
+    (code === "reportMissingImports" && isCircuitPythonImport(line)) ||
+    ((code === "reportAttributeAccessIssue" ||
+      code === "reportGeneralTypeIssues" ||
+      code === "reportCallIssue" ||
+      code === "reportArgumentType") &&
+      (timeFunction.test(line) ||
+        (neoPixelOption &&
+          precedingSource.lastIndexOf("neopixel.NeoPixel(") >
+            precedingSource.lastIndexOf(")"))))
+  );
+};
 
 const severityMapping = {
   [LSP.DiagnosticSeverity.Error]: "error",
@@ -44,6 +115,9 @@ export const diagnosticsMapping = (
       const to = positionToOffset(document, range.end);
       // Skip if we can't map to the current document.
       if (from !== undefined && to !== undefined && to >= from) {
+        if (isCircuitPythonDiagnostic(document, from, to, code)) {
+          return undefined;
+        }
         return {
           from,
           to,

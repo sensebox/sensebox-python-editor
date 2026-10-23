@@ -73,7 +73,12 @@ const ActiveLevel = ({
   toolkit,
   direction,
 }: ActiveLevelProps) => {
-  const [topic, activeItem] = getTopicAndEntry(toolkit, topicOrEntryId);
+  const [selectedTopic, activeItem] = getTopicAndEntry(toolkit, topicOrEntryId);
+  const directTopic =
+    section.direct && toolkit.contents?.length === 1
+      ? toolkit.contents[0]
+      : undefined;
+  const topic = selectedTopic ?? directTopic;
   const [{ languageId }] = useSettings();
   const referenceString = localize(section.title, languageId);
   const description = localize(section.description, languageId);
@@ -85,13 +90,17 @@ const ActiveLevel = ({
         key={topic.name}
         direction={direction}
         heading={
-          <DocumentationBreadcrumbHeading
-            parent={referenceString}
-            title={topic.name}
-            onBack={() => onNavigate(undefined)}
-            subtitle={topic.subtitle}
-            icon={topic.image}
-          />
+          directTopic ? (
+            <AreaHeading name={referenceString} description={description} />
+          ) : (
+            <DocumentationBreadcrumbHeading
+              parent={referenceString}
+              title={topic.name}
+              onBack={() => onNavigate(undefined)}
+              subtitle={topic.subtitle}
+              icon={topic.image}
+            />
+          )
         }
       >
         {topic.introduction && (

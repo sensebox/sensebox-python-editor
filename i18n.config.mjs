@@ -1,24 +1,8 @@
 import { defineConfig } from "@microbit/i18n-tools";
 
-// Languages with an editor UI translation in Crowdin. Which of them the app
-// offers, and whether as a preview, is decided in src/settings/settings.tsx;
-// a new language also needs TranslationProvider.tsx, lunr search support,
-// the stubs repo and the pyright fork (see docs/tech-overview.md).
-const languages = [
-  "ca",
-  "de",
-  "es-ES",
-  "fr",
-  "ga-IE",
-  "ja",
-  "ko",
-  "nl",
-  "pl",
-  "pt-BR",
-  "zh-CN",
-  "zh-TW",
-  "lol",
-];
+// English is the source catalog; German is the only translated catalog.
+// Together, they are the two languages offered by the senseBox editor.
+const languages = ["de"];
 
 export default defineConfig({
   crowdin: {

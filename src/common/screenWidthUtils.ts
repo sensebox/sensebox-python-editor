@@ -5,6 +5,6 @@
  */
 
 export const widthToHideSidebar = 1365;
-export const sidebarToWidthRatio = 0.27;
+export const sidebarToWidthRatio = 0.29;
 export const simulatorToWidthRatio = 0.29;
 export const hideSidebarMediaQuery = `(max-width: ${widthToHideSidebar}px)`;

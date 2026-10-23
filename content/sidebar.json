@@ -2,21 +2,95 @@
   "fallbackLanguage": "de",
   "sections": [
     {
-      "id": "grundlagen",
+      "id": "text",
       "layout": "reference",
-      "icon": "VscLibrary",
-      "title": { "de": "Grundlagen", "en": "Basics" },
+      "icon": "RiText",
+      "accentColor": "#5ba68d",
+      "direct": true,
+      "title": "Text",
       "description": {
-        "de": "Die wichtigsten Python-Bausteine für die senseBox.",
-        "en": "The most important Python building blocks for the senseBox."
+        "de": "Text erstellen, verbinden und untersuchen.",
+        "en": "Create, join and inspect text."
       },
-      "order": ["ausgabe", "schleifen"]
+      "order": ["text"]
+    },
+    {
+      "id": "logik",
+      "layout": "reference",
+      "icon": "RiGitBranchLine",
+      "accentColor": "#5b80a6",
+      "direct": true,
+      "title": { "de": "Logik", "en": "Logic" },
+      "description": {
+        "de": "Bedingungen prüfen und Entscheidungen treffen.",
+        "en": "Test conditions and make decisions."
+      },
+      "order": ["logik"]
+    },
+    {
+      "id": "schleifen",
+      "layout": "reference",
+      "icon": "RiLoopRightLine",
+      "accentColor": "#a6685b",
+      "direct": true,
+      "title": { "de": "Schleifen", "en": "Loops" },
+      "description": {
+        "de": "Anweisungen wiederholen und Schleifendurchläufe steuern.",
+        "en": "Repeat instructions and control loop iterations."
+      },
+      "order": ["schleifen"]
+    },
+    {
+      "id": "zeit",
+      "layout": "reference",
+      "icon": "RiTimeLine",
+      "accentColor": "#5ba674",
+      "title": { "de": "Zeit", "en": "Time" },
+      "description": {
+        "de": "Warten, Laufzeiten messen und Uhren verwenden.",
+        "en": "Wait, measure elapsed time and use clocks."
+      },
+      "order": ["zeitsteuerung", "rtc", "ntp"]
+    },
+    {
+      "id": "mathematik",
+      "layout": "reference",
+      "icon": "RiCalculatorLine",
+      "accentColor": "#5b68a6",
+      "direct": true,
+      "title": { "de": "Mathematik", "en": "Mathematics" },
+      "description": {
+        "de": "Zahlen berechnen, prüfen und umwandeln.",
+        "en": "Calculate, test and transform numbers."
+      },
+      "order": ["mathematik"]
+    },
+    {
+      "id": "variablen",
+      "layout": "reference",
+      "icon": "RiBracesLine",
+      "accentColor": "#a65b80",
+      "direct": true,
+      "title": { "de": "Variablen", "en": "Variables" },
+      "description": {
+        "de": "Werte unter einem Namen speichern und wiederverwenden.",
+        "en": "Store and reuse named values."
+      },
+      "order": ["variablen"]
     },
     {
       "id": "sensoren",
       "layout": "reference",
       "icon": "RiSensorLine",
+      "accentColor": "#5ba55b",
       "title": { "de": "Sensoren", "en": "Sensors" }
+    },
+    {
+      "id": "module",
+      "layout": "reference",
+      "icon": "RiCpuLine",
+      "accentColor": "#5ba55b",
+      "title": { "de": "Module", "en": "Modules" }
     },
     {
       "id": "projekte",
@@ -27,7 +101,6 @@
         "de": "Fertige Projekte zum Ausprobieren und Weiterentwickeln.",
         "en": "Complete projects to try out and build on."
       }
-    },
-    { "builtin": "api" }
+    }
   ]
 }

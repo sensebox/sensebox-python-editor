@@ -12,12 +12,19 @@ import {
   MoreMenuButton,
   Tooltip,
 } from "@microbit/ui";
-import React, { ForwardedRef, useCallback, useRef } from "react";
+import React, {
+  ForwardedRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { RiUsbLine } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
 import { HStack } from "styled-system/jsx";
 import { ConnectionStatus } from "@microbit/microbit-connection";
-import { useConnectionStatus } from "../device/device-hooks";
+import { WebFileSystemConnection } from "../device/web-file-system-device";
+import { useDevice, useConnectionStatus } from "../device/device-hooks";
 import { useProjectActions } from "./project-hooks";
 import { useHotkeys } from "react-hotkeys-hook";
 import {
@@ -36,8 +43,17 @@ const SendButton = React.forwardRef(
     { size, sendButtonRef }: SendButtonProps,
     ref: ForwardedRef<HTMLButtonElement>
   ) => {
+    const device = useDevice();
+    const [busy, setBusy] = useState(false);
     const status = useConnectionStatus();
     const connected = status === ConnectionStatus.Connected;
+    const isCircuitPython = device instanceof WebFileSystemConnection;
+    const [directorySelected, setDirectorySelected] = useState(
+      isCircuitPython && device.hasDirectory
+    );
+    useEffect(() => {
+      setDirectorySelected(isCircuitPython && device.hasDirectory);
+    }, [device, isCircuitPython, status]);
     const actions = useProjectActions();
     const handleToggleConnected = useCallback(async () => {
       if (connected) {
@@ -57,6 +73,7 @@ const SendButton = React.forwardRef(
           // Ignore repeated clicks.
           return;
         }
+        setBusy(true);
         flashing.current = {
           flashing: true,
           lastCompleteFlash: flashing.current.lastCompleteFlash,
@@ -64,15 +81,27 @@ const SendButton = React.forwardRef(
         try {
           await actions.flash(finalFocusRef);
         } finally {
+          setDirectorySelected(isCircuitPython && device.hasDirectory);
+          setBusy(false);
           flashing.current = {
             flashing: false,
             lastCompleteFlash: new Date().getTime(),
           };
         }
       },
-      [flashing, actions]
+      [flashing, actions, device, isCircuitPython]
     );
     const menuButtonRef = useRef<HTMLButtonElement>(null);
+    const handleSelectDirectory = useCallback(async () => {
+      if (!isCircuitPython || busy) return;
+      setBusy(true);
+      try {
+        await actions.selectCircuitPythonDirectory(sendButtonRef);
+      } finally {
+        setDirectorySelected(device.hasDirectory);
+        setBusy(false);
+      }
+    }, [actions, busy, device, isCircuitPython, sendButtonRef]);
     const activeElementRef = useRef<HTMLElement | null>(null);
     const handleSendToMicrobitShortcut = useCallback(() => {
       activeElementRef.current = document.activeElement as HTMLElement;
@@ -85,41 +114,70 @@ const SendButton = React.forwardRef(
     );
     return (
       <HStack>
-        <ButtonGroup isAttached>
-          <Tooltip
-            hasArrow
-            placement="top start"
-            label={intl.formatMessage({
-              id: "send-hover",
-            })}
+        {isCircuitPython && (
+          <Button
+            ref={menuButtonRef}
+            isDisabled={busy}
+            size={size}
+            onPress={handleToggleConnected}
           >
-            <Button
-              ref={ref}
-              size={size}
-              variant="primary"
-              startIcon={<RiUsbLine />}
-              onPress={() => handleSendToMicrobit(sendButtonRef)}
-            >
-              <FormattedMessage id="send-action" />
-            </Button>
-          </Tooltip>
-          <MenuTrigger>
-            <MoreMenuButton
-              ref={menuButtonRef}
-              variant="primary"
-              aria-label={intl.formatMessage({ id: "more-connect-options" })}
-              data-testid="more-connect-options"
-              size={size}
+            <FormattedMessage
+              id={
+                connected ? "disconnect-action" : "circuitpython-connect-action"
+              }
             />
-            <MenuList>
-              <MenuItem icon={<RiUsbLine />} onAction={handleToggleConnected}>
-                <FormattedMessage
-                  id={connected ? "disconnect-action" : "connect-action"}
+          </Button>
+        )}
+        {isCircuitPython && !directorySelected && (
+          <Button isDisabled={busy} size={size} onPress={handleSelectDirectory}>
+            <FormattedMessage id="circuitpython-directory-select" />
+          </Button>
+        )}
+        {(!isCircuitPython || directorySelected) && (
+          <ButtonGroup isAttached>
+            <Tooltip
+              hasArrow
+              placement="top start"
+              label={intl.formatMessage({
+                id: "send-hover",
+              })}
+            >
+              <Button
+                ref={ref}
+                isDisabled={busy}
+                size={size}
+                variant="primary"
+                startIcon={<RiUsbLine />}
+                onPress={() => handleSendToMicrobit(sendButtonRef)}
+              >
+                <FormattedMessage id="send-action" />
+              </Button>
+            </Tooltip>
+            {!isCircuitPython && (
+              <MenuTrigger>
+                <MoreMenuButton
+                  ref={menuButtonRef}
+                  variant="primary"
+                  aria-label={intl.formatMessage({
+                    id: "more-connect-options",
+                  })}
+                  data-testid="more-connect-options"
+                  size={size}
                 />
-              </MenuItem>
-            </MenuList>
-          </MenuTrigger>
-        </ButtonGroup>
+                <MenuList>
+                  <MenuItem
+                    icon={<RiUsbLine />}
+                    onAction={handleToggleConnected}
+                  >
+                    <FormattedMessage
+                      id={connected ? "disconnect-action" : "connect-action"}
+                    />
+                  </MenuItem>
+                </MenuList>
+              </MenuTrigger>
+            )}
+          </ButtonGroup>
+        )}
       </HStack>
     );
   }

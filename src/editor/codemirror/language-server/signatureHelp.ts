@@ -347,7 +347,7 @@ export const signatureHelp = (
       );
     }
     const referenceLink = getLinkToReference(id, apiReferenceMap);
-    return wrapWithDocumentationButton(intl, parent, id, referenceLink);
+    return wrapWithDocumentationButton(intl, parent, referenceLink);
   };
 
   return [

@@ -3,19 +3,16 @@
     "defaultMessage": "Über"
   },
   "about-comic": {
-    "defaultMessage": "Dreiteiliger Comic mit dem Titel \"MicroPython Rocks\" von Mike Rowbit. Eine Cartoon-Schlange stellt Damien mit den Worten vor: \"Darf ich vorstellen: Damien... Er hat MicroPython entwickelt.\". Zwei Schlangen diskutieren über MicroPython. Die gelbe Schlange sagt: \"MicroPython wurde entwickelt, um auf sehr kleinen Computern zu funktionieren.\" \"Wie dein BBC micro:bit\", antwortet die lila Schlange.\" Die gelbe Schlange fährt fort: \"Aber Python kann überall laufen.\". Die lila Schlange stimmt zu und sagt: \"Zum Beispiel auf diesem Server-Rack, auf dem riesige Websites betrieben werden\". Der Hintergrund hinter den Schlangen zeigt ein Server-Rack."
-  },
-  "about-microbit": {
-    "defaultMessage": "Mit Liebe entwickelt von der <link>Micro:bit Educational Foundation und Mitwirkenden</link>"
+    "defaultMessage": "Dreiteiliger Comic mit dem Titel \"CircuitPython Rocks\" von Mike Rowbit. Zwei Cartoon-Schlangen diskutieren über CircuitPython und Python. Der Hintergrund hinter den Schlangen zeigt ein Server-Rack."
   },
   "about-micropython": {
-    "defaultMessage": "Der Editor basiert auf <link>MicroPython</link>, das von Damien George und einer Gruppe von Entwicklern auf der ganzen Welt entwickelt wurde."
+    "defaultMessage": "Der Editor basiert auf <link>CircuitPython</link>."
   },
   "about-read-less-micropython": {
-    "defaultMessage": "Weniger über MicroPython lesen"
+    "defaultMessage": "Weniger über CircuitPython lesen"
   },
   "about-read-more-micropython": {
-    "defaultMessage": "Mehr über MicroPython lesen"
+    "defaultMessage": "Mehr über CircuitPython lesen"
   },
   "accessibility": {
     "defaultMessage": "Barrierefreiheit"
@@ -80,6 +77,60 @@
   "choose-main-source-replace-main-code": {
     "defaultMessage": "Hauptcode durch {source} ersetzen"
   },
+  "circuitpython-connect-action": {
+    "defaultMessage": "senseBox verbinden"
+  },
+  "circuitpython-console-clear": {
+    "defaultMessage": "Konsole leeren"
+  },
+  "circuitpython-directory-select": {
+    "defaultMessage": "CIRCUITPY-Verzeichnis auswählen"
+  },
+  "circuitpython-error-connect": {
+    "defaultMessage": "Der serielle Port konnte nicht geöffnet werden. Prüfe das USB-Kabel, wähle die senseBox und schließe andere Programme, die ihren seriellen Port verwenden. Verbinde dich danach erneut oben rechts."
+  },
+  "circuitpython-error-directory": {
+    "defaultMessage": "Auf das CIRCUITPY-Verzeichnis konnte nicht zugegriffen werden. Prüfe, ob das Laufwerk verbunden ist, und erlaube den Schreibzugriff. Wähle das Verzeichnis erneut aus."
+  },
+  "circuitpython-error-filesystem-state": {
+    "defaultMessage": "Das Betriebssystem verweigert Änderungen an {fileName}. CIRCUITPY ist möglicherweise schreibgeschützt eingebunden oder die Datei gesperrt. Schließe andere Programme mit Schreibzugriff. Trenne die Verbindung und binde CIRCUITPY regulär neu ein. Wähle das Verzeichnis danach neu aus. Ein erneutes Auswählen des Verzeichnisses allein behebt diesen Zustand nicht."
+  },
+  "circuitpython-error-library": {
+    "defaultMessage": "Die benötigte Bibliothek {moduleName} konnte nicht vorbereitet werden. Prüfe die Verbindung zum Editor und ob die senseBox CircuitPython 10.x verwendet. code.py wurde nicht neu geschrieben."
+  },
+  "circuitpython-error-not-connected": {
+    "defaultMessage": "Verbinde die senseBox zuerst mit dem Button oben rechts. Übertrage den Code danach mit dem unteren Button."
+  },
+  "circuitpython-error-permission": {
+    "defaultMessage": "Der Browser hat keine Schreibberechtigung mehr für {fileName}. Übertrage erneut, wähle das CIRCUITPY-Hauptverzeichnis und erlaube den Schreibzugriff."
+  },
+  "circuitpython-error-repl": {
+    "defaultMessage": "Die senseBox hat auf den Stoppbefehl nicht geantwortet. Prüfe, ob der serielle Port und das CIRCUITPY-Laufwerk zum selben Board gehören. Verbinde das Board neu und versuche es erneut."
+  },
+  "circuitpython-error-start": {
+    "defaultMessage": "Die Dateien wurden übertragen und ein Neustart wurde angefordert. CircuitPython konnte code.py danach nicht lesen (Eingabe-/Ausgabefehler, Errno 5). Warte kurz und übertrage erneut. Weitere Informationen stehen im seriellen Monitor."
+  },
+  "circuitpython-error-storage-full": {
+    "defaultMessage": "Auf CIRCUITPY ist nicht genügend Speicher zum Speichern von {fileName} frei. Sichere deine Dateien und schaffe Platz auf dem Laufwerk, bevor du erneut überträgst."
+  },
+  "circuitpython-error-sync": {
+    "defaultMessage": "Die Dateien wurden am Rechner gespeichert, aber die senseBox bestätigt ihren vollständigen Inhalt noch nicht. Es wurde kein Neustart angefordert. Warte kurz und übertrage erneut. Prüfe die USB-Verbindung, falls das weiterhin auftritt."
+  },
+  "circuitpython-error-title": {
+    "defaultMessage": "senseBox-Verbindung oder Übertragung fehlgeschlagen"
+  },
+  "circuitpython-error-unsupported": {
+    "defaultMessage": "Verwende einen Desktop-Browser mit Web Serial und Verzeichniszugriff, zum Beispiel Chrome oder Edge."
+  },
+  "circuitpython-error-write": {
+    "defaultMessage": "Die Projektdateien konnten nicht vollständig geschrieben werden. Prüfe USB-Verbindung, Schreibberechtigung und freien Speicher auf CIRCUITPY. Übertrage erneut und wähle das Laufwerk neu aus. Das Projekt ist möglicherweise nur teilweise geschrieben."
+  },
+  "circuitpython-error-wrong-directory": {
+    "defaultMessage": "Bitte wähle das Hauptverzeichnis des Laufwerks CIRCUITPY aus. Dort liegt boot_out.txt. Dateien, Unterordner und andere Laufwerke werden nicht akzeptiert."
+  },
+  "circuitpython-transfer-complete": {
+    "defaultMessage": "Projektdateien auf CIRCUITPY übertragen. Neustart angefordert."
+  },
   "clear": {
     "defaultMessage": "Löschen"
   },
@@ -123,28 +174,25 @@
     "defaultMessage": "Kabel anschließen"
   },
   "connect-help-alt": {
-    "defaultMessage": "WebUSB-Verbindungsdialog mit dem BBC micro:bit-Eingang mit der Bezeichnung 1 und der Schaltfläche Verbinden mit der Bezeichnung 2"
+    "defaultMessage": "WebUSB-Verbindungsdialog mit dem senseBox-Eingang mit der Bezeichnung 1 und der Schaltfläche Verbinden mit der Bezeichnung 2"
   },
   "connect-help-message": {
     "defaultMessage": "Im nächsten Popup:"
   },
   "connect-help-one": {
-    "defaultMessage": "Deinen micro:bit auswählen"
+    "defaultMessage": "Deinen senseBox auswählen"
   },
   "connect-help-title": {
-    "defaultMessage": "Wähle micro:bit"
+    "defaultMessage": "Wähle senseBox"
   },
   "connect-help-two": {
     "defaultMessage": "Wähle \"Verbinden\""
   },
   "connect-hover": {
-    "defaultMessage": "Verbinde deinen micro:bit über WebUSB"
-  },
-  "connect-microbit": {
-    "defaultMessage": "Mit dem micro:bit verbinden, um die serielle Ausgabe hier zu sehen"
+    "defaultMessage": "Verbinde deinen senseBox über WebUSB"
   },
   "connect-troubleshoot": {
-    "defaultMessage": "Problemlösungen bei fehlgeschlagener Verbindung mit dem micro:bit"
+    "defaultMessage": "Problemlösungen bei fehlgeschlagener Verbindung mit dem senseBox"
   },
   "content-load-error": {
     "defaultMessage": "Etwas ist schiefgelaufen. Laden deine Hex-Datei herunter, um das Projekt wiederherstellen zu können, und aktualisiere die Seite, um den Editor neu zu laden."
@@ -189,7 +237,7 @@
     "defaultMessage": "Trennen"
   },
   "disconnect-hover": {
-    "defaultMessage": "Verbindung zum micro:bit trennen"
+    "defaultMessage": "Verbindung zum senseBox trennen"
   },
   "dont-show-again": {
     "defaultMessage": "Nicht mehr anzeigen"
@@ -237,10 +285,10 @@
     "defaultMessage": "Der Name darf keine Leerzeichen enthalten"
   },
   "firmware-update-link": {
-    "defaultMessage": "Du musst <link>deine Firmware aktualisieren</link>, bevor du dich mit diesem micro:bit verbinden kannst."
+    "defaultMessage": "Du musst <link>deine Firmware aktualisieren</link>, bevor du dich mit diesem senseBox verbinden kannst."
   },
   "firmware-update-message": {
-    "defaultMessage": "Die Verbindung mit dem micro:bit ist fehlgeschlagen, weil die Firmware auf deinem micro:bit zu alt ist."
+    "defaultMessage": "Die Verbindung mit dem senseBox ist fehlgeschlagen, weil die Firmware auf deinem senseBox zu alt ist."
   },
   "firmware-update-title": {
     "defaultMessage": "Firmware-Aktualisierung erforderlich"
@@ -249,16 +297,16 @@
     "defaultMessage": "Flashen"
   },
   "flash-hover": {
-    "defaultMessage": "Das Projekt direkt auf den den micro:bit flashen"
+    "defaultMessage": "Das Projekt direkt auf den den senseBox flashen"
   },
   "flashing-code": {
-    "defaultMessage": "Sende Code (flashen)"
+    "defaultMessage": "Code wird übertragen"
   },
   "flashing-full-flash-detail": {
-    "defaultMessage": "Dein Code wird an deinen micro:bit gesendet (geflasht). Das kann beim ersten Mal eine Weile dauern, aber danach geht es schneller."
+    "defaultMessage": "Deine Projektdateien werden auf die senseBox übertragen. Bitte warte, bis die Übertragung abgeschlossen ist."
   },
   "flashing-micropython": {
-    "defaultMessage": "MicroPython flashen"
+    "defaultMessage": "CircuitPython flashen"
   },
   "font-size": {
     "defaultMessage": "Schriftgröße"
@@ -299,17 +347,8 @@
   "less-action": {
     "defaultMessage": "Weniger"
   },
-  "load-error-makecode-info": {
-    "defaultMessage": "Diese hex-Datei kann nicht in den Python-Editor geladen werden. Der Python-Editor kann keine hex-Dateien öffnen, die mit Microsoft MakeCode erstellt wurden."
-  },
-  "load-error-makecode-link": {
-    "defaultMessage": "Bitte besuche <link>https://makecode.microbit.org/</link>, um diese hex-Datei zu verwenden."
-  },
-  "load-error-mixed": {
-    "defaultMessage": "Eine hex-Datei kann nur für sich allein geladen werden. Sie ersetzt alle Dateien im Projekt."
-  },
-  "load-error-mpy": {
-    "defaultMessage": "Diese Version des Python-Editors unterstützt derzeit das Hinzufügen von .mpy-Dateien nicht."
+  "load-error-python": {
+    "defaultMessage": "Es können nur Python-Dateien (.py) geöffnet werden."
   },
   "load-error-title": {
     "defaultMessage": "Kann {fileCount, plural, one {Datei} other {Dateien}} nicht laden"
@@ -320,17 +359,14 @@
   "loading": {
     "defaultMessage": "Wird geladen..."
   },
-  "microbit-hearts-alt": {
-    "defaultMessage": "micro:bit-Platine mit dem 5 x 5 LED-Gitter, das ein Herz zeigt"
-  },
   "micropython-documentation": {
-    "defaultMessage": "MicroPython-Dokumentation"
+    "defaultMessage": "CircuitPython-Dokumentation"
   },
   "micropython-history": {
-    "defaultMessage": "Lerne, wie MicroPython auf dem micro:bit angefangen hat"
+    "defaultMessage": "Lerne CircuitPython auf der senseBox kennen"
   },
   "micropython-source-code": {
-    "defaultMessage": "MicroPython <linkV1>Quellcode für den micro:bit V1</linkV1> und <linkV2>micro:bit V2</linkV2>"
+    "defaultMessage": "CircuitPython <linkV1>Quellcode für den senseBox V1</linkV1> und <linkV2>senseBox V2</linkV2>"
   },
   "more-action": {
     "defaultMessage": "Mehr"
@@ -348,7 +384,7 @@
     "defaultMessage": "Dieses Projekt enthält {fileCount, plural, other {{fileCount} Dateien}} aber nur <strong>code.py</strong> wurde heruntergeladen."
   },
   "multiple-files-message-two": {
-    "defaultMessage": "Benutze die Taste <strong>Speichern</strong>, um dein ganzes Projekt als hex-Datei herunterzuladen. Du kannst die hex-Datei <strong>Öffnen</strong>, um dein Projekt wiederherzustellen. Wenn du es vorziehst, einzelne Python-Dateien herunterzuladen, benutze die Registerkarte <strong>Projekt</strong>."
+    "defaultMessage": "Die Hauptdatei wurde als Python-Datei gespeichert. Weitere Python-Dateien kannst du über die Registerkarte <strong>Projekt</strong> herunterladen."
   },
   "multiple-files-title": {
     "defaultMessage": "Warnung: Nur code.py heruntergeladen"
@@ -369,22 +405,22 @@
     "defaultMessage": "Weiter"
   },
   "not-found-checklist-one": {
-    "defaultMessage": "Ist dein <strong>micro:bit eingesteckt</strong>? Hast du <link>diese Schritte befolgt</link>?"
+    "defaultMessage": "Ist dein <strong>senseBox eingesteckt</strong>? Hast du <link>diese Schritte befolgt</link>?"
   },
   "not-found-checklist-two": {
-    "defaultMessage": "Wenn du einen <strong>micro:bit V1</strong> hast, musst du vielleicht <link>die Firmware aktualisieren</link>"
+    "defaultMessage": "Wenn du einen <strong>senseBox V1</strong> hast, musst du vielleicht <link>die Firmware aktualisieren</link>"
   },
   "not-found-message": {
-    "defaultMessage": "Du hast keinen micro:bit ausgewählt, oder es gab ein Problem beim Verbinden."
+    "defaultMessage": "Du hast keinen senseBox ausgewählt, oder es gab ein Problem beim Verbinden."
   },
   "not-found-save-message": {
     "defaultMessage": "Alternative Methode: Wähle Speichern und folge den Schritten zum Übertragen"
   },
   "not-found-title": {
-    "defaultMessage": "Kein micro:bit gefunden"
+    "defaultMessage": "Kein senseBox gefunden"
   },
   "not-found-update-link": {
-    "defaultMessage": "Du musst <link>die Firmware aktualisieren</link>, bevor eine Verbindung zu diesem micro:bit hergestellt werden kann."
+    "defaultMessage": "Du musst <link>die Firmware aktualisieren</link>, bevor eine Verbindung zu diesem senseBox hergestellt werden kann."
   },
   "offline-image-alt": {
     "defaultMessage": "Bild offline nicht verfügbar"
@@ -399,7 +435,7 @@
     "defaultMessage": "Datei nach Ablegen öffnen"
   },
   "open-hover": {
-    "defaultMessage": "Eine HEX- oder Python-Datei öffnen oder andere Dateien hinzufügen."
+    "defaultMessage": "Python-Dateien öffnen oder hinzufügen."
   },
   "options": {
     "defaultMessage": "Optionen"
@@ -429,7 +465,7 @@
     "defaultMessage": "Projekt gespeichert"
   },
   "post-save-transfer-hex": {
-    "defaultMessage": "Um diese hex-Datei auf deinem micro:bit auszuführen, solltest du <link>folgende Schritte ausführen</link>."
+    "defaultMessage": "Um diese hex-Datei auf deinem senseBox auszuführen, solltest du <link>folgende Schritte ausführen</link>."
   },
   "privacy-policy": {
     "defaultMessage": "Datenschutzerklärung"
@@ -498,7 +534,7 @@
     "defaultMessage": "hex-Datei exportieren"
   },
   "save-hover": {
-    "defaultMessage": "Speichere die HEX-Datei des Projektes auf deinem Computer."
+    "defaultMessage": "Speichere das Python-Skript auf deinem Computer."
   },
   "save-python-action": {
     "defaultMessage": "Python-Skript speichern"
@@ -507,10 +543,10 @@
     "defaultMessage": "Suche"
   },
   "send-action": {
-    "defaultMessage": "An micro:bit senden"
+    "defaultMessage": "Code übertragen"
   },
   "send-hover": {
-    "defaultMessage": "Verbindung über WebUSB herstellen und Code auf micro:bit flashen"
+    "defaultMessage": "Projektdateien auf das CIRCUITPY-Laufwerk der verbundenen senseBox übertragen"
   },
   "serial-collapse": {
     "defaultMessage": "Serielle Ausgabe ausblenden"
@@ -525,19 +561,19 @@
     "defaultMessage": "Serielle Schnittstelle anzeigen"
   },
   "serial-flashed": {
-    "defaultMessage": "micro:bit geflasht"
+    "defaultMessage": "Code übertragen"
   },
   "serial-help-ctrl-c": {
-    "defaultMessage": "Verwende den Tastenkürzel <kbd>Strg</kbd> + <kbd>C</kbd> um das Programm anzuhalten. Danach kannst du Python-Befehle eingeben, die MicroPython ausführen soll. Das ist eine großartige Möglichkeit, mit etwas Neuem zu experimentieren."
+    "defaultMessage": "Verwende den Tastenkürzel <kbd>Strg</kbd> + <kbd>C</kbd> um das Programm anzuhalten. Danach kannst du Python-Befehle eingeben, die CircuitPython ausführen soll. Das ist eine großartige Möglichkeit, mit etwas Neuem zu experimentieren."
   },
   "serial-help-ctrl-d": {
     "defaultMessage": "Um das Programm wieder zu starten, verwende <kbd>Strg</kbd> + <kbd>D</kbd>."
   },
   "serial-help-intro": {
-    "defaultMessage": "Die serielle Konsole zeigt Fehler und andere Ausgaben des Programms an, das auf deinem micro:bit läuft. Standardmäßig zeigt es den letzten Fehler des Programms an. Erweitere es, um alle Ausgaben zu sehen."
+    "defaultMessage": "Die serielle Konsole zeigt Fehler und andere Ausgaben des Programms an, das auf deinem senseBox läuft. Standardmäßig zeigt es den letzten Fehler des Programms an. Erweitere es, um alle Ausgaben zu sehen."
   },
   "serial-help-print": {
-    "defaultMessage": "Dein Programm kann Nachrichten mit der Funktion <code>print</code> drucken. Versuche, <code>print('micro:bit ist super')</code> zu deinem Programm hinzuzufügen."
+    "defaultMessage": "Dein Programm kann Nachrichten mit der Funktion <code>print</code> drucken. Versuche, <code>print('senseBox ist super')</code> zu deinem Programm hinzuzufügen."
   },
   "serial-help-title": {
     "defaultMessage": "Hinweise und Tipps zur seriellen Konsole"
@@ -549,7 +585,7 @@
     "defaultMessage": "Serielles Menü"
   },
   "serial-ready-to-flash": {
-    "defaultMessage": "micro:bit bereit zum Flashen"
+    "defaultMessage": "Bereit zur Übertragung"
   },
   "serial-running": {
     "defaultMessage": "Ausführen..."
@@ -567,7 +603,7 @@
     "defaultMessage": "Warnungen über Nur-V2-Funktionen anzeigen"
   },
   "setting-warn-on-v2-only-features-info": {
-    "defaultMessage": "Warnungen werden im Editor angezeigt, wenn ein micro:bit V1 verbunden ist."
+    "defaultMessage": "Warnungen werden im Editor angezeigt, wenn ein senseBox V1 verbunden ist."
   },
   "settings": {
     "defaultMessage": "Einstellungen"
@@ -729,7 +765,7 @@
     "defaultMessage": "Funk"
   },
   "simulator-radio-code": {
-    "defaultMessage": "micro:bit sendete:"
+    "defaultMessage": "senseBox sendete:"
   },
   "simulator-radio-group-notice": {
     "defaultMessage": "Funkgruppe auf {groupNumber} gesetzt"
@@ -807,7 +843,7 @@
     "defaultMessage": "Erlaube die Bearbeitung von Drittanbieter-Modulen in den <link>Einstellungen</link>, um dieses Modul zu ändern."
   },
   "timeout-error-description": {
-    "defaultMessage": "Verbindung zum micro:bit kann nicht hergestellt werden"
+    "defaultMessage": "Verbindung zum senseBox kann nicht hergestellt werden"
   },
   "timeout-error-title": {
     "defaultMessage": "Zeitüberschreitung der Verbindung"
@@ -819,13 +855,13 @@
     "defaultMessage": "{name}-Dokumentation anzeigen"
   },
   "transfer-hex-message-one": {
-    "defaultMessage": "Ziehe die hex-Datei aus deinem <strong>Download-Ordner</strong> auf das <strong>MICROBIT-Laufwerk</strong>."
+    "defaultMessage": "Ziehe die hex-Datei aus deinem <strong>Download-Ordner</strong> auf das <strong>CIRCUITPY-Laufwerk</strong>."
   },
   "transfer-hex-message-two": {
     "defaultMessage": "Du kannst die hex-Datei später <strong>Öffnen</strong>, um sie weiter zu bearbeiten."
   },
   "transfer-hex-title": {
-    "defaultMessage": "Gespeicherte Hex-Datei an micro:bit übertragen"
+    "defaultMessage": "Gespeicherte Hex-Datei an senseBox übertragen"
   },
   "try-again-action": {
     "defaultMessage": "Erneut versuchen"
@@ -852,7 +888,7 @@
     "defaultMessage": "Benutzerhandbuch"
   },
   "visit-dot-org": {
-    "defaultMessage": "besuche microbit.org (öffnet in neuen Tab)"
+    "defaultMessage": "besuche sensebox.de (öffnet in neuen Tab)"
   },
   "warn-on-v2-only-features-action": {
     "defaultMessage": "Warnungen über Nur-V2-Funktionen deaktivieren"
@@ -861,31 +897,31 @@
     "defaultMessage": "Ein anderer Prozess ist mit diesem Gerät verbunden."
   },
   "webusb-error-clear-connect-description-2": {
-    "defaultMessage": "Schließe alle anderen Tabs, die WebUSB verwenden (z. B. MakeCode, Python Editor), oder ziehe den micro:bit ab und stecke ihn wieder an, bevor du es erneut versuchst."
+    "defaultMessage": "Schließe alle anderen Tabs, die WebUSB verwenden (z. B. MakeCode, Python Editor), oder ziehe den senseBox ab und stecke ihn wieder an, bevor du es erneut versuchst."
   },
   "webusb-error-clear-connect-title": {
-    "defaultMessage": "Eine andere Seite oder ein Browser-Tab ist mit diesem micro:bit verbunden"
+    "defaultMessage": "Eine andere Seite oder ein Browser-Tab ist mit diesem senseBox verbunden"
   },
   "webusb-error-default-title": {
     "defaultMessage": "WebUSB-Fehler"
   },
-  "webusb-error-reconnect-microbit-description": {
+  "webusb-error-reconnect-sensebox-description": {
     "defaultMessage": "<p>Bitte folge diesen Schritten, dann versuche es erneut:</p><ul><li>trenne das USB-Kabel</li><li>entferne das Akku-Paket, wenn angeschlossen</li><li>verbinden das USB-Kabel erneut</li><li>verbinde das Akku-Paket erneut, wenn angeschlossen</li></ul>"
   },
   "webusb-not-supported": {
-    "defaultMessage": "Leider wird WebUSB in diesem Browser nicht unterstützt und dein Programm wird stattdessen auf deinem Computer gespeichert. Folge den Schritten auf dem nächsten Bildschirm, um es auf deinen micro:bit zu übertragen. Wir empfehlen Google Chrome oder Microsoft Edge, damit du dich direkt mit deinem micro:bit verbinden kannst."
+    "defaultMessage": "Leider wird WebUSB in diesem Browser nicht unterstützt und dein Programm wird stattdessen auf deinem Computer gespeichert. Folge den Schritten auf dem nächsten Bildschirm, um es auf deinen senseBox zu übertragen. Wir empfehlen Google Chrome oder Microsoft Edge, damit du dich direkt mit deinem senseBox verbinden kannst."
   },
   "webusb-not-supported-title": {
     "defaultMessage": "Dieser Browser unterstützt WebUSB nicht"
   },
   "webusb-why-use": {
-    "defaultMessage": "Mit WebUSB kannst du deinen micro:bit programmieren und dich direkt vom Online-Editor aus mit der seriellen Konsole verbinden."
+    "defaultMessage": "Mit WebUSB kannst du deinen senseBox programmieren und dich direkt vom Online-Editor aus mit der seriellen Konsole verbinden."
   },
   "welcome-message": {
     "defaultMessage": "Sieh dir unsere kurze Anleitung zu einigen der wichtigsten Funktionen an oder fang gleich mit dem Programmieren an."
   },
   "welcome-title": {
-    "defaultMessage": "Willkommen zum micro:bit Python-Editor"
+    "defaultMessage": "Willkommen zum senseBox Python-Editor"
   },
   "welcome-video-alt": {
     "defaultMessage": "Videoeinführung des Python Editors"
