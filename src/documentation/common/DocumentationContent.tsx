@@ -36,6 +36,7 @@ interface DocumentationContentProps {
 }
 
 interface DocumentationContextValue {
+  accentColor?: string;
   isExpanded?: boolean;
   parentSlug?: string;
   toolkitType?: string;
@@ -64,9 +65,9 @@ const useIsExpanded = () => {
 };
 
 const useCodeEmbedContext = () => {
-  const { parentSlug, toolkitType, title, sectionId } =
+  const { parentSlug, toolkitType, title, sectionId, accentColor } =
     useContext(DocumentationContext);
-  return { parentSlug, toolkitType, title, sectionId };
+  return { parentSlug, toolkitType, title, sectionId, accentColor };
 };
 
 const DocumentationApiLinkMark = (

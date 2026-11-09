@@ -16,14 +16,11 @@ import ErrorBoundary from "../common/ErrorBoundary";
 import DocsSectionArea from "../documentation/DocsSectionArea";
 import { localize, sidebarConfig } from "../documentation/sections/config";
 import { sectionIcon } from "../documentation/sections/icons";
-import { flags } from "../flags";
 import ProjectArea from "../project/ProjectArea";
 import { TabName, useRouterState } from "../router-hooks";
 import { useSettings } from "../settings/settings";
 import SettingsMenu from "../settings/SettingsMenu";
 import HelpMenu from "./HelpMenu";
-import PreReleaseNotice, { useReleaseDialogState } from "./PreReleaseNotice";
-import ReleaseDialogs from "./ReleaseDialogs";
 import SideBarHeader from "./SideBarHeader";
 import SideBarTab from "./SideBarTab";
 
@@ -68,7 +65,6 @@ const SideBar = ({
   ...props
 }: SideBarProps) => {
   const intl = useIntl();
-  const [releaseDialog, setReleaseDialog] = useReleaseDialogState();
   const [{ languageId }] = useSettings();
   const panes: Pane[] = useMemo(() => {
     // Documentation tabs come from content/sidebar.json.
@@ -303,21 +299,12 @@ const SideBar = ({
                 data-panel-content
                 outline="none"
               >
-                <ErrorBoundary>
-                  {p.contents}
-                  {flags.betaNotice && (
-                    <PreReleaseNotice onDialogChange={setReleaseDialog} />
-                  )}
-                </ErrorBoundary>
+                <ErrorBoundary>{p.contents}</ErrorBoundary>
               </Flex>
             </TabPanel>
           ))}
         </TabPanels>
       </Tabs>
-      <ReleaseDialogs
-        onDialogChange={setReleaseDialog}
-        dialog={releaseDialog}
-      />
     </styled.section>
   );
 };

@@ -32,7 +32,7 @@ import SideBar from "./SideBar";
 import { WorkbenchSelection, useSelection } from "./use-selection";
 import { flags } from "../flags";
 
-const minimums: [number, number] = [400, 580];
+const minimums: [number, number] = [480, 580];
 
 const defaultSelection = (
   selection: WorkbenchSelection,
@@ -120,7 +120,7 @@ const Workbench = () => {
           direction="row"
           minimums={minimums}
           initialSize={Math.min(
-            700,
+            800,
             Math.max(
               minimums[0],
               Math.floor(window.innerWidth * sidebarToWidthRatio)

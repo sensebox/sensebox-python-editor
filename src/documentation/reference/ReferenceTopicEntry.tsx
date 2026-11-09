@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 import { NativeSelect, Text } from "@microbit/ui";
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { Box, HStack, styled } from "styled-system/jsx";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { Box, styled } from "styled-system/jsx";
 import { docStylesClass } from "../../common/documentation-styles";
-import { PortableText } from "../../common/portable-text";
 import { Anchor } from "../../router-hooks";
 import DocumentationContent, {
   DocumentationCollapseMode,
@@ -15,7 +14,6 @@ import DocumentationContent, {
 } from "../common/DocumentationContent";
 import DocumentationHeading from "../common/DocumentationHeading";
 import { isV2Only } from "../common/model";
-import ShowMoreButton from "../common/ShowMoreButton";
 import Highlight from "./Highlight";
 import {
   ToolkitTopic,
@@ -29,10 +27,11 @@ interface ToolkitTopicEntryProps {
   active?: boolean;
   anchor?: Anchor;
   sectionId: string;
+  accentColor?: string;
 }
 
 /**
- * A toolkit topic entry. Can be displayed with and without detail.
+ * A toolkit topic entry with its full description and details.
  *
  * We show a pop-up over the code on hover to reveal the full code, overlapping
  * the sidebar scroll area.
@@ -43,6 +42,7 @@ const ReferenceTopicEntry = ({
   entry,
   active,
   sectionId,
+  accentColor,
 }: ToolkitTopicEntryProps) => {
   const { content, detailContent, alternatives, alternativesLabel } = entry;
   const activeAlterative = anchor?.id.split("/")[1];
@@ -63,30 +63,11 @@ const ReferenceTopicEntry = ({
     }
   }, [active, activeAlterative]);
 
-  const hasCode =
-    contentHasCode(content) ||
-    (alternatives && contentHasCode(activeAlterativeContent));
-
-  const hasMore =
-    hasCode &&
-    (detailContent ||
-      contentHasSomeNonCode(content) ||
-      (alternatives && contentHasSomeNonCode(activeAlterativeContent)));
-
   const handleSelectChange = useCallback(
     (e: ChangeEvent<HTMLSelectElement>) => {
       setAlternativeSlug(e.currentTarget.value);
     },
     [setAlternativeSlug]
-  );
-  const [isOpen, setOpen] = useState(false);
-  const disclosure = useMemo(
-    () => ({
-      isOpen,
-      onOpen: () => setOpen(true),
-      onToggle: () => setOpen((open) => !open),
-    }),
-    [isOpen]
   );
   const toolkitType = "reference";
   return (
@@ -94,45 +75,19 @@ const ReferenceTopicEntry = ({
       parentSlug={entry.slug.current}
       toolkitType={toolkitType}
       sectionId={sectionId}
-      isExpanded={disclosure.isOpen}
+      isExpanded
+      accentColor={accentColor}
       title={topic.name}
     >
       <Highlight
         anchor={anchor}
         id={topic.name}
         active={active}
-        disclosure={disclosure}
+        accentColor={accentColor}
       >
-        <Box
-          fontSize="sm"
-          p="5"
-          pr="3"
-          mt="1"
-          mb="1"
-          className={"docs-code " + docStylesClass}
-        >
-          <HStack justifyContent="space-between" flexWrap="nowrap">
-            <DocumentationHeading
-              name={entry.name}
-              isV2Only={isV2Only(entry)}
-            />
-            {hasMore && (
-              <ShowMoreButton
-                isBrief
-                onClick={disclosure.onToggle}
-                isOpen={disclosure.isOpen}
-              />
-            )}
-          </HStack>
-
-          <DocumentationContent
-            blocks={content}
-            details={
-              hasMore
-                ? DocumentationCollapseMode.ExpandCollapseExceptCodeAndFirstLine
-                : DocumentationCollapseMode.ShowAll
-            }
-          />
+        <Box fontSize="sm" p="5" className={"docs-code " + docStylesClass}>
+          <DocumentationHeading name={entry.name} isV2Only={isV2Only(entry)} />
+          <DocumentationContent blocks={content} />
           {alternatives && typeof alternativeSlug === "string" && (
             <>
               <styled.label display="flex" flexWrap="wrap" mt="3">
@@ -157,13 +112,13 @@ const ReferenceTopicEntry = ({
               </styled.label>
 
               <DocumentationContent
-                details={DocumentationCollapseMode.ExpandCollapseExceptCode}
+                details={DocumentationCollapseMode.ShowAll}
                 blocks={activeAlterativeContent}
               />
             </>
           )}
           <DocumentationContent
-            details={DocumentationCollapseMode.ExpandCollapseAll}
+            details={DocumentationCollapseMode.ShowAll}
             blocks={detailContent}
           />
         </Box>
@@ -171,11 +126,5 @@ const ReferenceTopicEntry = ({
     </DocumentationContextProvider>
   );
 };
-
-const contentHasSomeNonCode = (content: PortableText | undefined) =>
-  content && content.some((x) => x._type !== "python");
-
-const contentHasCode = (content: PortableText | undefined) =>
-  content && content.some((x) => x._type === "python");
 
 export default ReferenceTopicEntry;

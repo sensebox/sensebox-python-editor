@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { ButtonGroup, IconButton } from "@microbit/ui";
+import { ButtonGroup, IconButton, Tooltip } from "@microbit/ui";
 import { RiArrowGoBackLine, RiArrowGoForwardLine } from "react-icons/ri";
 import { useIntl } from "react-intl";
 import { SystemStyleObject } from "styled-system/types";
@@ -30,22 +30,26 @@ const UndoRedoControls = ({ css: cssProp }: UndoRedoControlsProps) => {
         ...cssProp,
       }}
     >
-      <IconButton
-        variant="neutral"
-        aria-label={intl.formatMessage({ id: "undo" })}
-        onPress={actions?.undo}
-        isDisabled={editorInfo.undo ? false : true}
-      >
-        <RiArrowGoBackLine style={{ transform: "rotate(-90deg)" }} />
-      </IconButton>
-      <IconButton
-        variant="neutral"
-        aria-label={intl.formatMessage({ id: "redo" })}
-        onPress={actions?.redo}
-        isDisabled={editorInfo.redo ? false : true}
-      >
-        <RiArrowGoForwardLine style={{ transform: "rotate(-90deg)" }} />
-      </IconButton>
+      <Tooltip label={intl.formatMessage({ id: "undo" })} delay={300} hasArrow>
+        <IconButton
+          variant="neutral"
+          aria-label={intl.formatMessage({ id: "undo" })}
+          onPress={actions?.undo}
+          isDisabled={editorInfo.undo ? false : true}
+        >
+          <RiArrowGoBackLine style={{ transform: "rotate(-90deg)" }} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip label={intl.formatMessage({ id: "redo" })} delay={300} hasArrow>
+        <IconButton
+          variant="neutral"
+          aria-label={intl.formatMessage({ id: "redo" })}
+          onPress={actions?.redo}
+          isDisabled={editorInfo.redo ? false : true}
+        >
+          <RiArrowGoForwardLine style={{ transform: "rotate(-90deg)" }} />
+        </IconButton>
+      </Tooltip>
     </ButtonGroup>
   );
 };

@@ -34,6 +34,7 @@ import { keyboardShortcuts } from "../../common/keyboard-shortcuts";
 
 interface CodeEmbedProps {
   code: string;
+  accentColor?: string;
   parentSlug?: string;
   toolkitType?: string;
   sectionId?: string;
@@ -56,6 +57,7 @@ type CodeEmbedState =
 
 const CodeEmbed = ({
   code: codeWithImports,
+  accentColor,
   toolkitType,
   sectionId,
   parentSlug,
@@ -140,15 +142,14 @@ const CodeEmbed = ({
   const lineCount = code.trim().split("\n").length;
   const codeRef = useRef<HTMLDivElement>(null);
   const textHeight = lineCount * 1.375 + "em";
-  const codeHeight = `calc(${textHeight} + var(--spacing-2) + var(--spacing-2))`;
-  const codePopUpHeight = `calc(${codeHeight} + 2px)`; // Account for border.
+  const codeHeight = `calc(${textHeight} + var(--spacing-2) + var(--spacing-2) + 6px)`;
   const hotKeysRef = useHotkeys(keyboardShortcuts.copyCode, handleCopyCode, {
     preventDefault: true,
   }) as Ref<HTMLDivElement>;
   const raisedLook =
     toolkitType === "ideas" ? state === "highlighted" : state !== "default";
   return (
-    <Box position="relative">
+    <Box position="relative" pb="2">
       <Box
         fontSize="md"
         ref={hotKeysRef}
@@ -170,16 +171,18 @@ const CodeEmbed = ({
           parentSlug={parentSlug}
           toolkitType={toolkitType}
           sectionId={sectionId}
+          accentColor={accentColor}
           isPopUp={false}
         />
         {state === "raised" && (
           <CodePopUp
+            accentColor={accentColor}
             onMouseLeave={toDefault}
             onCodeDragEnd={toDefault}
             isOpen={copyCodeOpen}
             onToggle={setCopyCodeOpen}
             style={{
-              height: codePopUpHeight,
+              height: codeHeight,
               top: codeRef.current!.getBoundingClientRect().top + "px",
               left: codeRef.current!.getBoundingClientRect().left + "px",
               width: codeRef.current!.offsetWidth + "px",
@@ -205,6 +208,7 @@ const CodeEmbed = ({
 };
 
 interface CodePopUpProps {
+  accentColor?: string;
   concise: string;
   full: string;
   toolkitType?: string;
@@ -247,6 +251,7 @@ const CodePopUp = ({
 };
 
 interface CodeProps {
+  accentColor?: string;
   concise: string;
   full: string;
   highlightDragHandle: boolean;
@@ -269,6 +274,7 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
     {
       concise,
       full,
+      accentColor,
       highlightDragHandle,
       toolkitType,
       sectionId,
@@ -326,11 +332,35 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
         role="button"
         draggable={toolkitType === "ideas" ? false : true}
         transition="background .2s, box-shadow .2s"
-        borderWidth="1px"
-        borderColor="blimpTeal.300"
-        borderRadius="lg"
+        borderWidth="2px"
+        borderBottomWidth="4px"
+        borderColor="var(--snippet-block-color)"
+        borderRadius="md"
         fontFamily="code"
-        overflow="hidden"
+        overflow="visible"
+        _before={{
+          content: '""',
+          position: "absolute",
+          top: "-2px",
+          left: "6",
+          width: "10",
+          height: "7px",
+          backgroundColor: "white",
+          borderBottomRadius: "sm",
+          zIndex: 1,
+          pointerEvents: "none",
+        }}
+        _after={{
+          content: '""',
+          position: "absolute",
+          bottom: "-10px",
+          left: "6",
+          width: "10",
+          height: "8px",
+          backgroundColor: "var(--snippet-block-color)",
+          borderBottomRadius: "sm",
+          pointerEvents: "none",
+        }}
         ref={ref}
         gap="0"
         onClick={() => onToggle(!isOpen)}
@@ -345,7 +375,12 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
         tabIndex={isPopUp ? undefined : 0}
         _focusVisible={{ focusRing: "outline" }}
         // Pop-up position/size at runtime coordinates.
-        style={style}
+        style={
+          {
+            "--snippet-block-color": accentColor ?? "var(--colors-brand-500)",
+            ...style,
+          } as CSSProperties
+        }
         {...props}
       >
         <VisuallyHidden>
@@ -353,7 +388,13 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
         </VisuallyHidden>
         {toolkitType !== "ideas" && (
           <DragHandle
-            css={{ borderTopLeftRadius: "lg", p: "1", alignSelf: "stretch" }}
+            css={{
+              borderStartRadius: "sm",
+              p: "1",
+              alignSelf: "stretch",
+              backgroundColor: "var(--snippet-block-color)",
+              "& svg": { color: "black" },
+            }}
             highlight={highlightDragHandle}
           />
         )}

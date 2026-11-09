@@ -5,6 +5,32 @@
  */
 
 @font-face {
+  font-family: "Brix Slab";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/webfonts/2EF157_1_0.eot");
+  src: local("BrixSlab-Regular"), local("Brix Slab"),
+    url("/webfonts/2EF157_1_0.eot?#iefix") format("embedded-opentype"),
+    url("/webfonts/2EF157_1_0.woff2") format("woff2"),
+    url("/webfonts/2EF157_1_0.woff") format("woff"),
+    url("/webfonts/2EF157_1_0.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Brix Slab";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/webfonts/2EF157_0_0.eot");
+  src: local("BrixSlab-Bold"),
+    url("/webfonts/2EF157_0_0.eot?#iefix") format("embedded-opentype"),
+    url("/webfonts/2EF157_0_0.woff2") format("woff2"),
+    url("/webfonts/2EF157_0_0.woff") format("woff"),
+    url("/webfonts/2EF157_0_0.ttf") format("truetype");
+}
+
+@font-face {
   font-family: "Source Code Pro";
   font-style: normal;
   font-weight: 500;

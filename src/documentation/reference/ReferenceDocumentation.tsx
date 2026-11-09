@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Divider, List, ListItem } from "@microbit/ui";
+import { List, ListItem } from "@microbit/ui";
 import { useCallback } from "react";
 import { Box } from "styled-system/jsx";
 import { docStylesClass } from "../../common/documentation-styles";
@@ -108,17 +108,23 @@ const ActiveLevel = ({
             <DocumentationContent blocks={topic.introduction} />
           </Box>
         )}
-        <List flex="1 1 auto">
+        <List
+          display="flex"
+          flexDirection="column"
+          gap="4"
+          p="3"
+          flex="1 1 auto"
+        >
           {topic.contents?.map((item) => (
             <ListItem key={item.name}>
               <ReferenceTopicEntry
                 topic={topic}
                 entry={item}
                 sectionId={section.id}
+                accentColor={section.accentColor}
                 anchor={anchor}
                 active={activeItem === item}
               />
-              <Divider />
             </ListItem>
           ))}
         </List>

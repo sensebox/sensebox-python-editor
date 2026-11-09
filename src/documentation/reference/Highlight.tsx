@@ -10,21 +10,12 @@ import { Anchor } from "../../router-hooks";
 import { useLogging } from "../../logging/logging-hooks";
 import { useScrollablePanelAncestor } from "../../common/ScrollablePanel";
 
-/**
- * Disclosure state for the highlight, implemented with useState by callers.
- */
-export interface HighlightDisclosure {
-  isOpen: boolean;
-  onOpen: () => void;
-  onToggle: () => void;
-}
-
 interface HighlightProps {
   children: ReactNode;
   anchor?: Anchor;
   id: string;
   active: boolean | undefined;
-  disclosure: HighlightDisclosure;
+  accentColor?: string;
 }
 
 const Highlight = ({
@@ -32,7 +23,7 @@ const Highlight = ({
   active,
   anchor,
   id,
-  disclosure,
+  accentColor,
 }: HighlightProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const previousAnchor = usePrevious(anchor);
@@ -45,8 +36,7 @@ const Highlight = ({
   useEffect(() => {
     if (previousAnchor !== anchor && active) {
       logging.log("Activating " + id);
-      disclosure.onOpen();
-      // Delay until after the opening animation so the full container height is known for the scroll.
+      // Wait for the content to render before scrolling to the anchor.
       // eslint-disable-next-line @eslint-react/web-api-no-leaked-timeout -- one-shot scroll and highlight sequence
       window.setTimeout(() => {
         if (ref.current && scrollable.current) {
@@ -72,7 +62,6 @@ const Highlight = ({
   }, [
     active,
     anchor,
-    disclosure,
     id,
     logging,
     prefersReducedMotion,
@@ -87,9 +76,16 @@ const Highlight = ({
   return (
     <Box
       onClick={handleHighlightClick}
-      borderLeftRadius="md"
+      borderRadius="lg"
+      borderWidth="1px"
+      borderColor={highlighting ? "brand.500" : "gray.300"}
+      borderInlineStartWidth="4px"
+      style={{ borderInlineStartColor: accentColor }}
+      boxShadow="0 2px 4px rgba(0, 0, 0, 0.06)"
+      _hover={{ borderColor: "brand.500" }}
+      _focusWithin={{ borderColor: "brand.500" }}
       ref={ref}
-      backgroundColor={highlighting ? "brand.100" : undefined}
+      backgroundColor={highlighting ? "brand.100" : "white"}
       transition={
         highlighting
           ? "background-color ease-out 0.2s"
