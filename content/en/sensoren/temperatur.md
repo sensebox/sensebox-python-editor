@@ -7,6 +7,8 @@ imageAlt: Temperature display in degrees Celsius
 
 The HDC1080 measures temperature and humidity. Connect it to an I²C port on the senseBox.
 
+See the [HDC1080 help page](doc:hilfe/hdc1080) for a wiring diagram and step-by-step instructions.
+
 ## Initialise HDC1080
 
 <!-- @slug hdc1080-initialisieren -->

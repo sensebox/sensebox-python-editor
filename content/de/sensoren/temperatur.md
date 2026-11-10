@@ -7,6 +7,8 @@ imageAlt: Temperaturanzeige in Grad Celsius
 
 Der HDC1080 misst Temperatur und Luftfeuchtigkeit. Schließe ihn an einen I²C-Anschluss der senseBox an.
 
+Das Anschlussbild und eine Schritt-für-Schritt-Anleitung findest du in der [Hilfe zum HDC1080](doc:hilfe/hdc1080).
+
 Füge zuerst **HDC1080 initialisieren** ein. Danach kannst du Temperatur und Luftfeuchtigkeit getrennt messen. Das letzte Beispiel fasst alle Schritte zusammen.
 
 ## HDC1080 initialisieren

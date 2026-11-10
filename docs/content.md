@@ -169,6 +169,18 @@ feature.
 
 ## Cards
 
+### Sensor and component help
+
+The `hilfe` section uses the cards layout, with one guide per component in
+`content/de/hilfe/` and `content/en/hilfe/`. To add a guide, create a Markdown
+file in these folders with the same file name in both languages (for example,
+`hdc1080.md`). Store wiring diagrams in `content/images/anschluesse/` and reference
+them using `image: ../../images/anschluesse/hdc1080.png`, with an `imageAlt` description.
+Include connection steps, links to the existing code blocks and troubleshooting
+tips. Files appear automatically; use the help section's `order` in
+`content/sidebar.json` to choose their order. Link to a guide with
+`[HDC1080 help](doc:hilfe/hdc1080)`.
+
 One Markdown file per card:
 
 ```markdown

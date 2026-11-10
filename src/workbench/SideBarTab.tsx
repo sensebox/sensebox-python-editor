@@ -60,7 +60,7 @@ const SideBarTab = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontWeight: "semibold",
+            fontWeight: "medium",
             outline: "none",
           },
           // Driven by `active` (index-based) rather than react-aria's
@@ -96,7 +96,7 @@ const SideBarTab = ({
             }}
           />
         )}
-        <VStack gap="0.5" width="100%" px="1">
+        <VStack gap="1" width="100%" px="1">
           <Box
             display="flex"
             alignItems="center"
@@ -114,8 +114,8 @@ const SideBarTab = ({
           </Box>
           <Text
             m="0"
-            fontSize="12px"
-            lineHeight="1.1"
+            fontSize="14px"
+            lineHeight="1.3"
             maxWidth="100%"
             textAlign="center"
             borderBottom="3px solid transparent"

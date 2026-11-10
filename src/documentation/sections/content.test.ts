@@ -130,7 +130,13 @@ describe("bundled content", () => {
     ).toBe(true);
 
     const sections = await fetchSections("de");
-    for (const sectionId of ["sensoren", "module"]) {
+    for (const sectionId of [
+      "sensoren",
+      "oled-display",
+      "rgb-led",
+      "wifi",
+      "led-matrix",
+    ]) {
       const content = sections[sectionId];
       expect(content.layout).toBe("reference");
       if (content.layout !== "reference") {

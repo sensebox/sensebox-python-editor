@@ -9,7 +9,10 @@ import { Box, Flex, styled } from "styled-system/jsx";
 import { widthXl } from "../common/media-queries";
 import { topBarHeight } from "../deployment/misc";
 import ZoomControls from "../editor/ZoomControls";
+import OpenButton from "../project/OpenButton";
 import ProjectNameEditable from "../project/ProjectNameEditable";
+import ResetButton from "../project/ResetButton";
+import SaveButton from "../project/SaveButton";
 import { WorkbenchSelection } from "../workbench/use-selection";
 import ActiveFileInfo from "./ActiveFileInfo";
 import EditorContainer from "./EditorContainer";
@@ -52,8 +55,15 @@ const EditorArea = ({ selection, onSelectedFileChanged }: EditorAreaProps) => {
           filename={selection.file}
           onSelectedFileChanged={onSelectedFileChanged}
         />
-        <Flex alignItems="center">
-          <ZoomControls css={{ display: ["none", "none", "none", "flex"] }} />
+        <Flex alignItems="center" gap="2" pr="5" flexShrink="0">
+          <UndoRedoControls size="sm" />
+          <ResetButton mode="icon" size="sm" variant="neutral" />
+          <SaveButton mode="icon" size="sm" variant="neutral" />
+          <OpenButton mode="icon" size="sm" variant="neutral" />
+          <ZoomControls
+            size="sm"
+            css={{ display: ["none", "none", "none", "flex"] }}
+          />
         </Flex>
       </styled.section>
       {/* Just for the line */}
@@ -67,15 +77,6 @@ const EditorArea = ({ selection, onSelectedFileChanged }: EditorAreaProps) => {
         borderColor="gray.200"
       />
       <Box position="relative" flex="1 1 auto" height="0">
-        <UndoRedoControls
-          css={{
-            display: ["none", "none", "none", "flex"],
-            zIndex: 1,
-            top: "6",
-            right: isWideScreen ? "10" : "5",
-            position: "absolute",
-          }}
-        />
         <EditorContainer selection={selection} />
       </Box>
     </Flex>

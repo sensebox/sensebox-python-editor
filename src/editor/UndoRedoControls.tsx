@@ -14,40 +14,36 @@ import {
 
 interface UndoRedoControlsProps {
   css?: SystemStyleObject;
+  size?: "lg" | "md" | "sm" | "xs";
 }
 
-const UndoRedoControls = ({ css: cssProp }: UndoRedoControlsProps) => {
+const UndoRedoControls = ({ css: cssProp, size }: UndoRedoControlsProps) => {
   const intl = useIntl();
   const actions = useActiveEditorActions();
   const editorInfo = useActiveEditorInfo();
 
   return (
-    <ButtonGroup
-      isAttached
-      css={{
-        transform: "rotate(90deg)",
-        transformOrigin: "bottom",
-        ...cssProp,
-      }}
-    >
+    <ButtonGroup isAttached css={cssProp}>
       <Tooltip label={intl.formatMessage({ id: "undo" })} delay={300} hasArrow>
         <IconButton
+          size={size}
           variant="neutral"
           aria-label={intl.formatMessage({ id: "undo" })}
           onPress={actions?.undo}
           isDisabled={editorInfo.undo ? false : true}
         >
-          <RiArrowGoBackLine style={{ transform: "rotate(-90deg)" }} />
+          <RiArrowGoBackLine />
         </IconButton>
       </Tooltip>
       <Tooltip label={intl.formatMessage({ id: "redo" })} delay={300} hasArrow>
         <IconButton
+          size={size}
           variant="neutral"
           aria-label={intl.formatMessage({ id: "redo" })}
           onPress={actions?.redo}
           isDisabled={editorInfo.redo ? false : true}
         >
-          <RiArrowGoForwardLine style={{ transform: "rotate(-90deg)" }} />
+          <RiArrowGoForwardLine />
         </IconButton>
       </Tooltip>
     </ButtonGroup>

@@ -86,11 +86,51 @@
       "title": { "de": "Sensoren", "en": "Sensors" }
     },
     {
-      "id": "module",
+      "id": "oled-display",
       "layout": "reference",
-      "icon": "RiCpuLine",
+      "icon": "RiComputerLine",
       "accentColor": "#5ba55b",
-      "title": { "de": "Module", "en": "Modules" }
+      "direct": true,
+      "title": { "de": "OLED-Display", "en": "OLED display" },
+      "order": ["oled-display"]
+    },
+    {
+      "id": "rgb-led",
+      "layout": "reference",
+      "icon": "RiPaletteLine",
+      "accentColor": "#5ba55b",
+      "direct": true,
+      "title": "RGB-LED",
+      "order": ["rgb-led-esp32"]
+    },
+    {
+      "id": "wifi",
+      "layout": "reference",
+      "icon": "RiWifiLine",
+      "accentColor": "#5ba55b",
+      "direct": true,
+      "title": { "de": "WLAN", "en": "WiFi" },
+      "order": ["wifi"]
+    },
+    {
+      "id": "led-matrix",
+      "layout": "reference",
+      "icon": "RiGridLine",
+      "accentColor": "#5ba55b",
+      "direct": true,
+      "title": "LED-Matrix",
+      "order": ["led-matrix"]
+    },
+    {
+      "id": "hilfe",
+      "layout": "cards",
+      "icon": "RiQuestionLine",
+      "title": { "de": "Hilfe", "en": "Help" },
+      "description": {
+        "de": "Anschlussbilder und Anleitungen für Sensoren und Bauteile.",
+        "en": "Wiring diagrams and guides for sensors and components."
+      },
+      "order": ["hdc1080"]
     },
     {
       "id": "projekte",
