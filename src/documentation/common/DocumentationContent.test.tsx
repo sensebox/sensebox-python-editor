@@ -5,11 +5,90 @@
  *
  * @vitest-environment jsdom
  */
-import { render } from "@testing-library/react";
+import { act, render, screen, within, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { IntlProvider } from "react-intl";
+import { vi } from "vitest";
 import { PortableText } from "../../common/portable-text";
-import DocumentationContent from "./DocumentationContent";
+import { useDocumentation } from "../documentation-hooks";
+import { fetchConnectionGuides, fetchSections } from "../sections/content";
+import DocumentationContent, {
+  ConnectionHelpLink,
+} from "./DocumentationContent";
+
+vi.mock("../../router-hooks", () => ({
+  useRouterState: () => [{}, vi.fn()],
+}));
+vi.mock("../documentation-hooks", () => ({
+  useDocumentation: vi.fn(),
+}));
 
 describe("DocumentationContent", () => {
+  it("opens connection help and an enlarged image without leaving the sensor", async () => {
+    const user = userEvent.setup();
+    const sections = await fetchSections("en");
+    const guides = await fetchConnectionGuides("en");
+    vi.mocked(useDocumentation).mockReturnValue({
+      sections: { status: "ok", content: sections, languageId: "en" },
+      connectionGuides: { status: "ok", content: guides, languageId: "en" },
+      apiReferenceMap: { status: "loading" },
+    });
+    const sensors = sections.sensoren;
+    if (sensors.layout !== "reference") throw new Error("Expected sensors");
+    const topic = sensors.toolkit.contents?.find(
+      (item) => item.slug.current === "temperatur"
+    );
+    render(
+      <IntlProvider
+        locale="en"
+        messages={{
+          "enlarge-image-action": "Enlarge image: {name}",
+          "connection-help-action": "Connection guide: {name}",
+        }}
+      >
+        <DocumentationContent blocks={topic?.introduction} />
+        <ConnectionHelpLink guideId={topic!.connectionGuide!} iconOnly>
+          {topic!.name}
+        </ConnectionHelpLink>
+      </IntlProvider>
+    );
+    const trigger = screen.getByRole("button", {
+      name: "Connection guide: Temperature",
+    });
+    expect(trigger.textContent).toBe("");
+    await act(async () => user.click(trigger));
+    let help = await screen.findByRole("dialog", {
+      name: "HDC1080 temperature sensor",
+    });
+    expect(within(help).getByText("Connect the sensor")).not.toBeNull();
+    await act(async () => user.keyboard("{Escape}"));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await act(async () => user.click(trigger));
+    help = await screen.findByRole("dialog", {
+      name: "HDC1080 temperature sensor",
+    });
+    await act(async () =>
+      user.click(within(help).getByRole("button", { name: /Enlarge image:/ }))
+    );
+    expect(screen.getAllByRole("dialog", { hidden: true })).toHaveLength(2);
+    expect(screen.getByRole("dialog")).not.toBe(help);
+    await act(async () => user.keyboard("{Escape}"));
+    await waitFor(() =>
+      expect(screen.getAllByRole("dialog", { hidden: true })).toHaveLength(1)
+    );
+    expect(screen.getByRole("dialog")).toBe(help);
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(help).getByRole("button", { name: /Enlarge image:/ })
+      )
+    );
+    await act(async () =>
+      user.click(within(help).getByRole("button", { name: "Close" }))
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
   it("renders external links", () => {
     const content: PortableText = [
       {

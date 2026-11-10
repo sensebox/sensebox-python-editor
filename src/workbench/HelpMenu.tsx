@@ -68,6 +68,14 @@ const HelpMenu = ({ size }: HelpMenuProps) => {
           <RiQuestionLine />
         </IconButton>
         <MenuList>
+          <MenuItem
+            href="https://docs.sensebox.de/"
+            target="_blank"
+            rel="noopener noreferrer"
+            icon={<RiExternalLinkLine />}
+          >
+            senseBox Docs
+          </MenuItem>
           {deployment.userGuideLink && (
             <MenuItem
               href={deployment.userGuideLink}

@@ -4,11 +4,11 @@ subtitle: Bedingungen verknüpfen und Programmabläufe verzweigen
 image: ../../images/logik.svg
 ---
 
-Logik-Bausteine prüfen Bedingungen und entscheiden, welcher Code ausgeführt wird.
+Bedingungen prüfen und Programmabläufe steuern.
 
 ## Wenn
 
-Der eingerückte Code wird nur ausgeführt, wenn die Bedingung wahr ist.
+Führt Code aus, wenn eine Bedingung wahr ist.
 
 ```python
 messwert = 12
@@ -19,7 +19,7 @@ if messwert > 10:
 
 ## Wenn sonst
 
-`else` wird ausgeführt, wenn die Bedingung falsch ist.
+Wählt je nach Bedingung zwischen zwei Codeblöcken.
 
 ```python
 messwert = 8
@@ -32,7 +32,7 @@ else:
 
 ## Wenn sonst wenn sonst
 
-Mit `elif` können mehrere Bedingungen nacheinander geprüft werden.
+Wählt anhand mehrerer Bedingungen einen Codeblock aus.
 
 ```python
 temperatur = 0
@@ -48,6 +48,8 @@ else:
 ## Werte vergleichen
 
 <!-- @alternatives Vergleich -->
+
+Vergleicht zwei Werte miteinander.
 
 ### Gleich
 
@@ -89,9 +91,9 @@ else:
 
 <!-- @alternatives Verknüpfung -->
 
-### Und
+Verknüpft Bedingungen mit Und oder Oder.
 
-Beide Bedingungen müssen wahr sein.
+### Und
 
 ```python
 temperatur = 20
@@ -102,11 +104,8 @@ if temperatur > 0 and temperatur < 30:
 
 ### Oder
 
-Mindestens eine Bedingung muss wahr sein.
-
 ```python
 temperatur = -3
 if temperatur < 0 or temperatur > 30:
     print("Eine der gewünschten Bedingungen wurde erfüllt")
 ```
-

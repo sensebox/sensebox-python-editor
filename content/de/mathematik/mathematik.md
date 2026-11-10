@@ -4,11 +4,11 @@ subtitle: Zahlen berechnen, prüfen, begrenzen und verteilen
 image: ../../images/mathematik.svg
 ---
 
-Mit diesen Bausteinen kannst du Zahlen berechnen, prüfen und umwandeln. Für erweiterte Funktionen werden die eingebauten Module `math` und `random` verwendet.
+Zahlen berechnen, prüfen und umwandeln.
 
 ## Zahl
 
-Python verarbeitet ganze Zahlen und Dezimalzahlen direkt.
+Legt einen Zahlenwert fest.
 
 ```python
 zahl = 123
@@ -18,6 +18,8 @@ dezimalzahl = 3.14
 ## Grundrechenarten
 
 <!-- @alternatives Operation -->
+
+Verknüpft Zahlen mit einer Rechenoperation.
 
 ### Addieren
 
@@ -51,7 +53,7 @@ ergebnis = 5 ** 3
 
 ## Negative Zahl
 
-Ein vorangestelltes Minus kehrt das Vorzeichen um.
+Kehrt das Vorzeichen einer Zahl um.
 
 ```python
 zahl = 5
@@ -61,6 +63,8 @@ ergebnis = -zahl
 ## Einzelne mathematische Funktion
 
 <!-- @alternatives Funktion -->
+
+Berechnet eine mathematische Funktion.
 
 ### Quadratwurzel
 
@@ -109,6 +113,8 @@ ergebnis = 10 ** 3
 ## Trigonometrische Funktion
 
 <!-- @alternatives Funktion -->
+
+Berechnet eine trigonometrische Funktion.
 
 ### Sinus
 
@@ -162,6 +168,8 @@ winkel = math.degrees(math.atan(1))
 
 <!-- @alternatives Konstante -->
 
+Stellt eine mathematische Konstante bereit.
+
 ### Pi
 
 ```python
@@ -209,6 +217,8 @@ wert = float("inf")
 ## Zahl prüfen
 
 <!-- @alternatives Eigenschaft -->
+
+Prüft eine Eigenschaft einer Zahl.
 
 ### Gerade
 
@@ -260,6 +270,8 @@ ergebnis = 15 % 3 == 0
 
 <!-- @alternatives Änderung -->
 
+Erhöht oder verringert den Wert einer Variablen.
+
 ### Erhöhen
 
 ```python
@@ -277,6 +289,8 @@ zahl -= 1
 ## Runden
 
 <!-- @alternatives Richtung -->
+
+Rundet eine Zahl auf eine ganze Zahl.
 
 ### Normal runden
 
@@ -302,7 +316,7 @@ ergebnis = math.floor(3.9)
 
 ## Rest einer Division
 
-Der Modulo-Operator `%` liefert den Rest.
+Berechnet den Rest einer Division.
 
 ```python
 rest = 64 % 10
@@ -310,7 +324,7 @@ rest = 64 % 10
 
 ## Wert begrenzen
 
-Der Wert bleibt zwischen Unter- und Obergrenze.
+Begrenzt einen Wert auf einen festgelegten Bereich.
 
 ```python
 wert = 120
@@ -321,7 +335,7 @@ begrenzt = min(max(wert, untergrenze), obergrenze)
 
 ## Ganzzahliger Zufallswert
 
-Beide Grenzen können als Ergebnis vorkommen.
+Erzeugt eine zufällige ganze Zahl einschließlich beider Grenzen.
 
 ```python
 import random
@@ -331,6 +345,8 @@ wert = random.randint(1, 100)
 
 ## Zufallszahl von 0 bis 1
 
+Erzeugt eine Zufallszahl zwischen 0 und 1.
+
 ```python
 import random
 
@@ -339,7 +355,7 @@ wert = random.random()
 
 ## Wert verteilen
 
-Die Formel überträgt einen Wert linear von einem Wertebereich in einen anderen.
+Überträgt einen Wert linear in einen anderen Wertebereich.
 
 ```python
 wert = 50

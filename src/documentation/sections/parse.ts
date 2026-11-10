@@ -168,6 +168,7 @@ export const parseTopic = (
 
   const topic: ToolkitTopic = {
     name: asString(data.name) || fileName,
+    connectionGuide: asString(data.connectionGuide),
     subtitle: asString(data.subtitle) ?? "",
     slug: slug(topicSlug),
     image: image(data, context),

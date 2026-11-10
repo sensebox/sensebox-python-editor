@@ -8,17 +8,13 @@ import React, {
   CSSProperties,
   Ref,
   useCallback,
-  useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import { Focusable } from "react-aria-components";
 import { FormattedMessage, useIntl } from "react-intl";
 import { Box, HStack } from "styled-system/jsx";
 import { pythonSnippetMediaType } from "../../common/mediaTypes";
-import { useScrollablePanelAncestor } from "../../common/ScrollablePanel";
 import { useActiveEditorActions } from "../../editor/active-editor-hooks";
 import CodeMirrorView from "../../editor/codemirror/CodeMirrorView";
 import { debug as dndDebug, setDragContext } from "../../editor/codemirror/dnd";
@@ -51,7 +47,7 @@ type CodeEmbedState =
    */
   | "highlighted"
   /**
-   * Raised state on mouse over.
+   * Highlighted block background on mouse over; geometry stays unchanged.
    */
   | "raised";
 
@@ -64,40 +60,10 @@ const CodeEmbed = ({
   title,
 }: CodeEmbedProps) => {
   const [copyCodeOpen, setCopyCodeOpen] = useState(false);
-  const [state, originalSetState] = useState<CodeEmbedState>("default");
-  // We want to debounce raising so that we don't raise very briefly during scroll.
-  // We don't ever want to delay other actions.
-  const setState = useMemo(() => {
-    let timeout: any;
-    return (newState: CodeEmbedState, immediate: boolean = true) => {
-      clearTimeout(timeout);
-      if (immediate) {
-        originalSetState(newState);
-      } else {
-        timeout = setTimeout(() => {
-          originalSetState(newState);
-        }, 30);
-      }
-    };
-  }, [originalSetState]);
-  const toRaised = useCallback(() => setState("raised", false), [setState]);
-  const toDefault = useCallback(() => setState("default"), [setState]);
-  const toHighlighted = useCallback(() => setState("highlighted"), [setState]);
-  const handleMouseLeave = useCallback(
-    (e: React.MouseEvent<HTMLElement>) => {
-      if (!codeRef.current) {
-        return;
-      }
-      const overElements = document.elementsFromPoint(e.clientX, e.clientY);
-      if (!overElements.includes(codeRef.current)) {
-        toDefault();
-      } else {
-        // The mouse hasn't really left, it's just now over the pop-up.
-      }
-    },
-    [toDefault]
-  );
-  useScrollableAncestorScroll(toDefault);
+  const [state, setState] = useState<CodeEmbedState>("default");
+  const toRaised = useCallback(() => setState("raised"), []);
+  const toDefault = useCallback(() => setState("default"), []);
+  const toHighlighted = useCallback(() => setState("highlighted"), []);
 
   const actions = useActiveEditorActions();
   const code = useMemo(
@@ -139,10 +105,6 @@ const CodeEmbed = ({
   const handleOpenIdea = useCallback(async () => {
     projectActions.openIdea(parentSlug, codeWithImports, title!);
   }, [codeWithImports, parentSlug, projectActions, title]);
-  const lineCount = code.trim().split("\n").length;
-  const codeRef = useRef<HTMLDivElement>(null);
-  const textHeight = lineCount * 1.375 + "em";
-  const codeHeight = `calc(${textHeight} + var(--spacing-2) + var(--spacing-2) + 6px)`;
   const hotKeysRef = useHotkeys(keyboardShortcuts.copyCode, handleCopyCode, {
     preventDefault: true,
   }) as Ref<HTMLDivElement>;
@@ -154,46 +116,24 @@ const CodeEmbed = ({
         fontSize="md"
         ref={hotKeysRef}
         tabIndex={-1}
-        // Runtime value from the line count.
-        style={{ height: codeHeight }}
+        width="100%"
+        overflowX="auto"
       >
         <Code
           onMouseEnter={toRaised}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={toDefault}
           onCodeDragEnd={toDefault}
           isOpen={copyCodeOpen}
           onToggle={setCopyCodeOpen}
           concise={code}
           full={codeWithImports}
-          ref={codeRef}
           raisedLook={raisedLook}
           highlightDragHandle={state === "raised"}
           parentSlug={parentSlug}
           toolkitType={toolkitType}
           sectionId={sectionId}
           accentColor={accentColor}
-          isPopUp={false}
         />
-        {state === "raised" && (
-          <CodePopUp
-            accentColor={accentColor}
-            onMouseLeave={toDefault}
-            onCodeDragEnd={toDefault}
-            isOpen={copyCodeOpen}
-            onToggle={setCopyCodeOpen}
-            style={{
-              height: codeHeight,
-              top: codeRef.current!.getBoundingClientRect().top + "px",
-              left: codeRef.current!.getBoundingClientRect().left + "px",
-              width: codeRef.current!.offsetWidth + "px",
-            }}
-            concise={code}
-            full={codeWithImports}
-            toolkitType={toolkitType}
-            sectionId={sectionId}
-            parentSlug={parentSlug}
-          />
-        )}
       </Box>
       <CodeActionButton
         isOpen={toolkitType === "ideas" ? true : copyCodeOpen}
@@ -204,49 +144,6 @@ const CodeEmbed = ({
         toolkitType={toolkitType}
       />
     </Box>
-  );
-};
-
-interface CodePopUpProps {
-  accentColor?: string;
-  concise: string;
-  full: string;
-  toolkitType?: string;
-  sectionId?: string;
-  parentSlug?: string;
-  onCodeDragEnd: () => void;
-  onMouseLeave: React.MouseEventHandler<HTMLElement>;
-  isOpen: boolean;
-  onToggle: React.Dispatch<React.SetStateAction<boolean>>;
-  style?: CSSProperties;
-}
-
-// We draw the same code over the top in a portal so we can draw it
-// above the scrollbar. You can achieve almost the same effect with
-// z-index, but Safari draws the scrollbars over the code that should
-// be above them.
-const CodePopUp = ({
-  concise,
-  full,
-  toolkitType,
-  sectionId,
-  parentSlug,
-  ...props
-}: CodePopUpProps) => {
-  return createPortal(
-    <Code
-      concise={concise}
-      full={full}
-      // We're always "raised" as this is the pop-up.
-      raisedLook={toolkitType !== "ideas"}
-      highlightDragHandle
-      toolkitType={toolkitType}
-      parentSlug={parentSlug}
-      sectionId={sectionId}
-      isPopUp
-      {...props}
-    />,
-    document.body
   );
 };
 
@@ -264,9 +161,6 @@ interface CodeProps {
   isOpen: boolean;
   onToggle: React.Dispatch<React.SetStateAction<boolean>>;
   raisedLook: boolean;
-  /** The portalled copy: absolute at runtime coordinates, above scrollbars. */
-  isPopUp: boolean;
-  style?: CSSProperties;
 }
 
 const Code = React.forwardRef<HTMLDivElement, CodeProps>(
@@ -283,8 +177,6 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
       isOpen,
       onToggle,
       raisedLook,
-      isPopUp,
-      style,
       ...props
     }: CodeProps,
     ref
@@ -331,54 +223,34 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
         // (also required by react-aria's Focusable tooltip trigger).
         role="button"
         draggable={toolkitType === "ideas" ? false : true}
-        transition="background .2s, box-shadow .2s"
+        transition="background-color 120ms ease-out, box-shadow 120ms ease-out"
         borderWidth="2px"
-        borderBottomWidth="4px"
         borderColor="var(--snippet-block-color)"
         borderRadius="md"
         fontFamily="code"
+        fontWeight="normal"
         overflow="visible"
-        _before={{
-          content: '""',
-          position: "absolute",
-          top: "-2px",
-          left: "6",
-          width: "10",
-          height: "7px",
-          backgroundColor: "white",
-          borderBottomRadius: "sm",
-          zIndex: 1,
-          pointerEvents: "none",
-        }}
-        _after={{
-          content: '""',
-          position: "absolute",
-          bottom: "-10px",
-          left: "6",
-          width: "10",
-          height: "8px",
-          backgroundColor: "var(--snippet-block-color)",
-          borderBottomRadius: "sm",
-          pointerEvents: "none",
-        }}
         ref={ref}
         gap="0"
         onClick={() => onToggle(!isOpen)}
         onDragStart={toolkitType === "ideas" ? () => {} : handleDragStart}
         onDragEnd={handleDragEnd}
         cursor={toolkitType === "ideas" ? "default" : "grab"}
-        position="absolute"
-        fontSize={isPopUp ? "md" : undefined}
-        zIndex={isPopUp ? "codePopUp" : "code"}
-        bgColor={raisedLook ? "blimpTeal.50" : "white"}
-        boxShadow={isPopUp ? "rgba(0, 0, 0, 0.18) 0px 2px 6px" : undefined}
-        tabIndex={isPopUp ? undefined : 0}
+        position="relative"
+        width="max-content"
+        minWidth="100%"
+        zIndex="code"
+        bgColor={raisedLook ? "brand.50" : "white"}
+        boxShadow={
+          raisedLook
+            ? "inset 0 0 0 1px var(--snippet-block-color), inset 0 2px 10px rgba(78, 175, 71, 0.12)"
+            : "none"
+        }
+        tabIndex={0}
         _focusVisible={{ focusRing: "outline" }}
-        // Pop-up position/size at runtime coordinates.
         style={
           {
             "--snippet-block-color": accentColor ?? "var(--colors-brand-500)",
-            ...style,
           } as CSSProperties
         }
         {...props}
@@ -393,7 +265,11 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
               p: "1",
               alignSelf: "stretch",
               backgroundColor: "var(--snippet-block-color)",
-              "& svg": { color: "black" },
+              "& svg": {
+                color: "black",
+                opacity: highlightDragHandle ? 1 : 0.6,
+                transition: "opacity 120ms ease-out",
+              },
             }}
             highlight={highlightDragHandle}
           />
@@ -428,18 +304,5 @@ const Code = React.forwardRef<HTMLDivElement, CodeProps>(
     );
   }
 );
-
-const useScrollableAncestorScroll = (callback: () => void) => {
-  const scrollable = useScrollablePanelAncestor();
-  useEffect(() => {
-    const target = scrollable.current;
-    if (target) {
-      target.addEventListener("scroll", callback);
-      return () => {
-        target.removeEventListener("scroll", callback);
-      };
-    }
-  }, [scrollable, callback]);
-};
 
 export default CodeEmbed;

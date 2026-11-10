@@ -1,4 +1,5 @@
 ---
+connectionGuide: led-matrix
 name: LED-Matrix
 subtitle: Text über die LED-Matrix laufen lassen
 image: ../../images/led-matrix.svg
@@ -10,15 +11,13 @@ imageAlt: Leuchtende Punkte einer LED-Matrix
 SPDX-License-Identifier: MIT
 -->
 
-Schließe die 12 × 8 LED-Matrix an Port A der senseBox an.
-
-Füge zuerst **LED-Matrix initialisieren** und danach **Lauftext anzeigen** ein. Alternativ enthält **LED-Matrix mit Lauftext vollständig verwenden** ein direkt ausführbares Gesamtbeispiel.
+Text auf einer LED-Matrix anzeigen.
 
 ## LED-Matrix initialisieren
 
 <!-- @slug led-matrix-initialisieren -->
 
-Schalte die senseBox-Anschlüsse ein und richte die LED-Matrix ein:
+Richtet die LED-Matrix ein.
 
 ```python
 import board
@@ -41,16 +40,12 @@ pixels = neopixel.NeoPixel(
 )
 matrix = PixelFramebuffer(pixels, breite, hoehe, alternating=True)
 ```
-
-<!-- @details -->
-
-Der Block legt das Anzeigeobjekt unter dem Namen `matrix` an. Verwende dieses Objekt auch im folgenden Block. Mit `brightness=0.05` kannst du die Helligkeit anpassen.
 
 ## Lauftext anzeigen
 
 <!-- @slug led-matrix-lauftext-anzeigen -->
 
-Lass einen Text in Rot über die zuvor initialisierte Matrix laufen:
+Zeigt einen roten Lauftext auf der LED-Matrix an.
 
 ```python
 import time
@@ -66,15 +61,11 @@ while True:
         time.sleep(0.1)
 ```
 
-<!-- @details -->
-
-Ändere `text`, um eine eigene Nachricht anzuzeigen. Mit `0xFF0000` legst du die Farbe fest. Eine kleinere Zahl bei `time.sleep(0.1)` lässt den Text schneller laufen. Der Block setzt voraus, dass `matrix` und `breite` zuvor eingerichtet wurden.
-
 ## LED-Matrix mit Lauftext vollständig verwenden
 
 <!-- @slug led-matrix-vollstaendig-verwenden -->
 
-Dieses vollständige Beispiel initialisiert die LED-Matrix und zeigt fortlaufend einen Lauftext an:
+Richtet die LED-Matrix ein und zeigt einen Lauftext an.
 
 ```python
 import board
@@ -108,7 +99,3 @@ while True:
         matrix.display()
         time.sleep(0.1)
 ```
-
-<!-- @details -->
-
-Text, Farbe, Helligkeit und Laufgeschwindigkeit kannst du für dein Projekt anpassen.

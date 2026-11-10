@@ -1,17 +1,18 @@
 ---
+connectionGuide: dps310
 name: Air pressure
 subtitle: Measure air pressure
 image: ../../images/luftdruck.svg
 imageAlt: Gauge for air pressure
 ---
 
-The air-pressure and temperature sensor is connected through I²C.
+Measure air pressure using the DPS310.
 
 ## Initialise air-pressure sensor
 
 <!-- @slug luftdrucksensor-initialisieren -->
 
-Enable the senseBox connections and set up the DPS310:
+Sets up the DPS310.
 
 ```python
 import board
@@ -26,28 +27,22 @@ i2c = board.I2C()
 dps310 = DPS310(i2c, 0x76)
 ```
 
-<!-- @details -->
-
-This creates the sensor as `dps310`.
-
 ## Read air pressure
 
 <!-- @slug luftdruck-messen -->
 
-Read air pressure in hectopascals:
+Reads air pressure in hPa.
 
 ```python
 pressure = dps310.pressure
 print("Air pressure: %.2f hPa" % pressure)
 ```
 
-<!-- @details -->
-
-`dps310` must already be initialised.
-
 ## Read air-pressure sensor completely
 
 <!-- @slug luftdrucksensor-vollstaendig-auslesen -->
+
+Sets up the sensor and prints air pressure every second.
 
 ```python
 import time
@@ -66,7 +61,3 @@ while True:
     print("Air pressure: %.2f hPa" % pressure)
     time.sleep(1)
 ```
-
-<!-- @details -->
-
-More information is available in the [senseBox documentation](https://docs.sensebox.de/en/).

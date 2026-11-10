@@ -4,11 +4,11 @@ subtitle: Wait, measure elapsed time and run actions regularly
 image: ../../images/zeit.svg
 ---
 
-The timing blocks use CircuitPython's built-in `time` module.
+Control delays, elapsed time and measurement intervals.
 
 ## Wait milliseconds
 
-`time.sleep()` expects seconds, so divide milliseconds by `1000`.
+Pauses the program for the specified number of milliseconds.
 
 ```python
 import time
@@ -19,7 +19,7 @@ time.sleep(milliseconds / 1000)
 
 ## Wait microseconds
 
-Divide microseconds by `1_000_000`.
+Pauses the program for the specified number of microseconds.
 
 ```python
 import time
@@ -30,7 +30,7 @@ time.sleep(microseconds / 1_000_000)
 
 ## Elapsed milliseconds
 
-`time.monotonic()` counts seconds since the senseBox started and is unaffected by clock changes.
+Returns elapsed runtime in milliseconds.
 
 ```python
 import time
@@ -40,6 +40,8 @@ milliseconds_since_start = int(time.monotonic() * 1000)
 
 ## Elapsed microseconds
 
+Returns elapsed runtime in microseconds.
+
 ```python
 import time
 
@@ -48,7 +50,7 @@ microseconds_since_start = int(time.monotonic() * 1_000_000)
 
 ## Wait forever
 
-The infinite loop sleeps so it does not use unnecessary processing time.
+Keeps the program in a waiting loop indefinitely.
 
 ```python
 import time
@@ -59,7 +61,7 @@ while True:
 
 ## Measurement interval
 
-Indented code runs regularly. The monotonic clock avoids problems caused by changing the date or time.
+Runs code at regular intervals.
 
 ```python
 import time

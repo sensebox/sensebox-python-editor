@@ -5,13 +5,13 @@ image: ../../images/photodiode.svg
 imageAlt: Photodiode with incoming light rays
 ---
 
-The photodiode is built into the MCU S2, so nothing else needs to be connected.
+Read light levels using the built-in photodiode.
 
 ## Initialise photodiode
 
 <!-- @slug photodiode-initialisieren -->
 
-Enable the photodiode power supply and set up the analogue input:
+Sets up the analogue input for the photodiode.
 
 ```python
 import time
@@ -26,16 +26,12 @@ time.sleep(0.1)
 
 photodiode = analogio.AnalogIn(board.PD_PIN)
 ```
-
-<!-- @details -->
-
-The brief wait stabilises the circuit. The analogue input is created as `photodiode`.
 
 ## Read photodiode and calculate voltage
 
 <!-- @slug photodiode-auslesen-und-spannung-berechnen -->
 
-Read the photodiode every second and convert its raw value to a voltage:
+Reads the raw value and calculates the voltage.
 
 ```python
 def get_voltage(raw_value, reference_voltage):
@@ -48,13 +44,11 @@ while True:
     time.sleep(1)
 ```
 
-<!-- @details -->
-
-`photodiode` must be initialised and `time` must be imported. Both values come from the same reading.
-
 ## Read photodiode completely
 
 <!-- @slug photodiode-vollstaendig-auslesen -->
+
+Sets up the photodiode and prints the raw value and voltage every second.
 
 ```python
 import time
@@ -77,7 +71,3 @@ while True:
     print(f"Raw value: {raw_value} | Voltage: {voltage:.2f} V")
     time.sleep(1)
 ```
-
-<!-- @details -->
-
-Output the values with [print](doc:text/werte-ausgeben). More information is available in the [senseBox documentation](https://docs.sensebox.de/en/).

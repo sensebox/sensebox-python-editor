@@ -19,7 +19,12 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { RiUsbLine } from "react-icons/ri";
+import {
+  RiFolderOpenFill,
+  RiPlugFill,
+  RiUpload2Line,
+  RiUsbLine,
+} from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
 import { HStack } from "styled-system/jsx";
 import { ConnectionStatus } from "@microbit/microbit-connection";
@@ -113,12 +118,38 @@ const SendButton = React.forwardRef(
       globalShortcutConfig
     );
     return (
-      <HStack>
+      <HStack
+        flexWrap="wrap"
+        css={{
+          "& button": {
+            height: "48px",
+            borderWidth: "2px",
+            borderStyle: "solid",
+            borderColor: "white",
+            borderRadius: "full",
+            backgroundColor: "brand.500",
+            color: "white",
+            fontSize: "18px",
+            fontWeight: "bold",
+            _hover: {
+              backgroundColor: "brand.500",
+              filter: "brightness(0.95)",
+              _disabled: {
+                backgroundColor: "brand.500",
+                filter: "none",
+              },
+            },
+            _active: { backgroundColor: "brand.500" },
+          },
+          "& button svg": { width: "26px", height: "26px" },
+        }}
+      >
         {isCircuitPython && (
           <Button
             ref={menuButtonRef}
             isDisabled={busy}
             size={size}
+            startIcon={<RiPlugFill />}
             onPress={handleToggleConnected}
           >
             <FormattedMessage
@@ -129,7 +160,12 @@ const SendButton = React.forwardRef(
           </Button>
         )}
         {isCircuitPython && !directorySelected && (
-          <Button isDisabled={busy} size={size} onPress={handleSelectDirectory}>
+          <Button
+            isDisabled={busy}
+            size={size}
+            startIcon={<RiFolderOpenFill />}
+            onPress={handleSelectDirectory}
+          >
             <FormattedMessage id="circuitpython-directory-select" />
           </Button>
         )}
@@ -147,7 +183,7 @@ const SendButton = React.forwardRef(
                 isDisabled={busy}
                 size={size}
                 variant="primary"
-                startIcon={<RiUsbLine />}
+                startIcon={<RiUpload2Line />}
                 onPress={() => handleSendToMicrobit(sendButtonRef)}
               >
                 <FormattedMessage id="send-action" />

@@ -4,11 +4,11 @@ subtitle: Store, read and change values
 image: ../../images/variablen.svg
 ---
 
-Variables store values under a name. Python detects the data type from the assigned value, so no extra declaration is needed.
+Store and read values using a name.
 
 ## Create or set a variable
 
-The assignment operator `=` stores a value. A later assignment replaces it.
+Stores or replaces the value of a variable.
 
 ```python
 measurement = 23.5
@@ -17,7 +17,7 @@ measurement = 24.0
 
 ## Read a variable
 
-Use the variable name wherever its stored value is needed.
+Reads the stored value of a variable.
 
 ```python
 measurement = 23.5
@@ -27,6 +27,8 @@ print(measurement)
 ## Set a data type
 
 <!-- @alternatives Data type -->
+
+Creates a value using the selected data type.
 
 ### Character
 
@@ -53,8 +55,6 @@ count = int(42)
 ```
 
 ### Large number
-
-Python integers automatically adjust their size.
 
 ```python
 large_number = int(2147483647)

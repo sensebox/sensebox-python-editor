@@ -5,15 +5,13 @@ image: ../../images/beschleunigung.svg
 imageAlt: Three axes for acceleration and rotation
 ---
 
-The IMU is built into the MCU S2, so nothing else needs to be connected.
-
-Add **Initialise motion sensor** first. You can then read acceleration and angular velocity separately; the last example combines every step.
+Measure acceleration and angular velocity using the built-in IMU.
 
 ## Initialise motion sensor
 
 <!-- @slug bewegungssensor-initialisieren -->
 
-Set up the I²C bus and the built-in ICM20948 IMU:
+Sets up the built-in motion sensor.
 
 ```python
 import busio
@@ -26,15 +24,11 @@ i2c = busio.I2C(scl, sda)
 imu = adafruit_icm20x.ICM20948(i2c, address=0x68)
 ```
 
-<!-- @details -->
-
-This creates the IMU as `imu`. Use this object in the following blocks.
-
 ## Read acceleration
 
 <!-- @slug beschleunigung-messen -->
 
-Read acceleration on all three axes:
+Reads acceleration on three axes.
 
 ```python
 acceleration_x, acceleration_y, acceleration_z = imu.acceleration
@@ -44,15 +38,11 @@ print(
 )
 ```
 
-<!-- @details -->
-
-`imu` must already be initialised. Output values with [print](doc:text/werte-ausgeben).
-
 ## Read angular velocity
 
 <!-- @slug drehgeschwindigkeit-messen -->
 
-Read angular velocity on all three axes:
+Reads angular velocity on three axes.
 
 ```python
 gyro_x, gyro_y, gyro_z = imu.gyro
@@ -62,15 +52,11 @@ print(
 )
 ```
 
-<!-- @details -->
-
-`imu` must already be initialised.
-
 ## Read motion sensor completely
 
 <!-- @slug bewegungssensor-vollstaendig-auslesen -->
 
-This complete example initialises the sensor and prints acceleration and angular velocity every second:
+Sets up the sensor and prints motion readings every second.
 
 ```python
 import time
@@ -91,7 +77,3 @@ while True:
     print("")
     time.sleep(1)
 ```
-
-<!-- @details -->
-
-More information is available in the [senseBox documentation](https://docs.sensebox.de/en/).

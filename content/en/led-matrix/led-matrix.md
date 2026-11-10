@@ -1,4 +1,5 @@
 ---
+connectionGuide: led-matrix
 name: LED Matrix
 subtitle: TDisplay text on the LED matrix
 image: ../../images/led-matrix.svg
@@ -10,15 +11,13 @@ imageAlt: Light-up dots on an LED matrix
 SPDX-License-Identifier: MIT
 -->
 
-Connect the 12 × 8 LED matrix to Port A of the senseBox.
-
-First, insert **Initialize LED Matrix**, followed by **Display Scrolling Text**. Alternatively, **Use LED Matrix with Scrolling Text** contains a complete example that can be run directly.
+Display text on an LED matrix.
 
 ## Initialize the LED matrix
 
 <!-- @slug led-matrix-initialisieren -->
 
-Turn on the senseBox connections and set up the LED matrix:
+Sets up the LED matrix.
 
 ```python
 import board
@@ -42,15 +41,11 @@ pixels = neopixel.NeoPixel(
 matrix = PixelFramebuffer(pixels, width, height, alternating=True)
 ```
 
-<!-- @details -->
-
-This block creates the display object with the name `matrix`. Use this object in the following block as well. You can adjust the brightness using `brightness=0.05`.
-
 ## Display scrolling text
 
 <!-- @slug led-matrix-lauftext-anzeigen -->
 
-Scroll some text in red across the previously initialized matrix:
+Displays red scrolling text on the LED matrix.
 
 ```python
 import time
@@ -66,15 +61,11 @@ while True:
         time.sleep(0.1)
 ```
 
-<!-- @details -->
-
-Change `text` to display your own message. Use `0xFF0000` to set the color. A smaller number in `time.sleep(0.1)` makes the text scroll faster. This block requires that `matrix` and `width` have been set up beforehand.
-
 ## Using the LED Matrix with Scrolling Text to Its Full Potential
 
 <!-- @slug led-matrix-vollstaendig-verwenden -->
 
-This complete example initializes the LED matrix and continuously displays scrolling text:
+Sets up the LED matrix and displays scrolling text.
 
 ```python
 import board
@@ -108,7 +99,3 @@ while True:
         matrix.display()
         time.sleep(0.1)
 ```
-
-<!-- @details -->
-
-You can customize the text, color, brightness, and scrolling speed for your project.

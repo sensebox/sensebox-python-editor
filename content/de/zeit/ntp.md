@@ -4,9 +4,11 @@ subtitle: Aktuelle Uhrzeit über WLAN abrufen
 image: ../../images/zeit.svg
 ---
 
-NTP ruft die aktuelle UTC-Zeit aus dem Netzwerk ab. Trage dafür die WLAN-Zugangsdaten direkt in den Block ein.
+Die aktuelle Uhrzeit über das Netzwerk abrufen.
 
 ## NTP initialisieren
+
+Richtet die Netzwerkverbindung und den NTP-Zeitabruf ein.
 
 ```python
 import wifi
@@ -29,17 +31,11 @@ pool = socketpool.SocketPool(wifi.radio)
 netzwerkzeit = adafruit_ntp.NTP(pool, tz_offset=0)
 ```
 
-<!-- @details -->
-
-Ersetze `SSID` und `Password` durch deine Zugangsdaten. Teile Programme mit einem echten WLAN-Passwort nicht mit anderen.
-
 ## NTP-Zeit auslesen
+
+Liest die aktuelle Netzwerkzeit mit dem eingestellten UTC-Versatz aus.
 
 ```python
 datum_zeit = netzwerkzeit.datetime
 print(datum_zeit)
 ```
-
-<!-- @details -->
-
-`tz_offset` ist der feste Abstand zu UTC in Stunden. Für automatische Sommerzeitregeln ist zusätzliche Zeitzonenlogik erforderlich.

@@ -209,15 +209,15 @@ const SideBarHeader = ({
               onPress={handleModalOpened}
               icon={<Icon as={RiSearch2Line} css={{ fontSize: "lg" }} />}
               css={{
-                backgroundColor: "brand.700",
+                backgroundColor: "brand.500",
                 fontWeight: "normal",
                 color: "#fffc",
                 fontSize: "sm",
                 // Neutralise the default (outline) variant's chrome with
                 // border/_hover/_active resets.
                 border: "unset",
-                _hover: { color: "#fffc", background: "brand.700" },
-                _active: { color: "#fffc", background: "brand.700" },
+                _hover: { color: "#fffc", background: "brand.500" },
+                _active: { color: "#fffc", background: "brand.500" },
                 textAlign: "left",
                 p: "3",
                 mr: "2rem",

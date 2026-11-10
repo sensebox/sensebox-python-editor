@@ -134,6 +134,12 @@
   "clear": {
     "defaultMessage": "Löschen"
   },
+  "enlarge-image-action": {
+    "defaultMessage": "Bild vergrößern: {name}"
+  },
+  "connection-help-action": {
+    "defaultMessage": "Anschlusshilfe: {name}"
+  },
   "close-action": {
     "defaultMessage": "Schließen"
   },

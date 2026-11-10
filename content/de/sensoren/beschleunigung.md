@@ -5,15 +5,13 @@ image: ../../images/beschleunigung.svg
 imageAlt: Drei Achsen für Beschleunigung und Drehung
 ---
 
-Die IMU ist auf der MCU S2 verbaut. Du musst hier also nichts weiter anschließen.
-
-Füge zuerst **Bewegungssensor initialisieren** ein. Danach kannst du die Beschleunigung und die Drehgeschwindigkeit getrennt auslesen. Das letzte Beispiel fasst alle Schritte zusammen.
+Beschleunigung und Drehgeschwindigkeit mit der eingebauten IMU messen.
 
 ## Bewegungssensor initialisieren
 
 <!-- @slug bewegungssensor-initialisieren -->
 
-Richte den I²C-Bus und die eingebaute ICM20948-IMU ein:
+Richtet den eingebauten Bewegungssensor ein.
 
 ```python
 import busio
@@ -26,15 +24,11 @@ i2c = busio.I2C(scl, sda)
 imu = adafruit_icm20x.ICM20948(i2c, address=0x68)
 ```
 
-<!-- @details -->
-
-Der Block legt die IMU unter dem Namen `imu` an. Verwende dieses Objekt auch in den folgenden Blöcken.
-
 ## Beschleunigung auslesen
 
 <!-- @slug beschleunigung-messen -->
 
-Lies die Beschleunigung auf allen drei Achsen aus:
+Liest die Beschleunigung auf drei Achsen aus.
 
 ```python
 beschleunigung_x, beschleunigung_y, beschleunigung_z = imu.acceleration
@@ -44,15 +38,11 @@ print(
 )
 ```
 
-<!-- @details -->
-
-Der Block setzt voraus, dass `imu` zuvor initialisiert wurde. Die Werte kannst du mit [print](doc:text/werte-ausgeben) ausgeben.
-
 ## Drehgeschwindigkeit auslesen
 
 <!-- @slug drehgeschwindigkeit-messen -->
 
-Lies die Drehgeschwindigkeit auf allen drei Achsen aus:
+Liest die Drehgeschwindigkeit auf drei Achsen aus.
 
 ```python
 gyro_x, gyro_y, gyro_z = imu.gyro
@@ -62,15 +52,11 @@ print(
 )
 ```
 
-<!-- @details -->
-
-Der Block setzt voraus, dass `imu` zuvor initialisiert wurde.
-
 ## Bewegungssensor vollständig auslesen
 
 <!-- @slug bewegungssensor-vollstaendig-auslesen -->
 
-Dieses vollständige Beispiel initialisiert den Sensor und gibt jede Sekunde Beschleunigung und Drehgeschwindigkeit aus:
+Richtet den Sensor ein und gibt jede Sekunde Bewegungswerte aus.
 
 ```python
 import time
@@ -98,7 +84,3 @@ while True:
     print("")
     time.sleep(1)
 ```
-
-<!-- @details -->
-
-Weitere Informationen findest du in der [senseBox-Dokumentation](https://docs.sensebox.de).

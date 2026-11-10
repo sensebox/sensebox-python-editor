@@ -23,6 +23,7 @@ interface DocumentationBreadcrumbHeadingProps {
   subtitle?: ReactNode;
   icon?: SimpleImage;
   isV2Only?: boolean;
+  action?: ReactNode;
 }
 
 const DocumentationBreadcrumbHeading = ({
@@ -35,6 +36,7 @@ const DocumentationBreadcrumbHeading = ({
   subtitle,
   icon,
   isV2Only,
+  action,
 }: DocumentationBreadcrumbHeadingProps) => {
   const scrollable = useScrollablePanelAncestor();
   const [reduced, setReduced] = useState<boolean>(false);
@@ -120,16 +122,19 @@ const DocumentationBreadcrumbHeading = ({
             />
           )}
           <VStack alignItems="flex-start" gap="0">
-            <Text
-              as="h2"
-              fontSize="2xl"
-              fontWeight="semibold"
-              fontFamily={titleFontFamily}
-              display="inline-flex"
-              alignItems="center"
-            >
-              {title} {isV2Only && <V2Tag ml="2.5" />}
-            </Text>
+            <HStack gap="2">
+              <Text
+                as="h2"
+                fontSize="2xl"
+                fontWeight="semibold"
+                fontFamily={titleFontFamily}
+                display="inline-flex"
+                alignItems="center"
+              >
+                {title} {isV2Only && <V2Tag ml="2.5" />}
+              </Text>
+              {action}
+            </HStack>
             {subtitle ? (
               <Collapse
                 isOpen={!reduced}

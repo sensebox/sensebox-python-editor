@@ -4,11 +4,11 @@ subtitle: Calculate, check, limit, and distribute numbers
 image: ../../images/mathematik.svg
 ---
 
-With these blocks, you can calculate, check, and convert numbers. The built-in `math` and `random` modules are used for advanced functions.
+Calculate, check and convert numbers.
 
 ## Number
 
-Python handles integers and decimals directly.
+Sets a numeric value.
 
 ```python
 number = 123
@@ -18,6 +18,8 @@ decimal = 3.14
 ## Basic Arithmetic Operations
 
 <!-- @alternatives Operation -->
+
+Combines numbers using an arithmetic operation.
 
 ### Add
 
@@ -51,7 +53,7 @@ result = 5 ** 3
 
 ## Negative Number
 
-A leading minus sign reverses the sign.
+Reverses the sign of a number.
 
 ```python
 number = 5
@@ -61,6 +63,8 @@ result = -number
 ## Single Mathematical Function
 
 <!-- @alternatives Funktion -->
+
+Calculates a mathematical function.
 
 ### Square Root
 
@@ -109,6 +113,8 @@ result = 10 ** 3
 ## Trigonometric Functions
 
 <!-- @alternatives Funktion -->
+
+Calculates a trigonometric function.
 
 ### Sine
 
@@ -162,6 +168,8 @@ angle = math.degrees(math.atan(1))
 
 <!-- @alternatives Konstante -->
 
+Provides a mathematical constant.
+
 ### Pi
 
 ```python
@@ -209,6 +217,8 @@ value = float(“inf”)
 ## Check a number
 
 <!-- @alternatives Eigenschaft -->
+
+Checks a property of a number.
 
 ### Even
 
@@ -260,6 +270,8 @@ result = 15 % 3 == 0
 
 <!-- @alternatives Änderung -->
 
+Increases or decreases the value of a variable.
+
 ### Increment
 
 ```python
@@ -277,6 +289,8 @@ number -= 1
 ## Round
 
 <!-- @alternatives Richtung -->
+
+Rounds a number to an integer.
 
 ### Round normally
 
@@ -302,7 +316,7 @@ result = math.floor(3.9)
 
 ## Remainder of a Division
 
-The modulo operator `%` returns the remainder.
+Calculates the remainder of a division.
 
 ```python
 remainder = 64 % 10
@@ -310,7 +324,7 @@ remainder = 64 % 10
 
 ## Limiting a Value
 
-The value remains between the lower and upper limits.
+Limits a value to a specified range.
 
 ```python
 value = 120
@@ -321,7 +335,7 @@ limited_value = min(max(value, lower_limit), upper_limit)
 
 ## Random Integer Value
 
-Either limit can be the result.
+Generates a random integer including both bounds.
 
 ```python
 import random
@@ -331,6 +345,8 @@ value = random.randint(1, 100)
 
 ## Random number between 0 and 1
 
+Generates a random number between 0 and 1.
+
 ```python
 import random
 
@@ -339,7 +355,7 @@ value = random.random()
 
 ## Map a value
 
-The formula maps a value linearly from one range to another.
+Maps a value linearly to another range.
 
 ```python
 value = 50

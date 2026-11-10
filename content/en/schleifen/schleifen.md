@@ -4,28 +4,24 @@ subtitle: Repeat instructions and control loop iterations
 image: ../../images/schleifen.svg
 ---
 
-Loops repeat an indented block of code.
+Repeat code and control loop iterations.
 
 ## Repeat X times
 
-All indented instructions run as often as specified in `range()`.
+Repeats a code block a specified number of times.
 
 ```python
 for _ in range(10):
     print("Repeat")
 ```
 
-<!-- @details -->
-
-The underscore indicates that the current iteration number is not needed.
-
 ## Repeat while or until
 
 <!-- @alternatives Condition -->
 
-### While
+Repeats code based on a condition.
 
-The loop runs while its condition is true.
+### While
 
 ```python
 measurement = 0
@@ -37,8 +33,6 @@ while measurement < 10:
 
 ### Until
 
-Python has no separate `until`. With `not`, the loop runs until the condition becomes true.
-
 ```python
 measurement = 0
 
@@ -49,24 +43,20 @@ while not (measurement >= 10):
 
 ## Count from, to, by
 
-The loop variable receives every value from the start up to and including the target value.
+Counts from the start to the end value, inclusive, using a step size.
 
 ```python
 for i in range(1, 10 + 1, 1):
     print(i)
 ```
 
-<!-- @details -->
-
-Python excludes the second value of `range()`. Add `1` here to include the target value.
-
 ## Control a loop iteration
 
 <!-- @alternatives Action -->
 
-### Stop loop
+Ends the loop or skips the current iteration.
 
-`break` immediately ends the enclosing loop.
+### Stop loop
 
 ```python
 for i in range(10):
@@ -76,8 +66,6 @@ for i in range(10):
 ```
 
 ### Next iteration
-
-`continue` skips the remaining code in the current iteration.
 
 ```python
 for i in range(10):

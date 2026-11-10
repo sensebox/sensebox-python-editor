@@ -177,6 +177,14 @@
     "defaultMessage": "Clear",
     "description": "Aria label for the search input"
   },
+  "enlarge-image-action": {
+    "defaultMessage": "Enlarge image: {name}",
+    "description": "Accessible label and tooltip for opening a documentation image in a large dialog"
+  },
+  "connection-help-action": {
+    "defaultMessage": "Connection guide: {name}",
+    "description": "Tooltip and accessible label for the question mark beside a sensor or component name"
+  },
   "close-action": {
     "defaultMessage": "Close",
     "description": "Close button text"

@@ -3,10 +3,23 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Collapse, Icon, Link, Text } from "@microbit/ui";
+import {
+  Button,
+  Collapse,
+  Icon,
+  IconButton,
+  Link,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalHeader,
+  Text,
+  Tooltip,
+} from "@microbit/ui";
 import BlockContent from "@sanity/block-content-to-react";
-import React, { ReactNode, useContext, useMemo } from "react";
-import { RiExternalLinkLine } from "react-icons/ri";
+import React, { ReactNode, useContext, useMemo, useRef, useState } from "react";
+import { FormattedMessage, useIntl } from "react-intl";
+import { RiExternalLinkLine, RiQuestionLine } from "react-icons/ri";
 import { Box, Stack } from "styled-system/jsx";
 import { PortableText, SimpleImage } from "../../common/portable-text";
 import { useRouterState } from "../../router-hooks";
@@ -22,6 +35,9 @@ import CodeEmbed from "./CodeEmbed";
 import { decorateWithCollapseNodes } from "./collapse-util";
 import ImageWithFallback from "./ImageWithFallback";
 import OfflineImageFallback from "../OfflineImageFallback";
+import { docStylesClass } from "../../common/documentation-styles";
+import Spinner from "../../common/Spinner";
+import ExpandableImage from "./ExpandableImage";
 
 export const enum DocumentationCollapseMode {
   ShowAll,
@@ -96,6 +112,13 @@ const DocumentationInternalLinkMark = (
   const [state, setState] = useRouterState();
   const { sections } = useDocumentation();
   const { sectionId } = useContext(DocumentationContext);
+  if (props.mark.section === "hilfe") {
+    return (
+      <ConnectionHelpLink guideId={props.mark.slug.current}>
+        {props.children}
+      </ConnectionHelpLink>
+    );
+  }
   return (
     <Link
       color="brand.600"
@@ -122,6 +145,115 @@ const DocumentationInternalLinkMark = (
     >
       {props.children}
     </Link>
+  );
+};
+
+export const ConnectionHelpLink = ({
+  guideId,
+  children,
+  iconOnly = false,
+}: {
+  guideId: string;
+  children: ReactNode;
+  iconOnly?: boolean;
+}) => {
+  const { connectionGuides } = useDocumentation();
+  const [isOpen, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const intl = useIntl();
+  const label = intl.formatMessage(
+    { id: "connection-help-action" },
+    { name: typeof children === "string" ? children : guideId }
+  );
+  const guide =
+    connectionGuides.status === "ok"
+      ? connectionGuides.content.find((item) => item.slug.current === guideId)
+      : undefined;
+  return (
+    <Box as="span" display="inline-flex" onClick={(e) => e.stopPropagation()}>
+      {iconOnly ? (
+        <Tooltip label={label} hasArrow delay={300}>
+          <IconButton
+            ref={buttonRef}
+            variant="ghost"
+            size="sm"
+            aria-label={label}
+            aria-haspopup="dialog"
+            onPress={() => setOpen(true)}
+            css={{ color: "brand.500", fontSize: "20px", flexShrink: 0 }}
+          >
+            <RiQuestionLine />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Button
+          ref={buttonRef}
+          variant="link"
+          css={{ fontSize: "inherit", whiteSpace: "normal" }}
+          onPress={() => setOpen(true)}
+          aria-haspopup="dialog"
+        >
+          {children}
+        </Button>
+      )}
+      <Modal
+        isOpen={isOpen}
+        onClose={() => setOpen(false)}
+        finalFocusRef={buttonRef}
+        isCentered
+        isDismissable
+        contentCss={{
+          width: "calc(100vw - 32px)",
+          maxWidth: "1000px",
+          height: "auto",
+          minHeight: "0",
+          maxHeight: "calc(100vh - 32px)",
+          margin: "16px 0",
+          overflow: "hidden",
+          "@supports (height: 100dvh)": {
+            maxHeight: "calc(100dvh - 32px)",
+          },
+          "& > [role='dialog']": {
+            minHeight: "0",
+            overflow: "hidden",
+          },
+        }}
+      >
+        <ModalHeader css={{ pr: "12" }}>{guide?.name ?? children}</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody
+          css={{
+            minHeight: "0",
+            flex: "1 1 auto",
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+            overflowWrap: "anywhere",
+            pb: "6",
+          }}
+        >
+          {connectionGuides.status === "loading" ? (
+            <Spinner />
+          ) : guide ? (
+            <Stack gap="3" className={docStylesClass}>
+              {guide.image && (
+                <Box
+                  css={{
+                    "& img": { maxHeight: "40vh", objectFit: "contain" },
+                  }}
+                >
+                  <ExpandableImage image={guide.image} title={guide.name} />
+                </Box>
+              )}
+              <DocumentationContent blocks={guide.content} />
+            </Stack>
+          ) : (
+            <Text>
+              <FormattedMessage id="toolkit-error-loading" />
+            </Text>
+          )}
+        </ModalBody>
+      </Modal>
+    </Box>
   );
 };
 

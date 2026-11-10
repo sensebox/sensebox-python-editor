@@ -4,11 +4,11 @@ subtitle: Werte speichern, lesen und verändern
 image: ../../images/variablen.svg
 ---
 
-Variablen speichern Werte unter einem Namen. Python erkennt den Datentyp am zugewiesenen Wert; eine zusätzliche Deklaration wie in Arduino ist nicht nötig.
+Werte unter einem Namen speichern und auslesen.
 
 ## Variable erstellen oder setzen
 
-Der Zuweisungsoperator `=` speichert einen Wert. Eine weitere Zuweisung ersetzt ihn.
+Speichert oder ersetzt den Wert einer Variablen.
 
 ```python
 messwert = 23.5
@@ -17,7 +17,7 @@ messwert = 24.0
 
 ## Variable lesen
 
-Der Variablenname kann überall eingesetzt werden, wo ihr gespeicherter Wert benötigt wird.
+Liest den gespeicherten Wert einer Variablen aus.
 
 ```python
 messwert = 23.5
@@ -27,6 +27,8 @@ print(messwert)
 ## Datentyp festlegen
 
 <!-- @alternatives Datentyp -->
+
+Legt einen Wert mit dem gewählten Datentyp an.
 
 ### Zeichen
 
@@ -53,8 +55,6 @@ anzahl = int(42)
 ```
 
 ### Große Zahl
-
-Python-Ganzzahlen passen ihre Größe automatisch an.
 
 ```python
 grosse_zahl = int(2147483647)

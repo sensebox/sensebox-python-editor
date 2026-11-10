@@ -13,7 +13,9 @@ import { useSettings } from "../../settings/settings";
 import AreaHeading from "../../common/AreaHeading";
 import { useAnimationDirection } from "../common/documentation-animation-hooks";
 import DocumentationBreadcrumbHeading from "../common/DocumentationBreadcrumbHeading";
-import DocumentationContent from "../common/DocumentationContent";
+import DocumentationContent, {
+  ConnectionHelpLink,
+} from "../common/DocumentationContent";
 import DocumentationTopLevelItem from "../common/DocumentationTopLevelItem";
 import { isV2Only } from "../common/model";
 import { DocsSectionConfig, localize } from "../sections/config";
@@ -82,6 +84,11 @@ const ActiveLevel = ({
   const [{ languageId }] = useSettings();
   const referenceString = localize(section.title, languageId);
   const description = localize(section.description, languageId);
+  const helpAction = topic?.connectionGuide ? (
+    <ConnectionHelpLink guideId={topic.connectionGuide} iconOnly>
+      {topic.name}
+    </ConnectionHelpLink>
+  ) : undefined;
   if (topic) {
     return (
       <HeadedScrollablePanel
@@ -91,7 +98,11 @@ const ActiveLevel = ({
         direction={direction}
         heading={
           directTopic ? (
-            <AreaHeading name={referenceString} description={description} />
+            <AreaHeading
+              name={referenceString}
+              description={description}
+              action={helpAction}
+            />
           ) : (
             <DocumentationBreadcrumbHeading
               parent={referenceString}
@@ -99,6 +110,7 @@ const ActiveLevel = ({
               onBack={() => onNavigate(undefined)}
               subtitle={topic.subtitle}
               icon={topic.image}
+              action={helpAction}
             />
           )
         }

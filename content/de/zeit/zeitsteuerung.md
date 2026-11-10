@@ -4,11 +4,11 @@ subtitle: Warten, Laufzeit messen und Aktionen regelmäßig ausführen
 image: ../../images/zeit.svg
 ---
 
-Die Zeitsteuerungs-Bausteine verwenden das in CircuitPython eingebaute Modul `time`.
+Wartezeiten, Laufzeiten und Messintervalle steuern.
 
 ## Millisekunden warten
 
-Der Baustein verwendet Millisekunden, `time.sleep()` erwartet Sekunden. Deshalb wird durch `1000` geteilt.
+Pausiert das Programm für die angegebene Anzahl Millisekunden.
 
 ```python
 import time
@@ -19,7 +19,7 @@ time.sleep(millisekunden / 1000)
 
 ## Mikrosekunden warten
 
-Für Mikrosekunden wird durch `1_000_000` geteilt.
+Pausiert das Programm für die angegebene Anzahl Mikrosekunden.
 
 ```python
 import time
@@ -30,7 +30,7 @@ time.sleep(mikrosekunden / 1_000_000)
 
 ## Vergangene Millisekunden
 
-`time.monotonic()` zählt die Sekunden seit dem Start der senseBox und wird nicht durch eine Änderung der Uhrzeit beeinflusst.
+Ermittelt die vergangene Laufzeit in Millisekunden.
 
 ```python
 import time
@@ -40,6 +40,8 @@ millisekunden_seit_start = int(time.monotonic() * 1000)
 
 ## Vergangene Mikrosekunden
 
+Ermittelt die vergangene Laufzeit in Mikrosekunden.
+
 ```python
 import time
 
@@ -48,7 +50,7 @@ mikrosekunden_seit_start = int(time.monotonic() * 1_000_000)
 
 ## Für immer warten
 
-Die Endlosschleife schläft, damit sie nicht unnötig Rechenzeit verbraucht.
+Hält das Programm dauerhaft in einer Warteschleife.
 
 ```python
 import time
@@ -59,7 +61,7 @@ while True:
 
 ## Messintervall
 
-Der eingerückte Code wird regelmäßig ausgeführt. Die monotone Uhr vermeidet Probleme durch geänderte Datums- oder Uhrzeitwerte.
+Führt Code in einem regelmäßigen Zeitabstand aus.
 
 ```python
 import time

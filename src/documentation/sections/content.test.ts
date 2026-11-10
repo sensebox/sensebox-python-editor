@@ -8,6 +8,7 @@
 import { docsSections, sidebarConfig } from "./config";
 import {
   candidateLanguages,
+  fetchConnectionGuides,
   fetchSections,
   findSectionForSlug,
   resolveContentImage,
@@ -38,6 +39,46 @@ describe("bundled content", () => {
     expect(findSectionForSlug(sections, slug)).toEqual(first.id);
     expect(findSectionForSlug(sections, "does-not-exist")).toBeUndefined();
   });
+
+  it.each(["de", "en"])(
+    "keeps nested connection guides and their images accessible in %s",
+    async (language) => {
+      const sections = await fetchSections(language);
+      expect(sections.hilfe).toBeUndefined();
+      expect(docsSections.some((section) => section.id === "hilfe")).toBe(
+        false
+      );
+      const guides = await fetchConnectionGuides(language);
+      const components = {
+        hdc1080: ["sensoren", "temperatur"],
+        dps310: ["sensoren", "luftdruck-temperatur"],
+        vl53l8cx: ["sensoren", "vl53l8cx"],
+        ltr329: ["sensoren", "helligkeit_uv"],
+        "oled-display": ["oled-display", "oled-display"],
+        "led-matrix": ["led-matrix", "led-matrix"],
+      };
+      for (const [id, [section, topicSlug]] of Object.entries(components)) {
+        const guide = guides.find((card) => card.slug.current === id);
+        expect(guide?.language).toBe(language);
+        expect(guide?.image?.src).not.toMatch(/^\.\./);
+        expect(guide?.image?.src).toBe(
+          resolveContentImage(
+            `/content/${language}/hilfe/anschluesse/${id}.md`,
+            `../../../images/anschluesse/${id}.png`
+          )
+        );
+        expect(guide?.content?.length).toBeGreaterThan(0);
+        const content = sections[section];
+        if (content.layout !== "reference") {
+          throw new Error(`Expected ${section} to use the reference layout`);
+        }
+        const topic = content.toolkit.contents?.find(
+          (item) => item.slug.current === topicSlug
+        );
+        expect(topic?.connectionGuide).toBe(id);
+      }
+    }
+  );
 
   it("provides the loop category and Python blocks", async () => {
     const config = docsSections.find((section) => section.id === "schleifen");
@@ -80,9 +121,9 @@ describe("bundled content", () => {
 
   it("provides the other Python categories with their configured colours", async () => {
     const expected = {
-      text: { accentColor: "#5ba68d", topics: 1, direct: true },
+      text: { accentColor: "#4eaf47", topics: 1, direct: true },
       logik: { accentColor: "#5b80a6", topics: 1, direct: true },
-      zeit: { accentColor: "#5ba674", topics: 3 },
+      zeit: { accentColor: "#4eaf47", topics: 3 },
       mathematik: { accentColor: "#5b68a6", topics: 1, direct: true },
       variablen: { accentColor: "#a65b80", topics: 1, direct: true },
     };

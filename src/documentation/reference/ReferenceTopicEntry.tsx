@@ -33,8 +33,7 @@ interface ToolkitTopicEntryProps {
 /**
  * A toolkit topic entry with its full description and details.
  *
- * We show a pop-up over the code on hover to reveal the full code, overlapping
- * the sidebar scroll area.
+ * Code remains in place on hover; long lines scroll within the snippet.
  */
 const ReferenceTopicEntry = ({
   anchor,

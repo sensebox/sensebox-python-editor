@@ -5,7 +5,7 @@
       "id": "text",
       "layout": "reference",
       "icon": "RiText",
-      "accentColor": "#5ba68d",
+      "accentColor": "#4eaf47",
       "direct": true,
       "title": "Text",
       "description": {
@@ -20,7 +20,10 @@
       "icon": "RiGitBranchLine",
       "accentColor": "#5b80a6",
       "direct": true,
-      "title": { "de": "Logik", "en": "Logic" },
+      "title": {
+        "de": "Logik",
+        "en": "Logic"
+      },
       "description": {
         "de": "Bedingungen prüfen und Entscheidungen treffen.",
         "en": "Test conditions and make decisions."
@@ -33,7 +36,10 @@
       "icon": "RiLoopRightLine",
       "accentColor": "#a6685b",
       "direct": true,
-      "title": { "de": "Schleifen", "en": "Loops" },
+      "title": {
+        "de": "Schleifen",
+        "en": "Loops"
+      },
       "description": {
         "de": "Anweisungen wiederholen und Schleifendurchläufe steuern.",
         "en": "Repeat instructions and control loop iterations."
@@ -44,8 +50,11 @@
       "id": "zeit",
       "layout": "reference",
       "icon": "RiTimeLine",
-      "accentColor": "#5ba674",
-      "title": { "de": "Zeit", "en": "Time" },
+      "accentColor": "#4eaf47",
+      "title": {
+        "de": "Zeit",
+        "en": "Time"
+      },
       "description": {
         "de": "Warten, Laufzeiten messen und Uhren verwenden.",
         "en": "Wait, measure elapsed time and use clocks."
@@ -58,7 +67,10 @@
       "icon": "RiCalculatorLine",
       "accentColor": "#5b68a6",
       "direct": true,
-      "title": { "de": "Mathematik", "en": "Mathematics" },
+      "title": {
+        "de": "Mathematik",
+        "en": "Mathematics"
+      },
       "description": {
         "de": "Zahlen berechnen, prüfen und umwandeln.",
         "en": "Calculate, test and transform numbers."
@@ -71,7 +83,10 @@
       "icon": "RiBracesLine",
       "accentColor": "#a65b80",
       "direct": true,
-      "title": { "de": "Variablen", "en": "Variables" },
+      "title": {
+        "de": "Variablen",
+        "en": "Variables"
+      },
       "description": {
         "de": "Werte unter einem Namen speichern und wiederverwenden.",
         "en": "Store and reuse named values."
@@ -82,23 +97,29 @@
       "id": "sensoren",
       "layout": "reference",
       "icon": "RiSensorLine",
-      "accentColor": "#5ba55b",
-      "title": { "de": "Sensoren", "en": "Sensors" }
+      "accentColor": "#4eaf47",
+      "title": {
+        "de": "Sensoren",
+        "en": "Sensors"
+      }
     },
     {
       "id": "oled-display",
       "layout": "reference",
       "icon": "RiComputerLine",
-      "accentColor": "#5ba55b",
+      "accentColor": "#4eaf47",
       "direct": true,
-      "title": { "de": "OLED-Display", "en": "OLED display" },
+      "title": {
+        "de": "OLED-Display",
+        "en": "OLED display"
+      },
       "order": ["oled-display"]
     },
     {
       "id": "rgb-led",
       "layout": "reference",
       "icon": "RiPaletteLine",
-      "accentColor": "#5ba55b",
+      "accentColor": "#4eaf47",
       "direct": true,
       "title": "RGB-LED",
       "order": ["rgb-led-esp32"]
@@ -107,36 +128,31 @@
       "id": "wifi",
       "layout": "reference",
       "icon": "RiWifiLine",
-      "accentColor": "#5ba55b",
+      "accentColor": "#4eaf47",
       "direct": true,
-      "title": { "de": "WLAN", "en": "WiFi" },
+      "title": {
+        "de": "WLAN",
+        "en": "WiFi"
+      },
       "order": ["wifi"]
     },
     {
       "id": "led-matrix",
       "layout": "reference",
       "icon": "RiGridLine",
-      "accentColor": "#5ba55b",
+      "accentColor": "#4eaf47",
       "direct": true,
       "title": "LED-Matrix",
       "order": ["led-matrix"]
     },
     {
-      "id": "hilfe",
-      "layout": "cards",
-      "icon": "RiQuestionLine",
-      "title": { "de": "Hilfe", "en": "Help" },
-      "description": {
-        "de": "Anschlussbilder und Anleitungen für Sensoren und Bauteile.",
-        "en": "Wiring diagrams and guides for sensors and components."
-      },
-      "order": ["hdc1080"]
-    },
-    {
       "id": "projekte",
       "layout": "cards",
       "icon": "RiLightbulbFlashLine",
-      "title": { "de": "Projektideen", "en": "Project ideas" },
+      "title": {
+        "de": "Projektideen",
+        "en": "Project ideas"
+      },
       "description": {
         "de": "Fertige Projekte zum Ausprobieren und Weiterentwickeln.",
         "en": "Complete projects to try out and build on."

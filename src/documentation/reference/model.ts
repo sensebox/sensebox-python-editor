@@ -17,6 +17,7 @@ export interface Toolkit {
 
 export interface ToolkitTopic extends HasCompatibility {
   name: string;
+  connectionGuide?: string;
   /**
    * Short, for the listing.
    */

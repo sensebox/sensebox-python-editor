@@ -4,11 +4,11 @@ subtitle: Text erstellen, verbinden und untersuchen
 image: ../../images/text.svg
 ---
 
-Text besteht in Python aus Zeichenketten (`str`). Mit diesen Bausteinen kannst du Text erstellen, verbinden und untersuchen.
+Text erstellen, verbinden und ausgeben.
 
 ## Textfeld
 
-Ein Text wird in Anführungszeichen geschrieben und kann in einer Variablen gespeichert werden.
+Speichert einen Text in einer Variablen.
 
 ```python
 text = "senseBox"
@@ -16,7 +16,7 @@ text = "senseBox"
 
 ## Erstelle Text aus
 
-Mit `str()` werden Zahlen oder Messwerte in Text umgewandelt. `+` verbindet die Teile.
+Verbindet Text und Zahlen zu einem Text.
 
 ```python
 temperatur = 23.5
@@ -25,7 +25,7 @@ text = "Temperatur: " + str(temperatur) + " °C"
 
 ## Text anhängen
 
-`+=` hängt weiteren Text an eine vorhandene Textvariable an.
+Hängt Text an eine vorhandene Textvariable an.
 
 ```python
 text = "Hallo"
@@ -34,7 +34,7 @@ text += " senseBox"
 
 ## Länge
 
-`len()` gibt die Anzahl der Zeichen zurück.
+Ermittelt die Anzahl der Zeichen.
 
 ```python
 text = "senseBox"
@@ -43,7 +43,7 @@ laenge = len(text)
 
 ## Ist leer
 
-Ein Text ist leer, wenn seine Länge `0` ist. Der Vergleich liefert `True` oder `False`.
+Prüft, ob ein Text leer ist.
 
 ```python
 text = ""
@@ -52,25 +52,19 @@ ist_leer = len(text) == 0
 
 ## Text ausgeben
 
-Schreibe den Text in Anführungszeichen:
+Gibt Text in der Konsole aus.
 
 ```python
 print("Hallo senseBox!")
 ```
 
-<!-- @details -->
-
-Die Ausgabe siehst du in der **Konsole** unterhalb des Editors, sobald die senseBox verbunden ist.
-
 ## Werte ausgeben
 
 <!-- @slug werte-ausgeben -->
 
-Du kannst auch Zahlen und Variablen ausgeben. Mehrere Werte trennst du mit Kommas:
+Gibt Zahlen und Variablen in der Konsole aus.
 
 ```python
 temperatur = 21.5
 print("Temperatur:", temperatur)
 ```
-
-Mehr über Messwerte erfährst du unter [Temperatur](doc:sensoren/temperatur).

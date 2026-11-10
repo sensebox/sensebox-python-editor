@@ -43,7 +43,7 @@ const ZoomControls = ({ size, css: cssProp }: ZoomControlsProps) => {
   }, [setSettings, settings, logging]);
   const intl = useIntl();
   return (
-    <ButtonGroup css={cssProp} isAttached>
+    <ButtonGroup css={cssProp}>
       <Tooltip
         label={intl.formatMessage({ id: "zoom-out-action" })}
         delay={300}

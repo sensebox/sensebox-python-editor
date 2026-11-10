@@ -4,9 +4,11 @@ subtitle: Get the current time over WiFi
 image: ../../images/zeit.svg
 ---
 
-NTP gets the current UTC time from the network. Enter your WiFi credentials directly in the block.
+Retrieve the current time over the network.
 
 ## Initialise NTP
+
+Sets up the network connection and NTP time retrieval.
 
 ```python
 import wifi
@@ -25,17 +27,11 @@ pool = socketpool.SocketPool(wifi.radio)
 network_time = adafruit_ntp.NTP(pool, tz_offset=0)
 ```
 
-<!-- @details -->
-
-Replace `SSID` and `Password` with your credentials. Do not share programs containing a real WiFi password.
-
 ## Read NTP time
+
+Reads the current network time using the configured UTC offset.
 
 ```python
 date_time = network_time.datetime
 print(date_time)
 ```
-
-<!-- @details -->
-
-`tz_offset` is the fixed offset from UTC in hours. Automatic daylight-saving rules need additional time-zone logic.

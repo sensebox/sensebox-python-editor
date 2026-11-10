@@ -171,15 +171,21 @@ feature.
 
 ### Sensor and component help
 
-The `hilfe` section uses the cards layout, with one guide per component in
-`content/de/hilfe/` and `content/en/hilfe/`. To add a guide, create a Markdown
-file in these folders with the same file name in both languages (for example,
-`hdc1080.md`). Store wiring diagrams in `content/images/anschluesse/` and reference
-them using `image: ../../images/anschluesse/hdc1080.png`, with an `imageAlt` description.
-Include connection steps, links to the existing code blocks and troubleshooting
-tips. Files appear automatically; use the help section's `order` in
-`content/sidebar.json` to choose their order. Link to a guide with
-`[HDC1080 help](doc:hilfe/hdc1080)`.
+Connection guides open in a dialog directly from the corresponding sensor or component.
+There is no separate help category in the sidebar. Store one guide per component in
+`content/de/hilfe/anschluesse/` and `content/en/hilfe/anschluesse/`. To add a guide,
+create a Markdown file in these folders with the same file name in both languages
+(for example, `hdc1080.md`). Store wiring diagrams in `content/images/anschluesse/`
+and reference them using `image: ../../../images/anschluesse/hdc1080.png`, with an
+`imageAlt` description. Sections support subfolders; file names must be unique
+within each section and language. Subfolders do not change slugs or `order` entries.
+Keep guides focused on the wiring diagram and physical connection steps.
+The standalone guide loader reads these files independently of `content/sidebar.json`.
+Add `connectionGuide: hdc1080` to the front matter of the corresponding reference
+topic. This shows a circled question mark beside the component name only in the
+opened topic heading. Its tooltip identifies the connection guide;
+clicking opens the guide without navigating away from the topic.
+Guide images can be clicked to open their large view.
 
 One Markdown file per card:
 

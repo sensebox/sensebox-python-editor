@@ -55,13 +55,41 @@ const EditorArea = ({ selection, onSelectedFileChanged }: EditorAreaProps) => {
           filename={selection.file}
           onSelectedFileChanged={onSelectedFileChanged}
         />
-        <Flex alignItems="center" gap="2" pr="5" flexShrink="0">
-          <UndoRedoControls size="sm" />
-          <ResetButton mode="icon" size="sm" variant="neutral" />
-          <SaveButton mode="icon" size="sm" variant="neutral" />
-          <OpenButton mode="icon" size="sm" variant="neutral" />
+        <Flex
+          alignItems="center"
+          gap="2"
+          pr="5"
+          flexShrink="0"
+          css={{
+            "& button": {
+              width: "48px",
+              height: "48px",
+              minWidth: "48px",
+              padding: "0",
+              borderWidth: "0",
+              borderRadius: "full",
+              backgroundColor: "brand.500",
+              color: "white",
+              _hover: {
+                backgroundColor: "brand.500",
+                filter: "brightness(0.95)",
+                _disabled: { filter: "none" },
+              },
+              _active: {
+                backgroundColor: "brand.500",
+                transform: "scale(0.96)",
+                _disabled: { transform: "none" },
+              },
+            },
+            "& button svg": { width: "26px", height: "26px" },
+          }}
+        >
+          <UndoRedoControls size="lg" />
+          <ResetButton mode="icon" size="lg" variant="neutral" />
+          <SaveButton mode="icon" size="lg" variant="neutral" />
+          <OpenButton mode="icon" size="lg" variant="neutral" />
           <ZoomControls
-            size="sm"
+            size="lg"
             css={{ display: ["none", "none", "none", "flex"] }}
           />
         </Flex>

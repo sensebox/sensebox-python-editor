@@ -17,7 +17,12 @@ import { useLogging } from "../logging/logging-hooks";
 import { useSettings } from "../settings/settings";
 import dragImage from "./drag-image.svg";
 import { ApiReferenceMap, fetchMappingData } from "./mapping/content";
-import { DocsSections, fetchSections } from "./sections/content";
+import {
+  DocsSections,
+  fetchConnectionGuides,
+  fetchSections,
+} from "./sections/content";
+import { Idea } from "./ideas/model";
 
 export type ContentState<T> =
   | { status: "ok"; content: T; languageId: string }
@@ -62,6 +67,7 @@ export interface DocumentationContextValue {
    * Content for the sections configured in content/sidebar.json.
    */
   sections: ContentState<DocsSections>;
+  connectionGuides: ContentState<Idea[]>;
   apiReferenceMap: ContentState<ApiReferenceMap>;
 }
 
@@ -82,10 +88,11 @@ export const useDocumentation = (): DocumentationContextValue => {
 
 const DocumentationProvider = ({ children }: { children: ReactNode }) => {
   const sections = useContent(fetchSections);
+  const connectionGuides = useContent(fetchConnectionGuides);
   const apiReferenceMap = useContent(fetchMappingData);
   const value: DocumentationContextValue = useMemo(() => {
-    return { sections, apiReferenceMap };
-  }, [sections, apiReferenceMap]);
+    return { sections, connectionGuides, apiReferenceMap };
+  }, [sections, connectionGuides, apiReferenceMap]);
   return (
     <DocumentationContext.Provider value={value}>
       {children}

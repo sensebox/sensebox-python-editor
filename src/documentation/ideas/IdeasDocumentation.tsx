@@ -15,11 +15,10 @@ import DocumentationBreadcrumbHeading from "../common/DocumentationBreadcrumbHea
 import DocumentationContent, {
   DocumentationContextProvider,
 } from "../common/DocumentationContent";
-import ImageWithFallback from "../common/ImageWithFallback";
+import ExpandableImage from "../common/ExpandableImage";
 import { isV2Only } from "../common/model";
 import IdeaCard from "./IdeaCard";
 import { Idea } from "./model";
-import OfflineImageFallback from "../OfflineImageFallback";
 import { useSettings } from "../../settings/settings";
 import { DocsSectionConfig, localize } from "../sections/config";
 
@@ -99,12 +98,9 @@ const ActiveLevel = ({
           >
             {activeIdea.image && (
               <Box width="600px" maxWidth="100%">
-                <ImageWithFallback
-                  src={activeIdea.image.src}
-                  ignoreFallback={navigator.onLine}
-                  fallback={<OfflineImageFallback width={600} />}
-                  alt={activeIdea.image.alt ?? ""}
-                  borderTopRadius="lg"
+                <ExpandableImage
+                  image={activeIdea.image}
+                  title={activeIdea.name}
                 />
               </Box>
             )}

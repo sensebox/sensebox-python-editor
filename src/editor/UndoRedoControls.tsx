@@ -23,7 +23,7 @@ const UndoRedoControls = ({ css: cssProp, size }: UndoRedoControlsProps) => {
   const editorInfo = useActiveEditorInfo();
 
   return (
-    <ButtonGroup isAttached css={cssProp}>
+    <ButtonGroup css={cssProp}>
       <Tooltip label={intl.formatMessage({ id: "undo" })} delay={300} hasArrow>
         <IconButton
           size={size}
