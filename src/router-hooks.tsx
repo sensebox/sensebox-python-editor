@@ -16,13 +16,11 @@ import { useLogging } from "./logging/logging-hooks";
 import { createEditorUrl } from "./urls";
 
 /**
- * "api", "project" or the id of a documentation section from
- * content/sidebar.json.
+ * "project" or the id of a documentation section from content/sidebar.json.
  */
 export type TabName = string;
 
 const tabNames: readonly string[] = [
-  "api",
   "project",
   ...docsSections.map((s) => s.id),
 ];

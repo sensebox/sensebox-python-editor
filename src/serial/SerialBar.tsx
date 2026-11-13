@@ -5,6 +5,7 @@
  */
 import { IconButton } from "@microbit/ui";
 import { useCallback, useRef, useState } from "react";
+import { GoTrash } from "react-icons/go";
 import { RiInformationLine } from "react-icons/ri";
 import { useIntl } from "react-intl";
 import { HStack } from "styled-system/jsx";
@@ -21,6 +22,8 @@ import { useLogging } from "../logging/logging-hooks";
 import { SerialHelpDialog } from "./SerialHelp";
 import SerialIndicators from "./SerialIndicators";
 import SerialMenu from "./SerialMenu";
+import { useCurrentTerminalRef } from "./serial-hooks";
+import RuntimeErrorHelp from "./RuntimeErrorHelp";
 
 interface SerialBarProps {
   compact?: boolean;
@@ -61,6 +64,7 @@ const SerialBar = ({
     setHelpOpen(true);
   }, [logging]);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const terminal = useCurrentTerminalRef();
   return (
     <>
       <SerialHelpDialog
@@ -93,6 +97,22 @@ const SerialBar = ({
         />
 
         <HStack>
+          {traceback?.error.trim() && (
+            <RuntimeErrorHelp
+              key={JSON.stringify([traceback.trace, traceback.error])}
+              traceback={traceback}
+              compact={compact}
+              current={syncStatus === SyncStatus.IN_SYNC}
+            />
+          )}
+          <CollapsibleButton
+            mode="button"
+            variant="unstyled"
+            css={{ display: "flex", fontWeight: "normal", color: "white" }}
+            onPress={() => terminal.current?.clear()}
+            icon={<GoTrash />}
+            text={intl.formatMessage({ id: "circuitpython-console-clear" })}
+          />
           <CollapsibleButton
             mode={
               hideExpandTextOnTraceback && compact && traceback

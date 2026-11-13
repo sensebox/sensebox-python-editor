@@ -68,36 +68,6 @@ const workerForLanguage = (language: string) => {
         type: "module",
       });
     }
-    case "fr": {
-      return new Worker(new URL(`./search.worker.fr.ts`, import.meta.url), {
-        type: "module",
-      });
-    }
-    case "es-es": {
-      return new Worker(new URL(`./search.worker.es.ts`, import.meta.url), {
-        type: "module",
-      });
-    }
-    case "ja": {
-      return new Worker(new URL(`./search.worker.ja.ts`, import.meta.url), {
-        type: "module",
-      });
-    }
-    case "ko": {
-      return new Worker(new URL(`./search.worker.ko.ts`, import.meta.url), {
-        type: "module",
-      });
-    }
-    case "nl": {
-      return new Worker(new URL(`./search.worker.nl.ts`, import.meta.url), {
-        type: "module",
-      });
-    }
-    case "pt-br": {
-      return new Worker(new URL(`./search.worker.pt.ts`, import.meta.url), {
-        type: "module",
-      });
-    }
     default:
       return new Worker(new URL(`./search.worker.en.ts`, import.meta.url), {
         type: "module",

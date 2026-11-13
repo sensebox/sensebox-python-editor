@@ -4,60 +4,56 @@
  * SPDX-License-Identifier: MIT
  */
 import { expect } from "@playwright/test";
-import { test } from "./app-test-fixtures.js";
+import { test } from "./app-test-fixtures";
 
-const nestedProgram = "while True:\n    if True:\n        pass";
+test.use({ viewport: { width: 1600, height: 1000 } });
 
-test.describe("structure highlighting", () => {
-  test("draws indented blocks for nested statements", async ({ app }) => {
-    await app.selectAllInEditor();
-    await app.typeInEditor(nestedProgram);
+test("aligns nested indentation guides with proportional-font spaces after zoom", async ({
+  app,
+}) => {
+  await app.editorTextArea.fill(
+    'import time\nwhile True:\n    if time.monotonic() > 1:\n        print("Hello World")\n    time.sleep(1)\n'
+  );
+  await app.page.evaluate(() => document.fonts.ready);
 
-    const bodies = app.page.locator(".cm-cs--body");
-    await expect(app.page.locator(".cm-cs--parent")).toHaveCount(2);
-    await expect(bodies).toHaveCount(2);
+  const checkAlignment = async () => {
+    await expect
+      .poll(async () => {
+        return app.editorTextArea.evaluate((content) => {
+          const editor = content.closest(".cm-editor")!;
+          const guides = [...editor.querySelectorAll(".cm-cs--indent")];
+          const lines = [...content.querySelectorAll(".cm-line")];
+          return ["    if", "        print"].map((prefix) => {
+            const line = lines.find((line) =>
+              line.textContent?.startsWith(prefix)
+            );
+            if (!line || guides.length !== 2) return false;
+            const walker = document.createTreeWalker(
+              line,
+              NodeFilter.SHOW_TEXT
+            );
+            const whitespace = walker.nextNode();
+            if (!whitespace) return false;
+            const range = document.createRange();
+            const spaces = prefix.length - prefix.trimStart().length;
+            range.setStart(whitespace, spaces);
+            range.collapse(true);
+            const textLeft = range.getBoundingClientRect().left;
+            const top = line.getBoundingClientRect().top;
+            const guide = guides.find(
+              (guide) => Math.abs(guide.getBoundingClientRect().top - top) < 2
+            );
+            if (!guide) return false;
+            const gap = textLeft - guide.getBoundingClientRect().right;
+            // Leave room beside the code instead of drawing through its text.
+            return gap >= 2 && gap <= 9;
+          });
+        });
+      })
+      .toEqual([true, true]);
+  };
 
-    // Drawn outermost first; the nested body is indented further.
-    const lefts = await bodies.evaluateAll((elements) =>
-      elements.map((e) => parseFloat((e as HTMLElement).style.left))
-    );
-    expect(lefts[1]).toBeGreaterThan(lefts[0]);
-  });
-
-  test("marks the innermost block containing the cursor as active", async ({
-    app,
-  }) => {
-    await app.selectAllInEditor();
-    // Leaves the cursor at the end, inside the if body.
-    await app.typeInEditor(nestedProgram);
-
-    const bodies = app.page.locator(".cm-cs--body");
-    await expect(bodies).toHaveCount(2);
-    await expect(bodies.nth(1)).toHaveClass(/cm-cs--active/);
-    await expect(bodies.nth(0)).not.toHaveClass(/cm-cs--active/);
-
-    // Moving the cursor to the while line moves the highlight.
-    await app.page.getByText("while True:").click();
-    await expect(bodies.nth(0)).toHaveClass(/cm-cs--active/);
-    await expect(bodies.nth(1)).not.toHaveClass(/cm-cs--active/);
-  });
-
-  test("follows the highlight code structure setting", async ({ app }) => {
-    await app.selectAllInEditor();
-    await app.typeInEditor(nestedProgram);
-    await expect(
-      app.page.locator(".cm-cs--layer.cm-cs--mode-full")
-    ).toHaveCount(1);
-
-    await app.page.getByTestId("settings").click();
-    await app.page.getByRole("menuitem", { name: "Settings" }).click();
-    const select = app.page.getByLabel("Highlight code structure");
-    await select.selectOption("simple");
-    await expect(
-      app.page.locator(".cm-cs--layer.cm-cs--mode-simple")
-    ).toHaveCount(1);
-
-    await select.selectOption("none");
-    await expect(app.page.locator(".cm-cs--layer")).toHaveCount(0);
-  });
+  await checkAlignment();
+  await app.page.getByRole("button", { name: "Zoom in", exact: true }).click();
+  await checkAlignment();
 });

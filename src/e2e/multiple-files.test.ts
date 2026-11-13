@@ -50,13 +50,6 @@ test.describe("multiple-files", () => {
     await app.editFile("module.py");
     await app.expectThirdPartModuleWarning("a", "1.0.0");
 
-    await app.toggleSettingThirdPartyModuleEditing();
-    try {
-      await app.expectEditorContainText(/a_works/);
-    } finally {
-      await app.toggleSettingThirdPartyModuleEditing();
-    }
-
     await app.loadFiles("testData/updated/module.py", {
       acceptDialog: LoadDialogType.CONFIRM,
     });

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Divider, List, ListItem } from "@microbit/ui";
+import { List, ListItem } from "@microbit/ui";
 import { useCallback } from "react";
 import { Box } from "styled-system/jsx";
 import { docStylesClass } from "../../common/documentation-styles";
@@ -13,7 +13,9 @@ import { useSettings } from "../../settings/settings";
 import AreaHeading from "../../common/AreaHeading";
 import { useAnimationDirection } from "../common/documentation-animation-hooks";
 import DocumentationBreadcrumbHeading from "../common/DocumentationBreadcrumbHeading";
-import DocumentationContent from "../common/DocumentationContent";
+import DocumentationContent, {
+  ConnectionHelpLink,
+} from "../common/DocumentationContent";
 import DocumentationTopLevelItem from "../common/DocumentationTopLevelItem";
 import { isV2Only } from "../common/model";
 import { DocsSectionConfig, localize } from "../sections/config";
@@ -73,10 +75,20 @@ const ActiveLevel = ({
   toolkit,
   direction,
 }: ActiveLevelProps) => {
-  const [topic, activeItem] = getTopicAndEntry(toolkit, topicOrEntryId);
+  const [selectedTopic, activeItem] = getTopicAndEntry(toolkit, topicOrEntryId);
+  const directTopic =
+    section.direct && toolkit.contents?.length === 1
+      ? toolkit.contents[0]
+      : undefined;
+  const topic = selectedTopic ?? directTopic;
   const [{ languageId }] = useSettings();
   const referenceString = localize(section.title, languageId);
   const description = localize(section.description, languageId);
+  const helpAction = topic?.connectionGuide ? (
+    <ConnectionHelpLink guideId={topic.connectionGuide} iconOnly>
+      {topic.name}
+    </ConnectionHelpLink>
+  ) : undefined;
   if (topic) {
     return (
       <HeadedScrollablePanel
@@ -85,13 +97,22 @@ const ActiveLevel = ({
         key={topic.name}
         direction={direction}
         heading={
-          <DocumentationBreadcrumbHeading
-            parent={referenceString}
-            title={topic.name}
-            onBack={() => onNavigate(undefined)}
-            subtitle={topic.subtitle}
-            icon={topic.image}
-          />
+          directTopic ? (
+            <AreaHeading
+              name={referenceString}
+              description={description}
+              action={helpAction}
+            />
+          ) : (
+            <DocumentationBreadcrumbHeading
+              parent={referenceString}
+              title={topic.name}
+              onBack={() => onNavigate(undefined)}
+              subtitle={topic.subtitle}
+              icon={topic.image}
+              action={helpAction}
+            />
+          )
         }
       >
         {topic.introduction && (
@@ -99,17 +120,23 @@ const ActiveLevel = ({
             <DocumentationContent blocks={topic.introduction} />
           </Box>
         )}
-        <List flex="1 1 auto">
+        <List
+          display="flex"
+          flexDirection="column"
+          gap="4"
+          p="3"
+          flex="1 1 auto"
+        >
           {topic.contents?.map((item) => (
             <ListItem key={item.name}>
               <ReferenceTopicEntry
                 topic={topic}
                 entry={item}
                 sectionId={section.id}
+                accentColor={section.accentColor}
                 anchor={anchor}
                 active={activeItem === item}
               />
-              <Divider />
             </ListItem>
           ))}
         </List>

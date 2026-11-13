@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { ButtonGroup, IconButton } from "@microbit/ui";
+import { ButtonGroup, IconButton, Tooltip } from "@microbit/ui";
 import { useCallback } from "react";
 import { RiZoomInLine, RiZoomOutLine } from "react-icons/ri";
 import { useIntl } from "react-intl";
@@ -43,23 +43,35 @@ const ZoomControls = ({ size, css: cssProp }: ZoomControlsProps) => {
   }, [setSettings, settings, logging]);
   const intl = useIntl();
   return (
-    <ButtonGroup css={cssProp} isAttached>
-      <IconButton
-        size={size}
-        variant="neutral"
-        aria-label={intl.formatMessage({ id: "zoom-out-action" })}
-        onPress={handleZoomOut}
+    <ButtonGroup css={cssProp}>
+      <Tooltip
+        label={intl.formatMessage({ id: "zoom-out-action" })}
+        delay={300}
+        hasArrow
       >
-        <RiZoomOutLine />
-      </IconButton>
-      <IconButton
-        size={size}
-        variant="neutral"
-        aria-label={intl.formatMessage({ id: "zoom-in-action" })}
-        onPress={handleZoomIn}
+        <IconButton
+          size={size}
+          variant="neutral"
+          aria-label={intl.formatMessage({ id: "zoom-out-action" })}
+          onPress={handleZoomOut}
+        >
+          <RiZoomOutLine />
+        </IconButton>
+      </Tooltip>
+      <Tooltip
+        label={intl.formatMessage({ id: "zoom-in-action" })}
+        delay={300}
+        hasArrow
       >
-        <RiZoomInLine />
-      </IconButton>
+        <IconButton
+          size={size}
+          variant="neutral"
+          aria-label={intl.formatMessage({ id: "zoom-in-action" })}
+          onPress={handleZoomIn}
+        >
+          <RiZoomInLine />
+        </IconButton>
+      </Tooltip>
     </ButtonGroup>
   );
 };

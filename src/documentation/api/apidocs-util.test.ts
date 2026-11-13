@@ -3,79 +3,13 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { ApiDocsContent } from "../../language-server/apidocs";
-import { moduleAndApiFromId, pullModulesToTop } from "./apidocs-util";
-
-describe("pullModulesToTop", () => {
-  it("pulls modules up", () => {
-    const mutated: ApiDocsContent = {
-      languageId: "en",
-      content: {
-        microbit: {
-          kind: "module",
-          fullName: "microbit",
-          id: "microbit",
-          name: "microbit",
-          children: [
-            {
-              kind: "module",
-              fullName: "microbit.compass",
-              id: "microbit.compass",
-              name: "compass",
-            },
-            {
-              kind: "module",
-              fullName: "microbit.display",
-              id: "microbit.display",
-              name: "display",
-            },
-            {
-              kind: "variable",
-              fullName: "microbit.display.foo",
-              id: "foo",
-              name: "foo",
-            },
-          ],
-        },
-      },
-    };
-    pullModulesToTop(mutated);
-    expect(mutated.content).toEqual({
-      microbit: {
-        kind: "module",
-        fullName: "microbit",
-        id: "microbit",
-        name: "microbit",
-        children: [
-          {
-            kind: "variable",
-            fullName: "microbit.display.foo",
-            id: "foo",
-            name: "foo",
-          },
-        ],
-      },
-      "microbit.compass": {
-        kind: "module",
-        fullName: "microbit.compass",
-        id: "microbit.compass",
-        name: "compass",
-      },
-      "microbit.display": {
-        kind: "module",
-        fullName: "microbit.display",
-        id: "microbit.display",
-        name: "display",
-      },
-    });
-  });
-});
+import { moduleAndApiFromId } from "./apidocs-util";
 
 describe("moduleAndApiFromId", () => {
   it("correctly splits module and apiId from id with three segments", () => {
-    const id = "microbit.display.scroll";
+    const id = "board.display.scroll";
     const { pythonModuleName, apiId } = moduleAndApiFromId(id);
-    expect(pythonModuleName).toEqual("microbit");
+    expect(pythonModuleName).toEqual("board");
     expect(apiId).toEqual("display.scroll");
   });
   it("correctly splits module and apiId from id with two segments", () => {

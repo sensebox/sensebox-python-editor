@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
-import { Checkbox, NativeSelectField, NumberField } from "@microbit/ui";
+import { NativeSelectField, NumberField } from "@microbit/ui";
 import { ReactNode, useCallback, useMemo } from "react";
 import { FormattedMessage, IntlShape, useIntl } from "react-intl";
 import { VStack } from "styled-system/jsx";
@@ -118,34 +118,6 @@ const SettingsArea = () => {
       >
         {options.parameterHelp}
       </NativeSelectField>
-      <Checkbox
-        isSelected={settings.warnForApiUnsupportedByDevice}
-        onChange={(warnForApiUnsupportedByDevice) => {
-          setSettings({
-            ...settings,
-            warnForApiUnsupportedByDevice,
-          });
-        }}
-        helperText={
-          <FormattedMessage id="setting-warn-on-v2-only-features-info" />
-        }
-      >
-        <FormattedMessage id="setting-warn-on-v2-only-features" />
-      </Checkbox>
-      <Checkbox
-        isSelected={settings.allowEditingThirdPartyModules}
-        onChange={(allowEditingThirdPartyModules) => {
-          setSettings({
-            ...settings,
-            allowEditingThirdPartyModules,
-          });
-        }}
-        helperText={
-          <FormattedMessage id="setting-allow-editing-third-party-info" />
-        }
-      >
-        <FormattedMessage id="setting-allow-editing-third-party" />
-      </Checkbox>
     </VStack>
   );
 };

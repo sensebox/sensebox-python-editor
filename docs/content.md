@@ -10,14 +10,13 @@ content/
   mapping.json            # optional: API entries → documentation (editor "Help" links)
   images/                 # images, referenced relatively from Markdown
   de/                     # one folder per language
-    grundlagen/           # one folder per section (the section id)
-      ausgabe.md          # reference layout: one file per topic
-      schleifen.md
+    text/                 # one folder per section (the section id)
+      text.md             # reference layout: one file per topic
     projekte/
       wetterstation.md    # cards layout: one file per card
   en/
-    grundlagen/
-      ausgabe.md          # translations use the same file names
+    text/
+      text.md             # translations use the same file names
 ```
 
 ## Sidebar (`content/sidebar.json`)
@@ -27,27 +26,27 @@ content/
   "fallbackLanguage": "de",
   "sections": [
     {
-      "id": "grundlagen",
+      "id": "text",
       "layout": "reference",
-      "icon": "VscLibrary",
-      "title": { "de": "Grundlagen", "en": "Basics" },
+      "icon": "RiText",
+      "accentColor": "#5ba68d",
+      "title": "Text",
       "description": { "de": "…", "en": "…" },
-      "order": ["ausgabe", "schleifen"]
+      "order": ["text"]
     },
     {
       "id": "projekte",
       "layout": "cards",
       "icon": "RiLightbulbFlashLine",
       "title": "Projekte"
-    },
-    { "builtin": "api" }
+    }
   ]
 }
 ```
 
 - Each entry in `sections` is a tab, in this order. The **Project** (files) tab
   always comes last.
-- **`id`** is the folder name and appears in URLs (`/grundlagen/ausgabe`). Use
+- **`id`** is the folder name and appears in URLs (`/text/text`). Use
   lowercase letters, digits and `-`. `api` and `project` are reserved.
 - **`layout`**:
   - `reference`: a list of topics. Each topic has entries with code you can
@@ -57,12 +56,15 @@ content/
 - **`icon`**: one of the names in `src/documentation/sections/icons.ts`. To
   use another [react-icons](https://react-icons.github.io/react-icons/) icon,
   add it there.
+- **`accentColor`**: optional six-digit hex colour shown behind the sidebar
+  icon. Use it when a section mirrors the colour of an external block category.
+- **`direct`** (optional): when `true` and the section contains exactly one
+  reference topic, show that topic's blocks immediately without an intermediate
+  topic list.
 - **`title`** / **`description`**: a string, or an object with a value per
   language.
 - **`order`** (optional): file names without `.md`. Files that aren't listed
   come after the listed ones, in alphabetical order.
-- **`{ "builtin": "api" }`** shows the API tab, which is generated from the
-  type stubs. Leave it out to hide the tab and the API search results.
 
 ### Languages
 
@@ -79,7 +81,6 @@ One Markdown file per topic:
 name: Schleifen
 subtitle: Code wiederholen
 image: ../../images/schleifen.svg
-compatibility: [microbitV2]
 ---
 
 Introduction shown at the top of the topic.
@@ -122,23 +123,69 @@ for i in range(10): print(i)
   - `slug`: defaults to the file name.
   - `subtitle`
   - `image`: the topic icon.
-  - `compatibility`: optional.
 - Everything before the first `##` is the **introduction**.
 - Each **`##` heading starts an entry**. The entry's slug is the heading,
   lower-cased and with umlauts replaced, e.g. `zaehlschleife`.
 - **Directives** are HTML comments placed after an entry heading:
   - `<!-- @slug name -->` sets the entry's slug. Placed after a `###`
     alternative heading, it sets that alternative's slug instead.
-  - `<!-- @compatibility microbitV2 -->`
   - `<!-- @alternatives Label -->`: the `###` headings that follow become
     choices in a dropdown labelled "Label".
   - `<!-- @details -->`: the content that follows is shown only when expanded.
   - Several directives can share one comment:
-    `<!-- @slug a @compatibility microbitV2 -->`.
+    `<!-- @slug a @alternatives Auswahl -->`.
 - Slugs must be unique within a section. A duplicate entry slug is
   automatically prefixed with the topic slug.
 
+## Combining sensor blocks
+
+Dragging a block from the `sensoren` section into the editor, or copying it with
+the editor's **Copy code** action and pasting it there, combines its setup with
+the current file. Ordinary clipboard text and blocks from other sections retain
+their existing insertion behavior.
+
+- Recognized initialization is placed at module level before the main loop.
+- Identical buses, power-pin objects and sensor constructors are reused, including
+  objects with different variable names. Comparisons use Python syntax and imported
+  names, not a text search. Different pins, addresses or bus configurations are
+  kept separate, with a fresh variable name when necessary.
+- Measurement blocks can use an existing sensor under another name when exactly
+  one matching sensor constructor is found. Multiple matching sensors require
+  the author to choose the object explicitly.
+- Only unconditional setup before the first compound statement is reused. Local,
+  conditional, reassigned and deinitialized objects are not assumed reusable.
+  Incomplete Python and snippets with locally rebound setup names retain ordinary
+  insertion behavior. Existing project text is never rewritten by the combination.
+- An undefined sensor object reported by the language server gets a localized
+  initialization hint and an action opening the corresponding documentation block.
+  These hints do not check whether physical hardware is connected.
+
+The supported constructor names, default object names and initialization links are
+listed in `src/editor/codemirror/sensor-snippets.ts`. Update that list when adding
+a sensor, and keep its block title/slug in sync with the content. The shipped
+initialization blocks are exercised in pairwise combination tests. Generic Python
+dependency analysis and arbitrary custom initialization routines are outside this
+feature.
+
 ## Cards
+
+### Sensor and component help
+
+Connection guides open in a dialog directly from the corresponding sensor or component.
+There is no separate help category in the sidebar. Store one guide per component in
+`content/de/hilfe/anschluesse/` and `content/en/hilfe/anschluesse/`. To add a guide,
+create a Markdown file in these folders with the same file name in both languages
+(for example, `hdc1080.md`). Store wiring diagrams in `content/images/anschluesse/`
+and reference them using `image: ../../../images/anschluesse/hdc1080.png`, with an
+`imageAlt` description. Sections support subfolders; file names must be unique
+within each section and language. Subfolders do not change slugs or `order` entries.
+Keep guides focused on the wiring diagram and physical connection steps.
+The standalone guide loader reads these files independently of `content/sidebar.json`.
+Add `connectionGuide: hdc1080` to the front matter of the corresponding reference
+topic. This shows a circled question mark beside the component name only in the
+opened topic heading. Its tooltip identifies the connection guide;
+clicking opens the guide without navigating away from the topic.
+Guide images can be clicked to open their large view.
 
 One Markdown file per card:
 
@@ -163,20 +210,19 @@ Page content, including `###` headings, images and code.
 | `[text](https://…)`                  | External link (opens a new tab)                                                                       |
 | `[text](doc:section/slug)`           | Link to a topic, entry or card in a section                                                           |
 | `[text](doc:slug)`                   | Same, searching all sections for the slug                                                             |
-| `[text](api:time.sleep)`             | Link to an entry in the API tab                                                                       |
 
 Inline HTML and tables aren't supported.
 
 ## Help links from the editor (`content/mapping.json`)
 
-The editor's autocomplete and signature help show a "Help" link when an API
+The editor's autocomplete and signature help show a "Help" link when a Python
 entry is mapped to documentation:
 
 ```json
 {
   "time": {
-    "sleep": "grundlagen/warten",
-    "monotonic": { "reference": "grundlagen/zeit", "alternative": "ms" }
+    "sleep": "zeit/warten",
+    "monotonic": { "reference": "zeit/laufzeit", "alternative": "ms" }
   }
 }
 ```

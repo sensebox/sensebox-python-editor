@@ -119,7 +119,9 @@ const useManagedTermimal = (
     terminal.onData((data: string) => {
       if (!isUnmounted()) {
         // Async for internal error handling, we don't need to wait.
-        device.serialWrite(data);
+        device
+          .serialWrite(data)
+          .catch((e) => actionFeedback.unexpectedError(e));
       }
     });
 
@@ -167,7 +169,7 @@ const useManagedTermimal = (
             // Previously shown bottom-right near the terminal; the shared
             // toast region has a single (top) placement.
             title:
-              "Started and finished MicroPython paste mode for the multi-line paste.",
+              "Started and finished CircuitPython paste mode for the multi-line paste.",
           });
           // Wrap in start/end paste mode to prevent auto-indent.
           text = `\x05${text}\x04`;

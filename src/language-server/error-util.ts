@@ -23,7 +23,7 @@ export const showOfflineLanguageToast = (toast: ToastFn): void => {
     // Fallback to hardcoded English.
     title: "Language unavailable offline",
     description:
-      "The language will update when you next open the micro:bit Python Editor and you are online.",
+      "The language will update when you next open the senseBox Python Editor and you are online.",
     status: "info",
     isClosable: true,
   });

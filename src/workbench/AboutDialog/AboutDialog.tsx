@@ -5,8 +5,6 @@
  */
 import {
   Button,
-  Collapse,
-  Icon,
   Image,
   Link,
   Modal,
@@ -14,39 +12,19 @@ import {
   ModalCloseButton,
   ModalFooter,
   Text,
-  VisuallyHidden,
 } from "@microbit/ui";
 import { ReactNode, useCallback, useState } from "react";
-import { RiFileCopy2Line, RiGithubFill } from "react-icons/ri";
+import { RiFileCopy2Line } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
-import {
-  AspectRatio,
-  Box,
-  Flex,
-  Grid,
-  HStack,
-  styled,
-  VStack,
-} from "styled-system/jsx";
-import ExpandCollapseIcon from "../../common/ExpandCollapseIcon";
+import { Flex, HStack, styled, VStack } from "styled-system/jsx";
 import { useDeployment } from "../../deployment";
-import { microPythonConfig } from "../../micropython/micropython";
-import comicImage from "./comic.png";
-import microbitHeartImage from "./microbit-heart.png";
-import micropythonLogo from "./micropython.jpeg";
 import pythonPoweredLogo from "./python-powered.png";
 
 const versionInfo = [
   {
     name: "Editor",
     value: import.meta.env.VITE_VERSION,
-    href: "https://github.com/microbit-foundation/python-editor-v3",
   },
-  ...microPythonConfig.versions.map((mpy) => ({
-    name: mpy.name,
-    value: mpy.version,
-    href: mpy.web,
-  })),
 ];
 
 const clipboardVersion = versionInfo
@@ -78,7 +56,6 @@ interface AboutDialogProps {
 const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
   const { hasCopied, onCopy } = useClipboard(clipboardVersion);
   const deployment = useDeployment();
-  const [micropythonOpen, setMicropythonOpen] = useState(false);
   const intl = useIntl();
   return (
     <Modal
@@ -103,10 +80,6 @@ const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
               </Flex>
             ) : null}
             <Flex alignItems="center" justifyContent="flex-end">
-              {/* No need to translate */}
-              <Image src={micropythonLogo} alt="MicroPython" />
-            </Flex>
-            <Flex alignItems="center" justifyContent="flex-end">
               <Image
                 src={pythonPoweredLogo}
                 alt={intl.formatMessage({ id: "python-powered" })}
@@ -115,102 +88,47 @@ const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
           </HStack>
 
           <Text fontSize="lg" textAlign="center">
-            <FormattedMessage
-              id="about-microbit"
-              values={{
-                link: (chunks: ReactNode) => (
-                  <Link
-                    rel="noopener noreferrer"
-                    target="blank"
-                    color="brand.500"
-                    href="https://github.com/microbit-foundation/python-editor-v3/graphs/contributors"
-                  >
-                    {chunks}
-                  </Link>
-                ),
-              }}
-            />
+            senseBox Python Editor
           </Text>
-          <Grid columns={{ base: 1, md: 2 }} gap="5" width="100%">
-            <Box>
-              <AspectRatio
-                ml="auto"
-                mr="auto"
-                maxWidth={{ base: "303px", md: "unset" }}
-                ratio={690 / 562}
+          <VStack alignItems="center" justifyContent="center" gap="4">
+            <styled.table css={{ fontSize: "sm" }}>
+              <styled.caption
+                color="gray.800"
+                css={{ captionSide: "top", py: "1" }}
               >
-                <Image
-                  src={microbitHeartImage}
-                  alt={intl.formatMessage({ id: "microbit-hearts-alt" })}
-                />
-              </AspectRatio>
-            </Box>
-            <VStack alignItems="center" justifyContent="center" gap="4">
-              <styled.table css={{ fontSize: "sm" }}>
-                <styled.caption
-                  color="gray.800"
-                  css={{ captionSide: "top", py: "1" }}
-                >
-                  <FormattedMessage id="software-versions" />
-                </styled.caption>
-                <styled.tbody>
-                  {versionInfo.map((v) => (
-                    <styled.tr key={v.name}>
-                      <styled.td
-                        px="3"
-                        py="1"
-                        css={{
-                          borderBottomWidth: "1px",
-                          borderColor: "gray.100",
-                        }}
-                      >
-                        {v.name}
-                      </styled.td>
-                      <styled.td
-                        px="3"
-                        py="1"
-                        css={{
-                          borderBottomWidth: "1px",
-                          borderColor: "gray.100",
-                        }}
-                      >
-                        {v.value}
-                      </styled.td>
-                      <styled.td
-                        p="0"
-                        css={{
-                          borderBottomWidth: "1px",
-                          borderColor: "gray.100",
-                        }}
-                      >
-                        {/* Move padding so we get a reasonable click target. */}
-                        <Link
-                          display="block"
-                          pl="4"
-                          pr="4"
-                          pt="2"
-                          pb="2"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          href={v.href}
-                        >
-                          <Icon as={RiGithubFill} />
-                          <VisuallyHidden>GitHub</VisuallyHidden>
-                        </Link>
-                      </styled.td>
-                    </styled.tr>
-                  ))}
-                </styled.tbody>
-              </styled.table>
-              <Button
-                startIcon={<RiFileCopy2Line />}
-                onPress={onCopy}
-                size="md"
-              >
-                <FormattedMessage id={hasCopied ? "copied" : "copy-action"} />
-              </Button>
-            </VStack>
-          </Grid>
+                <FormattedMessage id="software-versions" />
+              </styled.caption>
+              <styled.tbody>
+                {versionInfo.map((v) => (
+                  <styled.tr key={v.name}>
+                    <styled.td
+                      px="3"
+                      py="1"
+                      css={{
+                        borderBottomWidth: "1px",
+                        borderColor: "gray.100",
+                      }}
+                    >
+                      {v.name}
+                    </styled.td>
+                    <styled.td
+                      px="3"
+                      py="1"
+                      css={{
+                        borderBottomWidth: "1px",
+                        borderColor: "gray.100",
+                      }}
+                    >
+                      {v.value}
+                    </styled.td>
+                  </styled.tr>
+                ))}
+              </styled.tbody>
+            </styled.table>
+            <Button startIcon={<RiFileCopy2Line />} onPress={onCopy} size="md">
+              <FormattedMessage id={hasCopied ? "copied" : "copy-action"} />
+            </Button>
+          </VStack>
           <Text fontSize="lg">
             <FormattedMessage
               id="about-micropython"
@@ -218,7 +136,7 @@ const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
                 link: (chunks: ReactNode) => (
                   <Link
                     color="brand.500"
-                    href="https://micropython.org"
+                    href="https://circuitpython.org"
                     target="_blank"
                     rel="noopener"
                   >
@@ -226,33 +144,9 @@ const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
                   </Link>
                 ),
               }}
-            />{" "}
-            <Button
-              aria-label={intl.formatMessage({
-                id: micropythonOpen
-                  ? "about-read-less-micropython"
-                  : "about-read-more-micropython",
-              })}
-              variant="unstyled"
-              css={{
-                height: "unset",
-                verticalAlign: "unset",
-                fontSize: "lg",
-                fontWeight: "normal",
-              }}
-              endIcon={<ExpandCollapseIcon open={micropythonOpen} />}
-              onPress={() => setMicropythonOpen((open) => !open)}
-            >
-              {intl.formatMessage({
-                id: micropythonOpen ? "read-less" : "read-more",
-              })}
-            </Button>
+            />
           </Text>
         </VStack>
-        <Collapse isOpen={micropythonOpen}>
-          {/* Avoid stack spacing here but match space so it doesn't change after the animation */}
-          <MicroPythonSection />
-        </Collapse>
       </ModalBody>
       <ModalFooter>
         <Button onPress={onClose} variant="primary" size="lg">
@@ -260,59 +154,6 @@ const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
         </Button>
       </ModalFooter>
     </Modal>
-  );
-};
-
-const MicroPythonSection = () => {
-  const intl = useIntl();
-  return (
-    <VStack gap="4" mt="8" pl="5" pr="5">
-      <AspectRatio width="100%" ratio={1035 / 423}>
-        <Image
-          src={comicImage}
-          alt={intl.formatMessage({ id: "about-comic" })}
-        />
-      </AspectRatio>
-      <Grid columns={{ base: 1, lg: 2 }} gap="4" textAlign="center">
-        <Text fontSize="md">
-          <FormattedMessage
-            id="micropython-source-code"
-            values={{
-              linkV1: (chunks: ReactNode) => (
-                <Link
-                  color="brand.500"
-                  href="https://github.com/bbcmicrobit/micropython"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  {chunks}
-                </Link>
-              ),
-              linkV2: (_: ReactNode) => (
-                <Link
-                  color="brand.500"
-                  href="https://github.com/microbit-foundation/micropython-microbit-v2"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  micro:bit V2
-                </Link>
-              ),
-            }}
-          />
-        </Text>
-        <Text fontSize="md">
-          <Link
-            color="brand.500"
-            href="https://ntoll.org/article/story-micropython-on-microbit/"
-            target="_blank"
-            rel="noopener"
-          >
-            <FormattedMessage id="micropython-history" />
-          </Link>
-        </Text>
-      </Grid>
-    </VStack>
   );
 };
 

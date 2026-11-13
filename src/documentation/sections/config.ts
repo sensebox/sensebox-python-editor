@@ -26,6 +26,10 @@ export interface DocsSectionConfig {
   id: string;
   layout: SectionLayout;
   icon?: string;
+  /** Optional category accent colour. */
+  accentColor?: string;
+  /** Show the entries immediately when this section contains one topic. */
+  direct?: boolean;
   title: LocalizedString;
   description?: LocalizedString;
   /**
@@ -35,16 +39,9 @@ export interface DocsSectionConfig {
   order?: string[];
 }
 
-export interface BuiltinTabConfig {
-  kind: "builtin";
-  id: "api";
-}
-
-export type SidebarEntry = DocsSectionConfig | BuiltinTabConfig;
-
 export interface SidebarConfig {
   fallbackLanguage: string;
-  entries: SidebarEntry[];
+  entries: DocsSectionConfig[];
 }
 
 const reservedIds = new Set(["api", "project"]);
@@ -55,13 +52,7 @@ export const parseSidebarConfig = (raw: any): SidebarConfig => {
     throw new Error("content/sidebar.json must have a sections array");
   }
   const seen = new Set<string>();
-  const entries = raw.sections.map((s: any): SidebarEntry => {
-    if (s.builtin) {
-      if (s.builtin !== "api") {
-        throw new Error(`Unknown builtin sidebar tab: ${s.builtin}`);
-      }
-      return { kind: "builtin", id: "api" };
-    }
+  const entries = raw.sections.map((s: any): DocsSectionConfig => {
     if (typeof s.id !== "string" || !validId.test(s.id)) {
       throw new Error(`Invalid sidebar section id: ${s.id}`);
     }
@@ -80,6 +71,12 @@ export const parseSidebarConfig = (raw: any): SidebarConfig => {
       id: s.id,
       layout: s.layout,
       icon: s.icon,
+      accentColor:
+        typeof s.accentColor === "string" &&
+        /^#[0-9a-f]{6}$/i.test(s.accentColor)
+          ? s.accentColor
+          : undefined,
+      direct: s.direct === true,
       title: s.title,
       description: s.description,
       order: s.order,
@@ -93,9 +90,7 @@ export const parseSidebarConfig = (raw: any): SidebarConfig => {
 
 export const sidebarConfig = parseSidebarConfig(rawConfig);
 
-export const docsSections: DocsSectionConfig[] = sidebarConfig.entries.filter(
-  (e): e is DocsSectionConfig => e.kind === "section"
-);
+export const docsSections = sidebarConfig.entries;
 
 export const getSectionConfig = (
   id: string | undefined
