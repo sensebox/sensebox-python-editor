@@ -8,7 +8,6 @@ import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { Box } from "styled-system/jsx";
 import { SystemStyleObject } from "styled-system/types";
-import { token } from "styled-system/tokens";
 import useActionFeedback from "../common/use-action-feedback";
 import useIsUnmounted from "../common/use-is-unmounted";
 import { backgroundColorTerm } from "../deployment/misc";
@@ -43,6 +42,8 @@ const XTerm = ({ fontSizePt, tabOutRef, css: cssProp, style }: XTermProps) => {
 };
 
 const ptToPixelRatio = 96 / 72;
+// Keep terminal output monospaced independently of the app and editor fonts.
+const terminalFontFamily = '"Source Code Pro", monospace';
 
 /**
  * Manages an XTerm terminal object.
@@ -56,7 +57,6 @@ const useManagedTermimal = (
   fontSizePt: number
 ): void => {
   const actionFeedback = useActionFeedback();
-  const codeFontFamily = token("fonts.code");
   const device = useDevice();
   const isUnmounted = useIsUnmounted();
   const [, setSelection] = useSelection();
@@ -73,7 +73,7 @@ const useManagedTermimal = (
       throw new Error("Only one instance supported.");
     }
     const terminal = new Terminal({
-      fontFamily: codeFontFamily,
+      fontFamily: terminalFontFamily,
       fontSize: ptToPixelRatio * initialFontSizeRef.current,
       letterSpacing: 1.1,
       screenReaderMode: true,
@@ -197,7 +197,6 @@ const useManagedTermimal = (
     };
   }, [
     actionFeedback,
-    codeFontFamily,
     currentTerminalRef,
     device,
     isUnmounted,

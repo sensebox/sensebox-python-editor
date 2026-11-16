@@ -134,12 +134,6 @@
   "clear": {
     "defaultMessage": "Löschen"
   },
-  "enlarge-image-action": {
-    "defaultMessage": "Bild vergrößern: {name}"
-  },
-  "connection-help-action": {
-    "defaultMessage": "Anschlusshilfe: {name}"
-  },
   "close-action": {
     "defaultMessage": "Schließen"
   },
@@ -200,6 +194,9 @@
   "connect-troubleshoot": {
     "defaultMessage": "Problemlösungen bei fehlgeschlagener Verbindung mit dem senseBox"
   },
+  "connection-help-action": {
+    "defaultMessage": "Anschlusshilfe: {name}"
+  },
   "content-load-error": {
     "defaultMessage": "Etwas ist schiefgelaufen. Laden deine Hex-Datei herunter, um das Projekt wiederherstellen zu können, und aktualisiere die Seite, um den Editor neu zu laden."
   },
@@ -259,6 +256,9 @@
   },
   "edit-project-name-action": {
     "defaultMessage": "Projektname bearbeiten"
+  },
+  "enlarge-image-action": {
+    "defaultMessage": "Bild vergrößern: {name}"
   },
   "failed-to-build-hex": {
     "defaultMessage": "Erstellen der hex-Datei fehlgeschlagen"

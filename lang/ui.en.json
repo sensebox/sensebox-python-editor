@@ -177,14 +177,6 @@
     "defaultMessage": "Clear",
     "description": "Aria label for the search input"
   },
-  "enlarge-image-action": {
-    "defaultMessage": "Enlarge image: {name}",
-    "description": "Accessible label and tooltip for opening a documentation image in a large dialog"
-  },
-  "connection-help-action": {
-    "defaultMessage": "Connection guide: {name}",
-    "description": "Tooltip and accessible label for the question mark beside a sensor or component name"
-  },
   "close-action": {
     "defaultMessage": "Close",
     "description": "Close button text"
@@ -265,6 +257,10 @@
     "defaultMessage": "Troubleshoot problems with connecting to your senseBox",
     "description": "Text in no the senseBox found and firmware update dialogs"
   },
+  "connection-help-action": {
+    "defaultMessage": "Connection guide: {name}",
+    "description": "Tooltip and accessible label for the question mark beside a sensor or component name"
+  },
   "content-load-error": {
     "defaultMessage": "Something went wrong. Download your hex file for safe keeping, then refresh the page to reload.",
     "description": "Text displayed when content fails to load"
@@ -344,6 +340,10 @@
   "edit-project-name-action": {
     "defaultMessage": "Edit project name",
     "description": "Text for user to edit the name of the project"
+  },
+  "enlarge-image-action": {
+    "defaultMessage": "Enlarge image: {name}",
+    "description": "Accessible label and tooltip for opening a documentation image in a large dialog"
   },
   "failed-to-build-hex": {
     "defaultMessage": "Failed to build the hex file",
