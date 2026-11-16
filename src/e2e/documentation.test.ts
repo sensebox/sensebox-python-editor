@@ -6,14 +6,6 @@
 import { test } from "./app-test-fixtures.js";
 
 test.describe("documentation", () => {
-  test("API toolkit navigation", async ({ app }) => {
-    await app.switchTab("API");
-    await app.expectDocumentationTopLevelHeading(
-      "API",
-      "For usage and examples, see"
-    );
-  });
-
   test("Copy code and paste in editor", async ({ app }) => {
     const tab = "Reference";
     await app.selectAllInEditor();

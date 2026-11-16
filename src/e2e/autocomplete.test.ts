@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 import { test } from "./app-test-fixtures.js";
-import { expect } from "@playwright/test";
 
 const showSignature = "show(image, delay=400, wait=";
 
@@ -36,17 +35,6 @@ test.describe("autocomplete", () => {
     await app.expectCompletionOptions(["Image", "image="]);
   });
 
-  test("autocomplete can navigate to API toolkit content", async ({ app }) => {
-    await app.selectAllInEditor();
-    await app.typeInEditor("from microbit import *\ndisplay.sho");
-
-    await app.expectCompletionActiveOption("show(image)");
-
-    await app.followCompletionOrSignatureDocumentionLink("API");
-
-    await app.expectActiveApiEntry(showSignature);
-  });
-
   test("autocomplete can navigate to Reference toolkit content", async ({
     app,
   }) => {
@@ -72,23 +60,6 @@ test.describe("autocomplete", () => {
     await app.acceptCompletion("is_playing");
 
     await app.expectEditorContainText(/is_playing$/);
-  });
-
-  test("signature can navigate to API toolkit content", async ({ app }) => {
-    await app.selectAllInEditor();
-    // The closing bracket is autoinserted.
-    await app.typeInEditor("from microbit import *\ndisplay.show(");
-
-    const signatureHelp = app.page
-      .getByTestId("editor")
-      .locator("div")
-      .filter({ hasText: showSignature })
-      .nth(1);
-    await signatureHelp.waitFor();
-    await expect(signatureHelp).toBeVisible();
-    await app.followCompletionOrSignatureDocumentionLink("API");
-
-    await app.expectActiveApiEntry(showSignature);
   });
 
   test("signature can navigate to Reference toolkit content", async ({

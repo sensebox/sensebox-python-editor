@@ -1,0 +1,7 @@
+<!-- (c) 2026, Micro:bit Educational Foundation and contributors. SPDX-License-Identifier: MIT -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <rect width="160" height="160" rx="24" fill="#4a3f63"/>
+  <circle cx="58" cy="68" r="29" fill="#ef5350"/><circle cx="102" cy="68" r="29" fill="#42a85a" fill-opacity=".88"/>
+  <circle cx="80" cy="101" r="29" fill="#4f8ee8" fill-opacity=".88"/>
+  <path d="M58 126v10m22-6v6m22-10v10" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+</svg>

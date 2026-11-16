@@ -13,14 +13,16 @@ import {
   useRef,
   useState,
 } from "react";
-import { apiDocs, ApiDocsContent } from "../language-server/apidocs";
-import { useLanguageServerClient } from "../language-server/language-server-hooks";
 import { useLogging } from "../logging/logging-hooks";
 import { useSettings } from "../settings/settings";
-import { pullModulesToTop } from "./api/apidocs-util";
 import dragImage from "./drag-image.svg";
 import { ApiReferenceMap, fetchMappingData } from "./mapping/content";
-import { DocsSections, fetchSections } from "./sections/content";
+import {
+  DocsSections,
+  fetchConnectionGuides,
+  fetchSections,
+} from "./sections/content";
+import { Idea } from "./ideas/model";
 
 export type ContentState<T> =
   | { status: "ok"; content: T; languageId: string }
@@ -60,34 +62,12 @@ const useContent = <T,>(
   return state;
 };
 
-const useApiDocumentation = (): ApiDocsContent | undefined => {
-  const client = useLanguageServerClient();
-  const [apidocs, setApiDocs] = useState<ApiDocsContent | undefined>();
-  useEffect(() => {
-    let ignore = false;
-    const load = async () => {
-      if (client) {
-        const docs = await apiDocs(client);
-        pullModulesToTop(docs);
-        if (!ignore) {
-          setApiDocs(docs);
-        }
-      }
-    };
-    load();
-    return () => {
-      ignore = true;
-    };
-  }, [client]);
-  return apidocs;
-};
-
 export interface DocumentationContextValue {
-  api: ApiDocsContent | undefined;
   /**
    * Content for the sections configured in content/sidebar.json.
    */
   sections: ContentState<DocsSections>;
+  connectionGuides: ContentState<Idea[]>;
   apiReferenceMap: ContentState<ApiReferenceMap>;
 }
 
@@ -107,12 +87,12 @@ export const useDocumentation = (): DocumentationContextValue => {
 };
 
 const DocumentationProvider = ({ children }: { children: ReactNode }) => {
-  const api = useApiDocumentation();
   const sections = useContent(fetchSections);
+  const connectionGuides = useContent(fetchConnectionGuides);
   const apiReferenceMap = useContent(fetchMappingData);
   const value: DocumentationContextValue = useMemo(() => {
-    return { sections, api, apiReferenceMap };
-  }, [sections, api, apiReferenceMap]);
+    return { sections, connectionGuides, apiReferenceMap };
+  }, [sections, connectionGuides, apiReferenceMap]);
   return (
     <DocumentationContext.Provider value={value}>
       {children}

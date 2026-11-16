@@ -39,32 +39,30 @@ export const useSearch = (): UseSearch => {
 };
 
 const SearchProvider = ({ children }: { children: ReactNode }) => {
-  const { sections, api } = useDocumentation();
+  const { sections } = useDocumentation();
   const [query, setQuery] = useState<string>("");
   const [results, setResults] = useState<SearchResults | undefined>();
   const isUnmounted = useIsUnmounted();
   const logging = useLogging();
   const [{ languageId }] = useSettings();
   const search = useRef<WorkerSearch>();
+  const searchLogged = useRef(false);
 
   useEffect(() => {
     if (languageId !== search.current?.language) {
       search.current?.dispose();
       search.current = new WorkerSearch(languageId);
       setQuery("");
+      setResults(undefined);
+      searchLogged.current = false;
     }
-    // Wait for everything to be loaded and in the right language
-    if (
-      sections.status === "ok" &&
-      sections.languageId === languageId &&
-      api?.languageId === languageId
-    ) {
+    if (sections.status === "ok" && sections.languageId === languageId) {
       search.current.index(
         searchableSections(sections.content, languageId),
-        api.content
+        {}
       );
     }
-  }, [languageId, sections, api]);
+  }, [languageId, sections]);
 
   const debouncedSearch = useMemo(
     () =>
@@ -76,15 +74,15 @@ const SearchProvider = ({ children }: { children: ReactNode }) => {
         if (trimmedQuery) {
           const results = await search.current.search(trimmedQuery);
           if (!isUnmounted()) {
-            setResults((prevResults) => {
-              if (!prevResults) {
-                logging.event({ type: "docs_search" });
-              }
-              return results;
-            });
+            if (!searchLogged.current) {
+              logging.event({ type: "docs_search" });
+              searchLogged.current = true;
+            }
+            setResults(results);
           }
         } else {
           setResults(undefined);
+          searchLogged.current = false;
         }
       }, 300),
     [setResults, isUnmounted, logging]

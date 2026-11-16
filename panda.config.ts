@@ -44,6 +44,20 @@ export default defineConfig({
     appPreset,
     ...(brandPreset ? [brandPreset] : []),
   ],
+  // Keep the project font consistent, including when a brand preset is loaded.
+  theme: {
+    extend: {
+      tokens: {
+        fonts: {
+          body: { value: '"Brix Slab", Georgia, serif' },
+          heading: { value: '"Brix Slab", Georgia, serif' },
+          display: { value: '"Brix Slab", Georgia, serif' },
+          mono: { value: '"Brix Slab", "Source Code Pro", monospace' },
+          code: { value: '"Brix Slab", "Source Code Pro", monospace' },
+        },
+      },
+    },
+  },
   include: [
     "./src/**/*.{ts,tsx}",
     // @microbit/ui ships as source; include it so Panda extracts the styles its

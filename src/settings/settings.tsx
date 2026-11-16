@@ -10,7 +10,6 @@ import {
 import { createContext, ReactNode, useContext } from "react";
 import { useStorage } from "../common/use-storage";
 import { defaultCodeFontSizePt } from "../deployment/misc";
-import { stage } from "../environment";
 import { flags } from "../flags";
 
 /**
@@ -30,29 +29,10 @@ export interface Language {
 // if a user changes language while offline.
 export const fallbackLocale = "en";
 
-// When we add languages we need to update the toolkit search indexing,
-// which will require the dynamic import of a new language plugin for lunr.
-// See search.ts.
-//
-// Tag new languages with `preview: true` to enable for beta only.
-const allLanguages: Language[] = [
+export const supportedLanguages: Language[] = [
   { id: "en" },
-  { id: "ca" },
-  { id: "zh-CN" },
-  { id: "zh-TW" },
-  { id: "nl" },
-  { id: "fr" },
-  { id: "de", preview: true },
-  { id: "ga-IE", preview: true },
-  { id: "ja" },
-  { id: "ko" },
-  { id: "pl" },
-  { id: "pt-BR", preview: true },
-  { id: "es-ES" },
+  { id: "de" },
 ];
-export const supportedLanguages: Language[] = allLanguages.filter(
-  (l) => stage !== "PRODUCTION" || !l.preview
-);
 
 export const minimumFontSize = 4;
 export const maximumFontSize = 154;
@@ -101,8 +81,6 @@ export const defaultSettings: Settings = {
   warnForApiUnsupportedByDevice: true,
 };
 
-export const inContextTranslationLangId = "lol";
-
 export const isValidSettingsObject = (value: unknown): value is Settings => {
   if (typeof value !== "object") {
     return false;
@@ -110,7 +88,6 @@ export const isValidSettingsObject = (value: unknown): value is Settings => {
   const object = value as any;
   if (
     object.languageId &&
-    object.languageId !== inContextTranslationLangId &&
     !findSupportedLanguage(object.languageId)
   ) {
     return false;
@@ -178,9 +155,7 @@ const SettingsProvider = ({ children }: { children: ReactNode }) => {
     "settings",
     defaultSettings,
     isValidSettingsObject,
-    flags.translate
-      ? { languageId: inContextTranslationLangId }
-      : flags.noLang
+    flags.noLang
       ? { languageId: getLanguageFromQuery() }
       : {}
   );

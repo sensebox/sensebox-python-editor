@@ -5,7 +5,7 @@
  */
 .docs-spacing pre,
 .docs-spacing code {
-  font-family: "Source Code Pro", monospace;
+  font-family: var(--fonts-code);
 }
 .docs-spacing * + * {
   margin-top: var(--spacing-2);

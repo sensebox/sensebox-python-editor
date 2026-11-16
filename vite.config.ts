@@ -1,3 +1,4 @@
+import { circuitPythonHostFlushPlugin } from "./dev-tools/circuitpython-flush";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react from "@vitejs/plugin-react";
 import ejs from "ejs";
@@ -119,6 +120,7 @@ export default defineConfig(({ mode }) => {
     },
     assetsInclude: ["**/*.hex"],
     plugins: [
+      circuitPythonHostFlushPlugin(),
       viteEjsPlugin({
         data: loadEnv(mode, process.cwd(), "VITE_"),
       }),

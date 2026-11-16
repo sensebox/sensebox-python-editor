@@ -74,7 +74,7 @@ const FirmwareDialogBody = () => {
                     alignItems="center"
                     target="_blank"
                     rel="noreferrer"
-                    href="https://microbit.org/get-started/user-guide/firmware/"
+                    href="https://docs.sensebox.de/"
                   >
                     {chunks}
                     <Icon as={RiExternalLinkLine} css={{ ml: 1 }} />
@@ -91,7 +91,7 @@ const FirmwareDialogBody = () => {
         alignItems="center"
         target="_blank"
         rel="noreferrer"
-        href="https://support.microbit.org/support/solutions/articles/19000105428-webusb-troubleshooting"
+        href="https://docs.sensebox.de/"
       >
         <FormattedMessage id="connect-troubleshoot" />
         <Icon as={RiExternalLinkLine} css={{ ml: 1 }} />
@@ -124,7 +124,7 @@ const FirmwareDialogFooter = ({
         css={{ minWidth: buttonWidth }}
         target="_blank"
         rel="noreferrer"
-        href="https://microbit.org/get-started/user-guide/firmware/"
+        href="https://docs.sensebox.de/"
         endIcon={<Icon as={RiExternalLinkLine} />}
       >
         <FormattedMessage id="update-firmware-action" />

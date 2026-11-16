@@ -8,7 +8,6 @@ import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { Box } from "styled-system/jsx";
 import { SystemStyleObject } from "styled-system/types";
-import { token } from "styled-system/tokens";
 import useActionFeedback from "../common/use-action-feedback";
 import useIsUnmounted from "../common/use-is-unmounted";
 import { backgroundColorTerm } from "../deployment/misc";
@@ -43,6 +42,8 @@ const XTerm = ({ fontSizePt, tabOutRef, css: cssProp, style }: XTermProps) => {
 };
 
 const ptToPixelRatio = 96 / 72;
+// Keep terminal output monospaced independently of the app and editor fonts.
+const terminalFontFamily = '"Source Code Pro", monospace';
 
 /**
  * Manages an XTerm terminal object.
@@ -56,7 +57,6 @@ const useManagedTermimal = (
   fontSizePt: number
 ): void => {
   const actionFeedback = useActionFeedback();
-  const codeFontFamily = token("fonts.code");
   const device = useDevice();
   const isUnmounted = useIsUnmounted();
   const [, setSelection] = useSelection();
@@ -73,7 +73,7 @@ const useManagedTermimal = (
       throw new Error("Only one instance supported.");
     }
     const terminal = new Terminal({
-      fontFamily: codeFontFamily,
+      fontFamily: terminalFontFamily,
       fontSize: ptToPixelRatio * initialFontSizeRef.current,
       letterSpacing: 1.1,
       screenReaderMode: true,
@@ -119,7 +119,9 @@ const useManagedTermimal = (
     terminal.onData((data: string) => {
       if (!isUnmounted()) {
         // Async for internal error handling, we don't need to wait.
-        device.serialWrite(data);
+        device
+          .serialWrite(data)
+          .catch((e) => actionFeedback.unexpectedError(e));
       }
     });
 
@@ -167,7 +169,7 @@ const useManagedTermimal = (
             // Previously shown bottom-right near the terminal; the shared
             // toast region has a single (top) placement.
             title:
-              "Started and finished MicroPython paste mode for the multi-line paste.",
+              "Started and finished CircuitPython paste mode for the multi-line paste.",
           });
           // Wrap in start/end paste mode to prevent auto-indent.
           text = `\x05${text}\x04`;
@@ -195,7 +197,6 @@ const useManagedTermimal = (
     };
   }, [
     actionFeedback,
-    codeFontFamily,
     currentTerminalRef,
     device,
     isUnmounted,

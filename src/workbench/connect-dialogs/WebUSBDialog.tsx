@@ -83,14 +83,14 @@ const Chrome105ErrorBody = () => {
       <HStack gap="5">
         <Stack>
           <Text>
-            Unfortunately “Send to micro:bit” does not work in this particular
+            Unfortunately “Transfer code” does not work in this particular
             Chrome OS version due to a bug in the operating system. The next
             version of Chrome OS, version 106, expected October 2022, should
             contain a fix for this.
           </Text>
           <Text fontSize="md">
             Your program will be saved to your computer instead. Follow the
-            steps on the next screen to transfer it to your micro:bit.
+            steps on the next screen to transfer it to your senseBox.
           </Text>
           <Text fontSize="sm">
             *<FormattedMessage id="webusb-why-use" />

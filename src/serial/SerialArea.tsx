@@ -22,6 +22,7 @@ interface SerialAreaProps {
   showHintsAndTips?: boolean;
   tabOutRef: HTMLElement;
   "aria-label"?: string;
+  "data-testid"?: string;
 }
 
 /**

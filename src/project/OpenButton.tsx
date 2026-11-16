@@ -12,7 +12,7 @@ import { useProjectActions } from "./project-hooks";
 interface OpenButtonProps extends CollapsibleButtonComposableProps {}
 
 /**
- * Open HEX button, with an associated input field.
+ * Open Python files, with an associated input field.
  */
 const OpenButton = (props: OpenButtonProps) => {
   const actions = useProjectActions();
@@ -25,6 +25,7 @@ const OpenButton = (props: OpenButtonProps) => {
       })}
       onOpen={actions.load}
       data-testid="open"
+      accept=".py"
       multiple
       icon={<RiFolderOpenLine />}
       tooltip={intl.formatMessage({

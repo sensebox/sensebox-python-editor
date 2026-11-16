@@ -8,13 +8,15 @@ import {
   ConnectionStatusChange,
   DeviceError,
 } from "@microbit/microbit-connection";
+import { CircuitPythonError } from "../device/web-file-system-device";
 import { Logging } from "./logging";
 
 /**
  * Shared vocabulary for the device_* events. See docs/analytics-events.md.
  *
  * `transport` describes the user's hardware setup. The editor only
- * connects over WebUSB, so it's a constant here; ml-trainer emits
+ * uses the legacy web_usb label, including CircuitPython Web Serial +
+ * File System Access transfers; ml-trainer emits
  * `web_bluetooth` / `native_bluetooth` / `radio` for the same param.
  */
 export const transport = "web_usb";
@@ -52,7 +54,9 @@ export const importFormat = (files: File[]): ImportFormat => {
  * The `code` param for device_failure.
  */
 export const deviceFailureCode = (e: unknown): string =>
-  e instanceof DeviceError ? e.code : "unknown";
+  e instanceof DeviceError || e instanceof CircuitPythonError
+    ? e.code
+    : "unknown";
 
 // Set by the user-initiated disconnect action so the status listener
 // below doesn't also report the resulting status change as an

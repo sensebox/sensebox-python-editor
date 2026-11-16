@@ -38,7 +38,7 @@ const imageFiles = import.meta.glob<string>(
 );
 
 interface ContentFile {
-  // e.g. /content/de/grundlagen/leds.md
+  // e.g. /content/de/text/text.md
   path: string;
   language: string;
   section: string;
@@ -47,7 +47,9 @@ interface ContentFile {
 
 const contentFiles: ContentFile[] = Object.keys(markdownFiles).flatMap(
   (path) => {
-    const match = /^\/content\/([^/]+)\/([^/]+)\/([^/]+)\.md$/.exec(path);
+    const match = /^\/content\/([^/]+)\/([^/]+)\/(?:[^/]+\/)*([^/]+)\.md$/.exec(
+      path
+    );
     if (!match) {
       return [];
     }
@@ -153,6 +155,17 @@ export const fetchSections = async (
     docsSections.map((s) => loadSection(s, languageId))
   );
   return Object.fromEntries(docsSections.map((s, i) => [s.id, loaded[i]]));
+};
+
+/** Connection guides are opened from components, without a sidebar category. */
+export const fetchConnectionGuides = async (
+  languageId: string
+): Promise<Idea[]> => {
+  const content = await loadSection(
+    { kind: "section", id: "hilfe", layout: "cards", title: "" },
+    languageId
+  );
+  return content.layout === "cards" ? content.cards : [];
 };
 
 /**

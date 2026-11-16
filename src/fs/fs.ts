@@ -403,6 +403,25 @@ export class FileSystem extends TypedEventTarget<EventMap> {
     return this.notify();
   }
 
+  /** CircuitPython transfers need no micro:bit HEX firmware or size limits. */
+  async fileStatistics(): Promise<Statistics> {
+    const files = await this.files();
+    const main = files[MAIN_FILE] ?? new Uint8Array();
+    return {
+      files: Object.keys(files).length,
+      storageUsed: Object.values(files).reduce(
+        (sum, data) => sum + data.byteLength,
+        0
+      ),
+      lines: lineNumFromUint8Array(main),
+      defaultMain:
+        this.cachedInitialProject?.files[MAIN_FILE] === fromByteArray(main),
+      magicModules: Object.values(files).filter((data) =>
+        extractModuleData(new TextDecoder().decode(data))
+      ).length,
+    };
+  }
+
   async statistics(): Promise<Statistics> {
     const fs = await this.initialize();
     const currentMainFile = fs.readBytes(MAIN_FILE);

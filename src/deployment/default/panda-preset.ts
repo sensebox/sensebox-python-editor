@@ -10,8 +10,8 @@ import { definePreset } from "@pandacss/dev";
  * after the shared-ui base preset (@microbit/ui) and before the optional
  * private brand preset (see panda.config.ts). Kept minimal — the base preset
  * already supplies the token scales, recipes, `radii.button`, focus shadows,
- * Helvetica fonts and most semantic tokens. The private brand preset overrides
- * the brand-divergent token values.
+ * fonts and most semantic tokens. The private brand preset overrides
+ * the brand-divergent token values; panda.config.ts sets the project fonts.
  */
 export const appPreset = definePreset({
   name: "python-editor-v3",
@@ -43,11 +43,6 @@ export const appPreset = definePreset({
           aboveTerminal: { value: 20 },
           overlay: { value: 30 },
           aboveDialogs: { value: 1500 },
-        },
-        // The editor/terminal code face (both themes use the same value).
-        // Consumed at runtime via token("fonts.code") (XTerm, CodeMirror).
-        fonts: {
-          code: { value: "Source Code Pro, monospace" },
         },
         colors: {
           // senseBox green brand ramp.

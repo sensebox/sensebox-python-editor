@@ -13,6 +13,29 @@ import { codeBlocks } from "./blocks";
 import { overlapsUnnecessaryCode, skipBodyTrailers } from "./doc-util";
 import { Positions, VisualBlock } from "./visual-block";
 
+// A proportional font's average character width is not its space width.
+// Measure visible indentation so guides also follow font loading and zoom.
+const measureIndentWidth = (view: EditorView): number => {
+  const unitLength = view.state.facet(indentUnit).length;
+  for (const { from, to } of view.visibleRanges) {
+    let line = view.state.doc.lineAt(from);
+    while (line.from <= to) {
+      const spaces = /^ +/.exec(line.text)?.[0].length ?? 0;
+      if (spaces) {
+        const start = view.coordsAtPos(line.from);
+        const end = view.coordsAtPos(line.from + spaces);
+        if (start && end && end.left > start.left) {
+          return ((end.left - start.left) / spaces) * unitLength;
+        }
+      }
+      if (line.number === view.state.doc.lines) break;
+      line = view.state.doc.line(line.number + 1);
+    }
+  }
+  // No visible space-indented lines (and thus no visible indented text).
+  return unitLength * view.defaultCharacterWidth;
+};
+
 class Measure {
   constructor(
     readonly width: number,
@@ -71,6 +94,7 @@ export const codeStructureView = (option: "full" | "simple") =>
         const gutterWidth =
           view.scrollDOM.firstElementChild!.getBoundingClientRect().width;
         const width = contentDOMRect.width;
+        const indentWidth = measureIndentWidth(view);
 
         let cursorFound = false;
 
@@ -93,8 +117,6 @@ export const codeStructureView = (option: "full" | "simple") =>
           parent: Positions | undefined
         ): Positions | undefined => {
           const diagnostics = state.field(lintState, false)?.diagnostics;
-          const indentWidth =
-            state.facet(indentUnit).length * view.defaultCharacterWidth;
           let topLine = view.lineBlockAt(start);
           if (parent) {
             if (topLine.to + 1 < view.state.doc.length) {

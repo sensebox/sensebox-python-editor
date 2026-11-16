@@ -121,7 +121,6 @@ const createStyledAnchorElement = (): HTMLAnchorElement => {
 export const wrapWithDocumentationButton = (
   intl: IntlShape,
   child: Element,
-  id: string,
   referenceLink: ReferenceLink | undefined
 ): Element => {
   const docsAndActions = document.createElement("div");
@@ -154,33 +153,6 @@ export const wrapWithDocumentationButton = (
       );
     };
     actionsContainer.appendChild(refAnchor);
-  }
-  // We don't have documentation for builtins yet,
-  // so there is nothing to link to.
-  const { pythonModuleName } = moduleAndApiFromId(id);
-  if (pythonModuleName !== "builtins") {
-    const apiAnchor = createStyledAnchorElement();
-    apiAnchor.textContent = intl.formatMessage({ id: "api-tab" });
-    apiAnchor.onclick = (e) => {
-      e.preventDefault();
-      // Could we instead interact with the history API here?
-      document.dispatchEvent(
-        new CustomEvent("cm/openDocs", {
-          detail: {
-            tab: "api",
-            id,
-          },
-        })
-      );
-    };
-    if (referenceLink) {
-      const verticalDivider = document.createElement("hr");
-      verticalDivider.style.height = "1rem";
-      verticalDivider.style.borderRight = "1px solid #2C2C2C";
-      verticalDivider.setAttribute("aria-orientation", "vertical");
-      actionsContainer.appendChild(verticalDivider);
-    }
-    actionsContainer.appendChild(apiAnchor);
   }
   return docsAndActions;
 };
