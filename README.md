@@ -127,6 +127,29 @@ It correctly bundles React in production mode and optimizes the build for the be
 
 ## Deployments
 
+### Docker on your own server
+
+Install Docker Engine with the Docker Compose plugin. Place `deploy.sh` and
+`compose.yml` together in a directory on the server, for example
+`/opt/sensebox-editor`. No source checkout or Node.js installation is needed.
+Run the script with a user that has access to Docker:
+
+```bash
+cd /opt/sensebox-editor
+bash deploy.sh
+```
+
+Run the same command for subsequent updates. It pulls the latest published image
+and applies the Compose configuration. If the download fails, the script stops
+before updating the running container. The script also works when invoked from
+another directory, using the `compose.yml` next to it.
+
+The default host port is **8082**, mapped to port **80** inside the container.
+Open `http://<server-ip>:8082`, or point your reverse proxy at that port.
+If the image requires authentication, run `docker login ghcr.io` first.
+
+### Foundation deployments
+
 Most users should use the supported Foundation deployment at https://python.microbit.org/
 
 The editor is deployed by [GitHub actions](https://github.com/microbit-foundation/python-editor-v3/actions).
