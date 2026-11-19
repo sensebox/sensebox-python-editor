@@ -30,7 +30,6 @@ import { useSettings } from "../settings/settings";
 import Overlay from "./connect-dialogs/Overlay";
 import SideBar from "./SideBar";
 import { WorkbenchSelection, useSelection } from "./use-selection";
-import { flags } from "../flags";
 
 const minimums: [number, number] = [480, 580];
 
@@ -61,22 +60,6 @@ const Workbench = () => {
     },
     [setSelection]
   );
-
-  useEffect(() => {
-    const scriptId = "crowdin-jipt";
-    if (
-      document.getElementById("crowdin-jipt-config") &&
-      flags.translate &&
-      !document.getElementById(scriptId)
-    ) {
-      // Add Crowdin just in place translation script
-      const script = document.createElement("script");
-      script.id = scriptId;
-      script.type = "text/javascript";
-      script.src = "//cdn.crowdin.com/jipt/jipt.js";
-      document.head.appendChild(script);
-    }
-  }, []);
 
   const fileVersion = files.find((f) => f.name === selection.file)?.version;
 

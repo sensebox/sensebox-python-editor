@@ -23,7 +23,7 @@ import pythonPoweredLogo from "./python-powered.png";
 const versionInfo = [
   {
     name: "Editor",
-    value: import.meta.env.VITE_VERSION,
+    value: import.meta.env.VITE_COMMIT_SHA,
   },
 ];
 
@@ -69,14 +69,14 @@ const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
       <ModalBody>
         <VStack gap="8" pl="5" pr="5" pt="5">
           <HStack gap="4">
-            {deployment.horizontalLogo ? (
+            {deployment.horizontalLogo || deployment.squareLogo ? (
               <Flex
                 alignItems="center"
                 justifyContent="flex-end"
                 width="200px"
                 mr="4"
               >
-                {deployment.horizontalLogo}
+                {deployment.horizontalLogo ?? deployment.squareLogo}
               </Flex>
             ) : null}
             <Flex alignItems="center" justifyContent="flex-end">
@@ -89,6 +89,33 @@ const AboutDialog = ({ isOpen, onClose, finalFocusRef }: AboutDialogProps) => {
 
           <Text fontSize="lg" textAlign="center">
             senseBox Python Editor
+          </Text>
+          <Text textAlign="center">
+            <FormattedMessage
+              id="about-fork-credits"
+              values={{
+                upstream: (chunks: ReactNode) => (
+                  <Link
+                    color="brand.500"
+                    href="https://github.com/microbit-foundation/python-editor-v3"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+                license: (chunks: ReactNode) => (
+                  <Link
+                    color="brand.500"
+                    href="https://github.com/microbit-foundation/python-editor-v3/blob/main/LICENSE"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              }}
+            />
           </Text>
           <VStack alignItems="center" justifyContent="center" gap="4">
             <styled.table css={{ fontSize: "sm" }}>

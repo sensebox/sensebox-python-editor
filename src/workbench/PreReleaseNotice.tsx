@@ -5,13 +5,13 @@
  */
 import { Button, darkSurface, Text } from "@microbit/ui";
 import { useCallback, useEffect, useState } from "react";
-import { RiFeedbackFill, RiInformationFill } from "react-icons/ri";
+import { RiInformationFill } from "react-icons/ri";
 import { HStack, styled } from "styled-system/jsx";
 import { useStorage } from "../common/use-storage";
 import { useCookieConsent, useDeployment } from "../deployment";
 import { flags } from "../flags";
 
-export type ReleaseNoticeState = "info" | "feedback" | "closed";
+export type ReleaseNoticeState = "info" | "closed";
 
 // Bump this to show the notice again.
 const currentVersion = 3;
@@ -60,9 +60,6 @@ const PreReleaseNotice = ({ onDialogChange }: PreReleaseNoticeProps) => {
   const openInfoDialog = useCallback(() => {
     onDialogChange("info");
   }, [onDialogChange]);
-  const openFeedbackDialog = useCallback(() => {
-    onDialogChange("feedback");
-  }, [onDialogChange]);
   return (
     <styled.section
       display="flex"
@@ -91,15 +88,6 @@ const PreReleaseNotice = ({ onDialogChange }: PreReleaseNoticeProps) => {
             More
           </Button>
         )}
-        <Button
-          startIcon={<RiFeedbackFill />}
-          variant="link"
-          size="xs"
-          css={{ color: "white", p: "1", fontWeight: "semibold" }}
-          onPress={openFeedbackDialog}
-        >
-          Feedback
-        </Button>
       </HStack>
     </styled.section>
   );

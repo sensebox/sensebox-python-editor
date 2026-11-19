@@ -36,6 +36,7 @@ jobs:
           IMAGE: ${{ steps.image.outputs.name }}
         run: |
           docker build \
+            --build-arg "VITE_COMMIT_SHA=${GITHUB_SHA}" \
             --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --tag "${IMAGE}:latest" \

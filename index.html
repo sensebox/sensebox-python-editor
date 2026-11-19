@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
     <link rel="apple-touch-icon" href="%BASE_URL%logo512.png" sizes="512x512" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#6c4bc1" />
+    <meta name="theme-color" content="#4eaf47" />
     <title>senseBox Python Editor</title>
     <meta name="description" content="A Python editor for the senseBox." />
     <meta property="og:title" content="senseBox Python Editor" />
@@ -18,37 +18,6 @@
       content="A Python editor for the senseBox."
     />
     <meta property="og:image" content="%VITE_FULL_URL%social.png" />
-    <% if (typeof VITE_FOUNDATION_BUILD !== 'undefined' && VITE_FOUNDATION_BUILD
-    === 'true') { %>
-    <script
-      src="https://shared-assets.microbit.org/common/v2/common.js"
-      async
-    ></script>
-    <link
-      rel="stylesheet"
-      href="https://shared-assets.microbit.org/common/v2/main.css"
-    />
-    <script>
-      // GA config itself is via the common assets config depending on consent.
-      window.dataLayer = window.dataLayer || [];
-      window.gtag =
-        window.gtag ||
-        function () {
-          window.dataLayer.push(arguments);
-        };
-    </script>
-    <script type="text/javascript" id="crowdin-jipt-config">
-      (function () {
-        function escape() {
-          window.location.href = "%VITE_FULL_URL%";
-        }
-        window._jipt = [
-          ["project", "microbitorg"],
-          ["escape", escape],
-        ];
-      })();
-    </script>
-    <% } %>
     <script type="module" src="/src/index.tsx"></script>
   </head>
   <body>

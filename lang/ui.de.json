@@ -2,6 +2,9 @@
   "about": {
     "defaultMessage": "Über"
   },
+  "about-fork-credits": {
+    "defaultMessage": "Der senseBox Python Editor ist ein Fork des <upstream>micro:bit Python Editors</upstream>, entwickelt von der Micro:bit Educational Foundation und den Mitwirkenden. Vielen Dank für die Bereitstellung des Originalprojekts unter der <license>MIT-Lizenz</license>."
+  },
   "about-comic": {
     "defaultMessage": "Dreiteiliger Comic mit dem Titel \"CircuitPython Rocks\" von Mike Rowbit. Zwei Cartoon-Schlangen diskutieren über CircuitPython und Python. Der Hintergrund hinter den Schlangen zeigt ein Server-Rack."
   },

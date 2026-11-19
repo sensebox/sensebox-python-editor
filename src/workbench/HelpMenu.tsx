@@ -14,15 +14,12 @@ import { useCallback, useRef, useState } from "react";
 import { MdOutlineCookie } from "react-icons/md";
 import {
   RiExternalLinkLine,
-  RiFeedbackLine,
   RiInformationLine,
   RiQuestionLine,
 } from "react-icons/ri";
 import { FormattedMessage, useIntl } from "react-intl";
-import { useDialogs } from "../common/use-dialogs";
 import { deployment, useDeployment } from "../deployment";
 import AboutDialog from "./AboutDialog/AboutDialog";
-import FeedbackForm from "./FeedbackForm";
 
 interface HelpMenuProps {
   size?: "lg" | "md" | "sm" | "xs";
@@ -34,16 +31,6 @@ interface HelpMenuProps {
 const HelpMenu = ({ size }: HelpMenuProps) => {
   const [aboutDialogOpen, setAboutDialogOpen] = useState(false);
   const intl = useIntl();
-  const dialogs = useDialogs();
-  const handleFeedback = useCallback(() => {
-    dialogs.show((callback) => (
-      <FeedbackForm
-        isOpen
-        onClose={() => callback(undefined)}
-        finalFocusRef={menuButtonRef}
-      />
-    ));
-  }, [dialogs]);
   const { compliance } = useDeployment();
   const handleCookies = useCallback(() => {
     // Only called if defined:
@@ -113,9 +100,6 @@ const HelpMenu = ({ size }: HelpMenuProps) => {
             icon={<RiExternalLinkLine />}
           >
             <FormattedMessage id="micropython-documentation" />
-          </MenuItem>
-          <MenuItem icon={<RiFeedbackLine />} onAction={handleFeedback}>
-            <FormattedMessage id="feedback" />
           </MenuItem>
           <MenuDivider />
           {deployment.termsOfUseLink && (

@@ -23,9 +23,9 @@ After bumping the pinned `@microbit/ui` version, follow "Upgrading in an app" in
 
 Events go through `Logging` (`src/logging/`) and are documented in
 `docs/analytics-events.md`; update the doc when adding or changing an event.
-Names are snake_case with flat primitive params. gtag only exists on
-Foundation builds (`VITE_FOUNDATION_BUILD`, see `index.html`), so OSS and
-local dev log events to the console instead.
+Names are snake_case with flat primitive params. There is no Google Analytics
+backend or Foundation build mode. Events are recorded as console diagnostics
+or Sentry breadcrumbs when a Sentry DSN is explicitly configured.
 
 ## senseBox connection and transfer
 
