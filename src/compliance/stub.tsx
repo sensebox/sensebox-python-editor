@@ -15,8 +15,8 @@ const stubConsentContext = createContext<CookieConsent | undefined>(
 );
 
 /**
- * Compliance for builds without the shared-assets cookie modal (OSS forks,
- * local dev). Consent is immediately "functional only" so features gated on
+ * The editor has no analytics backend or external cookie modal.
+ * Consent is immediately "functional only" so features gated on
  * having a consent decision, such as the welcome dialog, still work.
  */
 export const createStubCompliance = (): DeploymentConfig["compliance"] => ({

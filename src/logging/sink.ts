@@ -17,32 +17,11 @@ export interface AnalyticsSink {
   setUserProperty(name: string, value: string): void;
 }
 
-type GtagFn = {
-  (command: "event", eventName: string, params: AnalyticsParams): void;
-  (
-    command: "set",
-    target: "user_properties",
-    values: Record<string, string>
-  ): void;
-};
-
-const gtag = () => (window as Window & { gtag?: GtagFn }).gtag;
-
 /**
- * Web sink: emits events through gtag when shared-assets/common.js has
- * set it up. index.html only loads that script for Foundation builds
- * (VITE_FOUNDATION_BUILD) and the script itself is hostname-gated to
- * `*.microbit.org`, so OSS forks and local dev take the silent no-gtag
- * path. Consent is owned by the shared-assets cookie modal, see
- * src/compliance/web.tsx. GA4 Enhanced Measurement auto-collects
- * page_view, including the router's pushState navigation.
+ * This editor has no analytics backend. Logger still records diagnostic
+ * breadcrumbs locally, or in Sentry when explicitly configured.
  */
-export class WebSink implements AnalyticsSink {
-  event(name: string, params: AnalyticsParams): void {
-    gtag()?.("event", name, params);
-  }
-
-  setUserProperty(name: string, value: string): void {
-    gtag()?.("set", "user_properties", { [name]: value });
-  }
-}
+export const disabledAnalyticsSink: AnalyticsSink = {
+  event: () => undefined,
+  setUserProperty: () => undefined,
+};

@@ -7,14 +7,11 @@ import { BrandConfigFactory } from "..";
 
 const defaultBrandFactory: BrandConfigFactory = () => ({
   product: "python-editor",
-  horizontalLogo: (
-    <img src="https://sensebox.de/images/logos/sensebox_wort_logo.svg" alt="" />
-  ),
   squareLogo: (
     <img
-      src="https://sensebox.de/images/pressekit/sensebox_logo.svg"
+      src={`${import.meta.env.BASE_URL}sensebox-logo.svg`}
       alt=""
-      style={{ padding: ".7rem" }}
+      style={{ display: "block", width: "100%", height: "auto" }}
     />
   ),
 });

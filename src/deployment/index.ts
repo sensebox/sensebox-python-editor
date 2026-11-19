@@ -5,18 +5,17 @@
  */
 import React, { ReactNode, useContext } from "react";
 import { createStubCompliance } from "../compliance/stub";
-import { createWebCompliance } from "../compliance/web";
 import { Logger } from "../logging/logger";
 import { Logging } from "../logging/logging";
-import { WebSink } from "../logging/sink";
+import { disabledAnalyticsSink } from "../logging/sink";
 
 // This is configured via a vite alias, defaulting to ./default
 import { default as df } from "theme-package";
 
 /**
  * Brand-and-content config supplied by the (optionally private) theme
- * package. No analytics opinions live here — the OSS deployment loader
- * picks the logger and compliance backend based on build config and env.
+ * package. The deployment loader configures diagnostic logging and
+ * functional-only consent without external analytics or a cookie modal.
  */
 export interface BrandConfig {
   /**
@@ -68,18 +67,7 @@ export interface DeploymentConfig extends BrandConfig {
 const brandFactory: BrandConfigFactory = df;
 
 const createLogging = (env: Record<string, string>, product: string): Logging =>
-  // WebSink is silent without gtag and Logger falls back to console
-  // breadcrumbs without a Sentry DSN, so this is safe for every build.
-  new Logger(new WebSink(), env, product);
-
-const createCompliance = (
-  env: Record<string, string>
-): DeploymentConfig["compliance"] =>
-  // The same flag index.html uses to decide whether to load the
-  // shared-assets script that provides the cookie modal (and gtag).
-  env.VITE_FOUNDATION_BUILD === "true"
-    ? createWebCompliance(env)
-    : createStubCompliance();
+  new Logger(disabledAnalyticsSink, env, product);
 
 export const deployment: DeploymentConfig = (() => {
   const env = import.meta.env as unknown as Record<string, string>;
@@ -87,7 +75,7 @@ export const deployment: DeploymentConfig = (() => {
   return {
     ...brand,
     logging: createLogging(env, brand.product),
-    compliance: createCompliance(env),
+    compliance: createStubCompliance(),
   };
 })();
 

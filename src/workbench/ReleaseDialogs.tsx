@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 import { useCallback } from "react";
-import FeedbackForm from "./FeedbackForm";
 import { ReleaseNoticeState } from "./PreReleaseNotice";
 import WelcomeDialog from "./WelcomeDialog";
 import { useDeployment } from "../deployment";
@@ -19,9 +18,6 @@ const ReleaseDialogs = ({ dialog, onDialogChange }: ReleaseDialogsProps) => {
   const handleClose = useCallback(() => {
     onDialogChange("closed");
   }, [onDialogChange]);
-  if (dialog === "feedback") {
-    return <FeedbackForm isOpen onClose={handleClose} />;
-  }
   if (dialog === "info" && welcomeVideoYouTubeId) {
     return (
       <WelcomeDialog

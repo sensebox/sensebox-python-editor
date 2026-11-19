@@ -1,5 +1,11 @@
 # Analytics events
 
+The senseBox editor does not load Google Analytics, Foundation shared assets,
+or an external cookie modal. The analytics sink is disabled in all builds;
+events remain available as console diagnostics, or Sentry breadcrumbs when a
+Sentry DSN is explicitly configured. The catalogue below documents the existing
+event vocabulary; it does not imply transmission to Google Analytics.
+
 Analytics events emitted by the app. The catalogue is aligned with
 ml-trainer's `docs/analytics-events.md` so the two apps can share GA4 custom
 definitions where the concept matches; the "Removed / migrated events" table

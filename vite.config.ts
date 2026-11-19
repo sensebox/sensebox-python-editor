@@ -3,6 +3,7 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import react from "@vitejs/plugin-react";
 import ejs from "ejs";
 import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import {
   IndexHtmlTransformContext,
@@ -86,6 +87,17 @@ const viteRemoveManifestPlugin = (): Plugin => ({
 
 export default defineConfig(({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+  let commitSha = process.env.VITE_COMMIT_SHA || process.env.GITHUB_SHA;
+  if (!commitSha) {
+    try {
+      commitSha = execFileSync("git", ["rev-parse", "HEAD"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch {
+      commitSha = "local";
+    }
+  }
   const unitTest: UserConfig["test"] = {
     globals: true,
     exclude: [...configDefaults.exclude, "**/e2e/**"],
@@ -103,6 +115,9 @@ export default defineConfig(({ mode }) => {
     },
   };
   const config: UserConfig = {
+    define: {
+      "import.meta.env.VITE_COMMIT_SHA": JSON.stringify(commitSha),
+    },
     base: process.env.BASE_URL ?? "/",
     build: {
       outDir: "build",
@@ -174,11 +189,11 @@ export default defineConfig(({ mode }) => {
           ],
         },
         manifest: {
-          name: "micro:bit Python Editor",
-          short_name: "micro:bit Python Editor",
+          name: "senseBox Python Editor",
+          short_name: "senseBox Python",
           description:
-            "A Python Editor for the BBC micro:bit, built by the Micro:bit Educational Foundation and the global Python Community.",
-          theme_color: "#6c4bc1",
+            "Create and transfer CircuitPython projects for the senseBox.",
+          theme_color: "#4eaf47",
           icons: [
             {
               src: `${process.env.BASE_URL ?? "/"}logo512.png`,

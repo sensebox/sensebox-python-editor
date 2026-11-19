@@ -190,14 +190,18 @@ const SideBarHeader = ({
           >
             <HStack gap="0.875rem">
               <Box
-                width="3.56875rem"
+                width={
+                  !brand.horizontalLogo && sidebarShown && !query
+                    ? "12rem"
+                    : "3.56875rem"
+                }
                 color="white"
                 role="img"
                 ref={faceLogoRef}
               >
                 {brand.squareLogo}
               </Box>
-              {!query && sidebarShown && (
+              {!query && sidebarShown && Boolean(brand.horizontalLogo) && (
                 <Box width="9.098rem" role="img" color="white">
                   {brand.horizontalLogo}
                 </Box>
