@@ -3,13 +3,13 @@
     "defaultMessage": "About",
     "description": "About action; also the accessible name of the about dialog"
   },
-  "about-fork-credits": {
-    "defaultMessage": "The senseBox Python Editor is a fork of the <upstream>micro:bit Python Editor</upstream>, developed by the Micro:bit Educational Foundation and contributors. Thank you for making the original project available under the <license>MIT license</license>.",
-    "description": "Acknowledgement of the upstream project and its license in the about dialog"
-  },
   "about-comic": {
     "defaultMessage": "Three panel comic titled \"CircuitPython Rocks\" by Mike Rowbit. Two cartoon snakes discuss CircuitPython and Python. The background behind the snakes shows a server rack.",
     "description": "Alt text for comic in the about dialog"
+  },
+  "about-fork-credits": {
+    "defaultMessage": "The senseBox Python Editor is a fork of the <upstream>micro:bit Python Editor</upstream>, developed by the Micro:bit Educational Foundation and contributors. Thank you for making the original project available under the <license>MIT license</license>.",
+    "description": "Acknowledgement of the upstream project and its license in the about dialog"
   },
   "about-micropython": {
     "defaultMessage": "The editor depends on <link>CircuitPython</link>.",
