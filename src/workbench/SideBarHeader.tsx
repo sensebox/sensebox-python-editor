@@ -201,7 +201,7 @@ const SideBarHeader = ({
               >
                 {brand.squareLogo}
               </Box>
-              {!query && sidebarShown && brand.horizontalLogo && (
+              {!query && sidebarShown && Boolean(brand.horizontalLogo) && (
                 <Box width="9.098rem" role="img" color="white">
                   {brand.horizontalLogo}
                 </Box>
