@@ -193,7 +193,18 @@ export async function flushMatchingCircuitPythonFiles(
       for (const part of parts.slice(0, -1)) {
         parent = join(parent, part);
         if (!directories.has(parent)) {
-          if ((await lstat(parent)).isSymbolicLink()) return false;
+          try {
+            if ((await lstat(parent)).isSymbolicLink()) return false;
+          } catch (cause) {
+            // Deleted nested directories no longer have handles to sync. The
+            // closest surviving ancestor still needs its metadata flushed.
+            if (
+              "removed" in file &&
+              (cause as NodeJS.ErrnoException).code === "ENOENT"
+            )
+              break;
+            throw cause;
+          }
           if (!canSyncDirectories) {
             continue;
           }

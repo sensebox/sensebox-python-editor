@@ -24,6 +24,7 @@ declare global {
       commands: string[];
       written: Record<string, string>;
       bytes: Record<string, number[]>;
+      directories: string[];
       folderSelections: number;
       connections: number;
       validFolder: boolean;
@@ -56,6 +57,7 @@ test.beforeEach(async ({ page, context }) => {
       commands: [],
       written: {},
       bytes: {},
+      directories: [],
       folderSelections: 0,
       connections: 0,
       validFolder: true,
@@ -131,9 +133,13 @@ test.beforeEach(async ({ page, context }) => {
           name: prefix ? prefix.split("/").slice(-2)[0] : state.directoryName,
           entries: async function* () {
             const names = new Set<string>();
-            for (const path of Object.keys(state.bytes)) {
+            for (const path of [
+              ...Object.keys(state.bytes),
+              ...state.directories.map((path) => path + "/"),
+            ]) {
               if (!path.startsWith(prefix)) continue;
               const rest = path.slice(prefix.length);
+              if (!rest) continue;
               const name = rest.split("/")[0];
               if (names.has(name)) continue;
               names.add(name);
@@ -148,10 +154,32 @@ test.beforeEach(async ({ page, context }) => {
           removeEntry: async (name: string) => {
             if (state.readOnly)
               throw new DOMException("Read-only", "NoModificationAllowedError");
-            delete state.bytes[prefix + name];
+            const path = prefix + name;
+            if (
+              [...Object.keys(state.bytes), ...state.directories].some(
+                (child) => child.startsWith(path + "/")
+              )
+            )
+              throw new DOMException("Not empty", "InvalidModificationError");
+            delete state.bytes[path];
+            state.directories = state.directories.filter((dir) => dir !== path);
           },
-          getDirectoryHandle: async (name: string) =>
-            directory(prefix + name + "/"),
+          getDirectoryHandle: async (
+            name: string,
+            options?: { create?: boolean }
+          ) => {
+            const path = prefix + name;
+            if (
+              !options?.create &&
+              !state.directories.includes(path) &&
+              !Object.keys(state.bytes).some((child) =>
+                child.startsWith(path + "/")
+              )
+            )
+              throw new DOMException("Missing", "NotFoundError");
+            if (!state.directories.includes(path)) state.directories.push(path);
+            return directory(path + "/");
+          },
           getFileHandle: async (
             leaf: string,
             options?: { create?: boolean }
@@ -550,6 +578,9 @@ test("installs imported libraries, their dependencies and resources before code.
     Object.keys(window.senseboxTest.bytes)
   );
   expect(remaining).toContain("lib/custom.py");
+  expect(await page.evaluate(() => window.senseboxTest.directories)).toEqual([
+    "lib",
+  ]);
   expect(
     remaining.filter(
       (path) => path.startsWith("lib/adafruit_") || path.startsWith("font5x8")

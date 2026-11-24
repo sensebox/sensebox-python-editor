@@ -423,7 +423,8 @@ export class WebFileSystemConnection
       parent: FileSystemDirectoryHandle,
       prefix: string,
       managed = false
-    ) => {
+    ): Promise<boolean> => {
+      let keep = [...required].some((path) => path.startsWith(prefix));
       for await (const [name, handle] of parent.entries()) {
         const path = prefix + name;
         const isManaged =
@@ -434,13 +435,16 @@ export class WebFileSystemConnection
               name.replace(/\.(mpy|py)$/, "")
             ));
         if (handle.kind === "directory") {
-          await visit(handle, path + "/", isManaged);
+          if (await visit(handle, path + "/", isManaged)) keep = true;
+          else obsolete.push([parent, name, path]);
         } else if (isManaged && !required.has(path)) {
           obsolete.push([parent, name, path]);
         } else {
           libraryPaths.add(path);
+          keep = true;
         }
       }
+      return keep;
     };
     let lib: FileSystemDirectoryHandle | undefined;
     try {
@@ -449,7 +453,8 @@ export class WebFileSystemConnection
       if (!(cause instanceof DOMException) || cause.name !== "NotFoundError")
         throw cause;
     }
-    if (lib) await visit(lib, "lib/");
+    if (lib && !(await visit(lib, "lib/")))
+      obsolete.push([directory, "lib", "lib"]);
     for await (const [name, handle] of directory.entries()) {
       if (
         handle.kind === "file" &&
@@ -457,6 +462,13 @@ export class WebFileSystemConnection
         !required.has(name)
       )
         obsolete.push([directory, name, name]);
+    }
+    // Include directories in the MCU inventory so stale empty folders also
+    // block a restart, including after a transfer is retried.
+    for (const path of [...libraryPaths]) {
+      const parts = path.split("/");
+      for (let depth = 1; depth < parts.length; depth++)
+        libraryPaths.add(parts.slice(0, depth).join("/") + "/");
     }
     return { obsolete, libraryPaths: [...libraryPaths].sort() };
   }
@@ -502,6 +514,7 @@ export class WebFileSystemConnection
       " except OSError as _error:",
       "  if _error.args[0] == 2: return _paths",
       "  raise",
+      " _paths.append(_dir + '/')",
       " for _name in _names:",
       "  _path = _dir + '/' + _name",
       "  if _os.stat(_path)[0] & 0x4000:",

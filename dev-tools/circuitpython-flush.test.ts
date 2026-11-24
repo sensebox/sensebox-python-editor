@@ -312,3 +312,20 @@ it.each([
     false
   );
 });
+
+it("flushes surviving ancestors when deleted library directories are already absent", async () => {
+  await mkdir(join(volume, "lib"));
+  request.removed = [
+    "lib/adafruit_bus_device/nested/old.mpy",
+    "lib/adafruit_bus_device/nested",
+    "lib/adafruit_bus_device",
+  ];
+  expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
+    true
+  );
+  await rm(join(volume, "lib"), { recursive: true });
+  request.removed.push("lib");
+  expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
+    true
+  );
+});

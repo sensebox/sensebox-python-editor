@@ -41,6 +41,7 @@ function setup({
 } = {}) {
   const operations: string[] = [];
   const stored = new Map<string, Uint8Array>();
+  const directoryNames = new Set<string>();
   let incoming: ReadableStreamDefaultController<Uint8Array>;
   let raw = startInRaw;
   let rawSource = "";
@@ -169,16 +170,21 @@ function setup({
           : getFileHandle(prefix + name),
       entries: async function* () {
         const names = new Set<string>();
-        for (const path of stored.keys()) {
+        for (const path of [
+          ...stored.keys(),
+          ...[...directoryNames].map((path) => path + "/"),
+        ]) {
           if (!path.startsWith(prefix)) continue;
           const rest = path.slice(prefix.length);
+          if (!rest) continue;
           const name = rest.split("/")[0];
           if (names.has(name)) continue;
           names.add(name);
           yield [
             name,
             rest.includes("/")
-              ? directory(prefix + name + "/")
+              ? (directoryNames.add(prefix + name),
+                directory(prefix + name + "/"))
               : { kind: "file", name },
           ];
         }
@@ -186,11 +192,31 @@ function setup({
       removeEntry: async (name: string) => {
         if (failAt === "remove-file")
           throw new DOMException("Denied", "NotAllowedError");
-        stored.delete(prefix + name);
+        const path = prefix + name;
+        if (
+          [...stored.keys(), ...directoryNames].some((child) =>
+            child.startsWith(path + "/")
+          )
+        )
+          throw new DOMException("Not empty", "InvalidModificationError");
+        stored.delete(path);
+        directoryNames.delete(path);
         operations.push(`remove:${prefix + name}`);
       },
-      getDirectoryHandle: async (name: string) =>
-        directory(prefix + name + "/"),
+      getDirectoryHandle: async (
+        name: string,
+        options?: { create?: boolean }
+      ) => {
+        const path = prefix + name;
+        if (
+          !options?.create &&
+          !directoryNames.has(path) &&
+          ![...stored.keys()].some((child) => child.startsWith(path + "/"))
+        )
+          throw new DOMException("Missing", "NotFoundError");
+        directoryNames.add(path);
+        return directory(path + "/");
+      },
     } as unknown as FileSystemDirectoryHandle);
   const picker = vi.fn().mockResolvedValue(directory());
   vi.stubGlobal("showDirectoryPicker", picker);
@@ -217,6 +243,7 @@ function setup({
     operations,
     sources,
     stored,
+    directoryNames,
     requestPort,
     incoming: () => incoming,
   };
@@ -1040,4 +1067,60 @@ it("does not restart or report success when removing an obsolete library fails",
   });
   expect(operations).not.toContain("soft-reboot");
   expect(device.hasDirectory).toBe(false);
+});
+
+it("removes empty library directories deepest first, including the empty lib root", async () => {
+  const flushHostFiles = vi.fn<
+    NonNullable<
+      ConstructorParameters<typeof WebFileSystemConnection>[0]["flushHostFiles"]
+    >
+  >(async () => {});
+  const { device, stored, directoryNames, operations, sources } = setup({
+    flushHostFiles,
+  });
+  stored.set("lib/adafruit_bus_device/i2c_device.mpy", new Uint8Array([1]));
+  directoryNames.add("lib/adafruit_bus_device/empty/nested");
+  directoryNames.add("lib/adafruit_bus_device/empty");
+  directoryNames.add("lib/unused_empty");
+  await device.connect();
+  await device.selectDirectory();
+  vi.useFakeTimers();
+  const transfer = device.flash({} as never, {});
+  await vi.advanceTimersByTimeAsync(5000);
+  await transfer;
+  expect(directoryNames.size).toBe(0);
+  expect(operations.filter((op) => op.startsWith("remove:"))).toEqual([
+    "remove:lib/adafruit_bus_device/i2c_device.mpy",
+    "remove:lib/adafruit_bus_device/empty/nested",
+    "remove:lib/adafruit_bus_device/empty",
+    "remove:lib/adafruit_bus_device",
+    "remove:lib/unused_empty",
+    "remove:lib",
+  ]);
+  expect(flushHostFiles.mock.calls[0][2]).toContain("lib");
+  expect(sources[0]).toContain('"/lib"');
+});
+
+it("keeps directories needed by project files and unknown libraries", async () => {
+  const { device, files, directoryNames, stored, sources } = setup();
+  files.mockResolvedValue({
+    "code.py": new Uint8Array([1]),
+    "lib/adafruit_bus_device/custom.py": new Uint8Array([2]),
+  });
+  directoryNames.add("lib/adafruit_bus_device");
+  directoryNames.add("lib/custom");
+  stored.set("lib/custom/data.bin", new Uint8Array([3]));
+  await device.connect();
+  await device.selectDirectory();
+  vi.useFakeTimers();
+  const transfer = device.flash({} as never, {});
+  await vi.advanceTimersByTimeAsync(5000);
+  await transfer;
+  expect([...directoryNames].sort()).toEqual([
+    "lib",
+    "lib/adafruit_bus_device",
+    "lib/custom",
+  ]);
+  expect(sources[0]).toContain('"/lib/adafruit_bus_device/"');
+  expect(sources[0]).toContain("_paths.append(_dir + '/')");
 });

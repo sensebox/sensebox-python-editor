@@ -1205,8 +1205,10 @@ Windows host validation:
   file set. This includes unused dependencies and obsolete files within packages.
   The default root `font5x8.bin` and its license are also removed when unneeded.
 - Project-owned files take priority, including files under `lib/`. Libraries
-  outside the catalog and unrelated root files remain untouched. Empty library
-  directories may remain. Static import resolution retains its existing limits:
+  outside the catalog and unrelated root files remain untouched. Empty directories
+  within `lib/` are removed deepest first, including the empty `lib/` root. Each
+  directory removal is non-recursive, so unexpected contents cannot be deleted.
+  Static import resolution retains its existing limits:
   dynamically constructed imports cannot retain a catalog library automatically.
 - All assets and the cleanup inventory are prepared before mutation; cleanup
   starts only after the board confirms the normal REPL. Invalid project paths
@@ -1214,9 +1216,10 @@ Windows host validation:
   success/restart and invalidates the selected directory handle.
 - The loopback flush request includes removed paths, checks their absence and
   flushes their parent directories. The helper performs no deletion itself.
+  When a parent was deleted too, it flushes the closest surviving ancestor.
   Required files still undergo fresh byte comparison and the MCU checksum gate.
 - Before restarting, Raw REPL also verifies deleted paths are absent and compares
-  the entire `lib/` file inventory against the fresh host inventory plus planned
+  the entire `lib/` file and directory inventory against the fresh host inventory plus planned
   writes, preserving unknown libraries. This catches stale deleted files even on
   retry when they are already absent from the host view. The existing 60-second
   deadline, stable-match interval and friendly-REPL confirmation still apply.
@@ -1234,3 +1237,8 @@ then removal of the import and cleanup on the third transfer, with an unknown
 library preserved. The broader browser run was stopped after two failures in
 existing pre-transfer UI assertions (missing disabled transfer button / missing
 directory-selection control); three tests had passed before it was stopped.
+
+Empty-directory cleanup follow-up: all 62 device tests and 32 host-flush tests
+pass, as do TypeScript, ESLint and the targeted Chrome library-transfer test.
+The board inventory now includes directories as well as files, so stale empty
+folders also prevent a restart. No additional physical-board test was performed.
