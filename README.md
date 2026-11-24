@@ -49,7 +49,11 @@ When transferring to a CircuitPython 10.x senseBox, static imports automatically
 install matching libraries and their dependencies from the pinned Adafruit bundle
 into `CIRCUITPY/lib`. Imports in reachable project modules are included. Built-in
 modules such as `board` need no installation; project-owned modules take priority.
-Unchanged files are compared and skipped. Unknown libraries and dynamic imports
+Unchanged files are compared and skipped. Each transfer removes unneeded catalog
+library files from `lib/` and unused default font resources from the board root.
+Project files and libraries outside the catalog are preserved; empty directories
+may remain. The board must confirm the resulting library inventory before restart.
+Unknown libraries and dynamic imports
 still require manual installation. The first use needs access to the editor's
 library assets. This also works in hosted builds.
 

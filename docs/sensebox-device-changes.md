@@ -978,7 +978,8 @@ Behavior and implementation:
   file contents followed by all parent directories, deepest first. Traversal and
   symlink directories remain rejected. The 60-second visibility deadline, normal
   REPL acknowledgement and soft-restart checks are retained.
-- No library cleanup is performed when an import is removed. Unknown third-party
+- At this stage no library cleanup was performed when an import was removed
+  (superseded by the 2026-11-24 change below). Unknown third-party
   modules, arbitrary PyPI packages and dynamically constructed imports are not
   installed automatically. Imports inside conditional code are conservatively
   included even if that branch does not run. Installation does not guarantee that
@@ -1196,3 +1197,40 @@ Windows host validation:
   dedicated CRLF regression test passes, and both automatic-library scenarios
   pass in the installed Windows system Chrome, including dependency/resource
   installation before `code.py` and failure without partial board writes.
+
+## 2026-11-24 — Remove unused catalog libraries during transfer
+
+- Each transfer inventories the current board's `lib/` tree, then removes files
+  belonging to catalog modules that are absent from the resolved library/project
+  file set. This includes unused dependencies and obsolete files within packages.
+  The default root `font5x8.bin` and its license are also removed when unneeded.
+- Project-owned files take priority, including files under `lib/`. Libraries
+  outside the catalog and unrelated root files remain untouched. Empty library
+  directories may remain. Static import resolution retains its existing limits:
+  dynamically constructed imports cannot retain a catalog library automatically.
+- All assets and the cleanup inventory are prepared before mutation; cleanup
+  starts only after the board confirms the normal REPL. Invalid project paths
+  and failed library preparation cause no deletions. A deletion failure prevents
+  success/restart and invalidates the selected directory handle.
+- The loopback flush request includes removed paths, checks their absence and
+  flushes their parent directories. The helper performs no deletion itself.
+  Required files still undergo fresh byte comparison and the MCU checksum gate.
+- Before restarting, Raw REPL also verifies deleted paths are absent and compares
+  the entire `lib/` file inventory against the fresh host inventory plus planned
+  writes, preserving unknown libraries. This catches stale deleted files even on
+  retry when they are already absent from the host view. The existing 60-second
+  deadline, stable-match interval and friendly-REPL confirmation still apply.
+- Automated tests cover cleanup, required dependencies, project/unknown files,
+  preparation/deletion failures, removed-path flush requests and safe nested
+  directory flushing. No physical-board verification was performed for this change.
+
+Validation: all **553 unit tests** pass with Node's experimental webstorage
+switched off (`NODE_OPTIONS=--no-experimental-webstorage npm test -- --run`).
+TypeScript and ESLint checks pass. The default Playwright Chromium binary is
+missing on this host; browser verification uses the installed Chrome via a
+temporary configuration outside the repository.
+The targeted Chrome test passes for installation, an identical second transfer,
+then removal of the import and cleanup on the third transfer, with an unknown
+library preserved. The broader browser run was stopped after two failures in
+existing pre-transfer UI assertions (missing disabled transfer button / missing
+directory-selection control); three tests had passed before it was stopped.

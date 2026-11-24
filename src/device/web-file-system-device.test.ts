@@ -167,6 +167,28 @@ function setup({
         options
           ? getFileHandle(prefix + name, options)
           : getFileHandle(prefix + name),
+      entries: async function* () {
+        const names = new Set<string>();
+        for (const path of stored.keys()) {
+          if (!path.startsWith(prefix)) continue;
+          const rest = path.slice(prefix.length);
+          const name = rest.split("/")[0];
+          if (names.has(name)) continue;
+          names.add(name);
+          yield [
+            name,
+            rest.includes("/")
+              ? directory(prefix + name + "/")
+              : { kind: "file", name },
+          ];
+        }
+      },
+      removeEntry: async (name: string) => {
+        if (failAt === "remove-file")
+          throw new DOMException("Denied", "NotAllowedError");
+        stored.delete(prefix + name);
+        operations.push(`remove:${prefix + name}`);
+      },
       getDirectoryHandle: async (name: string) =>
         directory(prefix + name + "/"),
     } as unknown as FileSystemDirectoryHandle);
@@ -933,4 +955,89 @@ it("rejects traversal in nested project files without creating or writing them",
     file: { fileName: "lib/../bad.py", operation: "open-file" },
   });
   expect(operations).not.toContain("soft-reboot");
+});
+
+it("removes obsolete catalog libraries and font resources, preserving required, project and unknown files", async () => {
+  const data = new Uint8Array([42]);
+  const flushHostFiles = vi.fn<
+    NonNullable<
+      ConstructorParameters<typeof WebFileSystemConnection>[0]["flushHostFiles"]
+    >
+  >(async () => {});
+  const { device, files, stored, operations, sources } = setup({
+    libraryFiles: async () => ({
+      "lib/adafruit_bus_device/__init__.mpy": data,
+      "lib/adafruit_bus_device/i2c_device.mpy": data,
+    }),
+    flushHostFiles,
+  });
+  files.mockResolvedValue({ "code.py": data, "lib/adafruit_ssd1306.py": data });
+  for (const name of [
+    "lib/adafruit_ssd1306.py",
+    "lib/adafruit_bme680.mpy",
+    "lib/adafruit_bus_device/__init__.mpy",
+    "lib/adafruit_bus_device/spi_device.mpy",
+    "lib/custom.py",
+    "font5x8.bin",
+    "font5x8.bin.license",
+    "notes.txt",
+  ])
+    stored.set(name, data);
+  await device.connect();
+  await device.selectDirectory();
+  vi.useFakeTimers();
+  const transfer = device.flash({} as never, {});
+  await vi.advanceTimersByTimeAsync(4000);
+  await transfer;
+  expect([...stored.keys()].sort()).toEqual(
+    [
+      "code.py",
+      "lib/adafruit_bus_device/__init__.mpy",
+      "lib/adafruit_bus_device/i2c_device.mpy",
+      "lib/adafruit_ssd1306.py",
+      "lib/custom.py",
+      "notes.txt",
+    ].sort()
+  );
+  expect(operations.indexOf("remove:lib/adafruit_bme680.mpy")).toBeGreaterThan(
+    operations.indexOf("\x03\x03\x02")
+  );
+  expect(flushHostFiles.mock.calls[0][2]).toEqual(
+    expect.arrayContaining([
+      "lib/adafruit_bme680.mpy",
+      "lib/adafruit_bus_device/spi_device.mpy",
+      "font5x8.bin",
+    ])
+  );
+  expect(sources[0]).toContain('for _path in ["/lib/adafruit_bme680.mpy"');
+  expect(sources[0]).toContain("_os.stat(_path)");
+});
+
+it("does not delete libraries when preparation fails", async () => {
+  const { device, stored, operations } = setup({
+    libraryFiles: async () => {
+      throw new CircuitPythonLibraryError("adafruit_bme680");
+    },
+  });
+  stored.set("lib/adafruit_ssd1306.mpy", new Uint8Array([1]));
+  await device.connect();
+  await device.selectDirectory();
+  await expect(device.flash({} as never, {})).rejects.toMatchObject({
+    code: "library",
+  });
+  expect(stored.has("lib/adafruit_ssd1306.mpy")).toBe(true);
+  expect(operations.some((op) => op.startsWith("remove:"))).toBe(false);
+});
+
+it("does not restart or report success when removing an obsolete library fails", async () => {
+  const { device, stored, operations } = setup({ failAt: "remove-file" });
+  stored.set("lib/adafruit_ssd1306.mpy", new Uint8Array([1]));
+  await device.connect();
+  await device.selectDirectory();
+  await expect(device.flash({} as never, {})).rejects.toMatchObject({
+    code: "permission",
+    file: { fileName: "lib/adafruit_ssd1306.mpy", operation: "remove-file" },
+  });
+  expect(operations).not.toContain("soft-reboot");
+  expect(device.hasDirectory).toBe(false);
 });

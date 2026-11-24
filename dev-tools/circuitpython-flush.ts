@@ -28,7 +28,20 @@ function validRequest(value: unknown): value is CircuitPythonFlushRequest {
     request.bootOut.length <= 8192 &&
     request.bootOut.includes("CircuitPython") &&
     Array.isArray(request.files) &&
-    request.files.length > 0 &&
+    (request.files.length > 0 || !!request.removed?.length) &&
+    (request.removed === undefined ||
+      (Array.isArray(request.removed) &&
+        request.removed.length <= 4096 &&
+        request.removed.every(
+          (name) =>
+            typeof name === "string" &&
+            name.length <= 512 &&
+            !name.includes("\\") &&
+            !name.includes("\0") &&
+            name
+              .split("/")
+              .every((part) => part && part !== "." && part !== "..")
+        ))) &&
     request.files.length <= 128 &&
     new Set(request.files.map((file) => file?.name)).size ===
       request.files.length &&
@@ -168,7 +181,13 @@ export async function flushMatchingCircuitPythonFiles(
       directories.set(target, handles[0]);
     }
     const files: FileHandle[] = [];
-    for (const file of request.files) {
+    for (const file of [
+      ...request.files,
+      ...(request.removed ?? []).map((name) => ({
+        name,
+        removed: true as const,
+      })),
+    ]) {
       const parts = file.name.split("/");
       let parent = target;
       for (const part of parts.slice(0, -1)) {
@@ -188,6 +207,15 @@ export async function flushMatchingCircuitPythonFiles(
       }
       const filePath = join(target, file.name);
       if (relative(target, filePath).startsWith("..")) return false;
+      if ("removed" in file) {
+        try {
+          await lstat(filePath);
+          return false;
+        } catch (cause) {
+          if ((cause as NodeJS.ErrnoException).code !== "ENOENT") return false;
+        }
+        continue;
+      }
       if ((await lstat(filePath)).isSymbolicLink()) return false;
       const handle = await open(
         filePath,
