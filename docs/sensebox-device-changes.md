@@ -1242,3 +1242,40 @@ Empty-directory cleanup follow-up: all 62 device tests and 32 host-flush tests
 pass, as do TypeScript, ESLint and the targeted Chrome library-transfer test.
 The board inventory now includes directories as well as files, so stale empty
 folders also prevent a restart. No additional physical-board test was performed.
+
+## 2026-11-24 — Retry transfer entry while the board stops
+
+Report: every other transfer fails with the stop-command (`repl`) error, and
+first transfer after opening the website is slow. The previous entry sequence
+sent Ctrl-C, Ctrl-C, Ctrl-B only once and waited three seconds for a prompt.
+A lost command during program shutdown or REPL initialization consequently
+required another user-initiated transfer. This is a plausible explanation for
+the alternating symptom; the physical board timing has not been reproduced.
+
+- Transfer entry now repeats that interrupt/normal-REPL sequence every 500 ms
+  until the board acknowledges `>>> `. The existing three-second overall
+  deadline remains. An immediate response adds no delay. Response listeners and
+  retry timers are removed on success and failure; no file mutation, verification
+  command or restart is allowed before entry succeeds.
+- Internal response tracking is used directly, independently of terminal-output
+  visibility. Existing fresh file comparisons, library preparation and cleanup,
+  host flush, MCU checksum/inventory verification, 60-second visibility deadline,
+  friendly-REPL restoration and final restart checks remain in place.
+- Unit regressions simulate lost stop commands on three consecutive transfers,
+  including fragmented replies, no retry after immediate acknowledgement and
+  no writes or lingering retries after an unresponsive board times out. The
+  browser library-transfer regression now drops the first stop command after a
+  successful restart and checks that all three transfers still finish, without
+  replacement writes for identical files on the second transfer.
+- Cold-start duration is not attributed to this change: the first transfer can
+  download/verify required library assets and write missing files; host writeback
+  can also delay board verification. No physical duration measurement was made,
+  and none of these safety gates was shortened to hide the latency.
+
+Validation: all 64 device tests pass, as do application TypeScript and ESLint for
+all three changed source/test files. The headless installed-Chrome regression
+passes with simulated USB/filesystem APIs and actual library asset downloads.
+The full unit run passed 543 tests; 15 host-flush tests failed because the sandbox
+blocks opening local server sockets. Repeating that suite outside the sandbox
+passed all 32 host-flush tests, including the 15 affected cases. No physical-board
+test was performed.
