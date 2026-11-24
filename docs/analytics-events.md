@@ -292,7 +292,8 @@ it does not assert that the user's program ran successfully.
 
 File-write error reports include flat diagnostic context `file_name`, `operation`
 and `error_name`, without program source. `operation` is `open-file`,
-`read-file`, `create-writer`, `write-file` or `close-file`. `NoModificationAllowedError` maps to
+`read-file`, `create-writer`, `write-file`, `close-file` or `remove-file`
+(for unused catalog library files and empty library directories). `NoModificationAllowedError` maps to
 `filesystem-state` (read-only drive or file lock), `NotAllowedError` / `SecurityError`
 to `permission`, and `QuotaExceededError` to `storage-full`. These same categories
 are retained in `device_failure.code`; cleanup failures do not replace the original

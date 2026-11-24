@@ -9,7 +9,8 @@ import type { CircuitPythonFlushRequest } from "./circuitpython-flush-protocol";
 /** Optional local-editor acceleration. MCU verification remains authoritative. */
 export async function flushCircuitPythonHostFiles(
   directory: FileSystemDirectoryHandle,
-  entries: [string, Uint8Array][]
+  entries: [string, Uint8Array][],
+  removed: string[] = []
 ): Promise<void> {
   if (!["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)) return;
   const controller = new AbortController();
@@ -43,6 +44,7 @@ export async function flushCircuitPythonHostFiles(
       directoryName: "CIRCUITPY",
       bootOut,
       files,
+      ...(removed.length ? { removed } : {}),
     };
     if (controller.signal.aborted) return;
     await fetch(

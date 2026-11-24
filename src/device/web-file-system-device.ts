@@ -13,6 +13,7 @@ import {
 } from "@microbit/microbit-connection";
 import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 import { CircuitPythonLibraryError } from "./circuitpython-library-error";
+import libraryCatalog from "./libraries/catalog.json";
 import { Logging } from "../logging/logging";
 import { SimpleEventTarget } from "./simple-event-target";
 
@@ -36,7 +37,8 @@ type FileWriteOperation =
   | "read-file"
   | "create-writer"
   | "write-file"
-  | "close-file";
+  | "close-file"
+  | "remove-file";
 
 export const circuitPythonTransferPhases = [
   "libraries",
@@ -71,6 +73,29 @@ export class CircuitPythonError extends Error {
   ) {
     super(code);
   }
+}
+
+function fileError(
+  cause: unknown,
+  fileName: string,
+  operation: FileWriteOperation
+): CircuitPythonError {
+  let code: CircuitPythonErrorCode = "write";
+  if (cause instanceof DOMException) {
+    switch (cause.name) {
+      case "NoModificationAllowedError":
+        code = "filesystem-state";
+        break;
+      case "NotAllowedError":
+      case "SecurityError":
+        code = "permission";
+        break;
+      case "QuotaExceededError":
+        code = "storage-full";
+        break;
+    }
+  }
+  return new CircuitPythonError(code, cause, { fileName, operation });
 }
 
 interface WebFileSystemEventMap {
@@ -116,7 +141,8 @@ export class WebFileSystemConnection
       ) => Promise<Record<string, Uint8Array>>;
       flushHostFiles?: (
         directory: FileSystemDirectoryHandle,
-        entries: [string, Uint8Array][]
+        entries: [string, Uint8Array][],
+        removed?: string[]
       ) => Promise<void>;
     }
   ) {
@@ -281,12 +307,43 @@ export class WebFileSystemConnection
       }
       // User-owned project files take precedence over automatic dependencies.
       const entries = Object.entries({ ...libraries, ...project });
+      for (const [name] of entries) {
+        if (
+          !name
+            .split("/")
+            .every(
+              (part) =>
+                part &&
+                part !== "." &&
+                part !== ".." &&
+                !part.includes("\\") &&
+                !part.includes("\0")
+            )
+        )
+          throw new CircuitPythonError(
+            "write",
+            new Error("Invalid project file path"),
+            { fileName: name, operation: "open-file" }
+          );
+      }
+      const { obsolete, libraryPaths } = await this.obsoleteLibraryFiles(
+        this.directoryHandle,
+        new Set(entries.map(([name]) => name))
+      );
       // Write the entry point after its dependencies.
       entries.sort(
         ([a], [b]) => Number(a === "code.py") - Number(b === "code.py")
       );
       options.transferProgress?.({ phase: "board" });
       await this.enterRepl();
+      for (const [parent, name, path] of obsolete) {
+        try {
+          await parent.removeEntry(name);
+        } catch (cause) {
+          throw fileError(cause, path, "remove-file");
+        }
+      }
+      const removed = obsolete.map(([, , path]) => path);
       let completed = 0;
       options.transferProgress?.({
         phase: "files",
@@ -310,9 +367,13 @@ export class WebFileSystemConnection
       // a previous verification timeout or a save through another editor.
       // Flush every required file, while still skipping identical writes.
       options.transferProgress?.({ phase: "flush" });
-      if (entries.length && this.options.flushHostFiles) {
+      if ((entries.length || removed.length) && this.options.flushHostFiles) {
         try {
-          await this.options.flushHostFiles(this.directoryHandle, entries);
+          await this.options.flushHostFiles(
+            this.directoryHandle,
+            entries,
+            removed
+          );
         } catch (cause) {
           this.options.logging.error(
             "Local CircuitPython host flush unavailable",
@@ -324,7 +385,7 @@ export class WebFileSystemConnection
       options.transferProgress?.({ phase: "verify" });
       this.checkingFiles = true;
       try {
-        await this.waitForDeviceFiles(entries);
+        await this.waitForDeviceFiles(entries, removed, libraryPaths);
       } finally {
         this.checkingFiles = false;
       }
@@ -346,9 +407,77 @@ export class WebFileSystemConnection
     }
   }
 
+  /** Inventory fresh board contents before any mutation; project files win. */
+  private async obsoleteLibraryFiles(
+    directory: FileSystemDirectoryHandle,
+    required: Set<string>
+  ): Promise<{
+    obsolete: [FileSystemDirectoryHandle, string, string][];
+    libraryPaths: string[];
+  }> {
+    const obsolete: [FileSystemDirectoryHandle, string, string][] = [];
+    const libraryPaths = new Set(
+      [...required].filter((path) => path.startsWith("lib/"))
+    );
+    const visit = async (
+      parent: FileSystemDirectoryHandle,
+      prefix: string,
+      managed = false
+    ): Promise<boolean> => {
+      let keep = [...required].some((path) => path.startsWith(prefix));
+      for await (const [name, handle] of parent.entries()) {
+        const path = prefix + name;
+        const isManaged =
+          managed ||
+          (prefix === "lib/" &&
+            Object.prototype.hasOwnProperty.call(
+              libraryCatalog.modules,
+              name.replace(/\.(mpy|py)$/, "")
+            ));
+        if (handle.kind === "directory") {
+          if (await visit(handle, path + "/", isManaged)) keep = true;
+          else obsolete.push([parent, name, path]);
+        } else if (isManaged && !required.has(path)) {
+          obsolete.push([parent, name, path]);
+        } else {
+          libraryPaths.add(path);
+          keep = true;
+        }
+      }
+      return keep;
+    };
+    let lib: FileSystemDirectoryHandle | undefined;
+    try {
+      lib = await directory.getDirectoryHandle("lib");
+    } catch (cause) {
+      if (!(cause instanceof DOMException) || cause.name !== "NotFoundError")
+        throw cause;
+    }
+    if (lib && !(await visit(lib, "lib/")))
+      obsolete.push([directory, "lib", "lib"]);
+    for await (const [name, handle] of directory.entries()) {
+      if (
+        handle.kind === "file" &&
+        ["font5x8.bin", "font5x8.bin.license"].includes(name) &&
+        !required.has(name)
+      )
+        obsolete.push([directory, name, name]);
+    }
+    // Include directories in the MCU inventory so stale empty folders also
+    // block a restart, including after a transfer is retried.
+    for (const path of [...libraryPaths]) {
+      const parts = path.split("/");
+      for (let depth = 1; depth < parts.length; depth++)
+        libraryPaths.add(parts.slice(0, depth).join("/") + "/");
+    }
+    return { obsolete, libraryPaths: [...libraryPaths].sort() };
+  }
+
   /** Host close() can finish before USB filesystem caches reach the board. */
   private async waitForDeviceFiles(
-    entries: [string, Uint8Array][]
+    entries: [string, Uint8Array][],
+    removed: string[],
+    libraryPaths: string[]
   ): Promise<void> {
     const expected = entries.map(([name, data]) => {
       let a = 1;
@@ -377,6 +506,40 @@ export class WebFileSystemConnection
       "  _ok = _ok and (_n, _a, _b) == (_size, _ea, _eb)",
       " except OSError:",
       "  _ok = False",
+      "import os as _os",
+      "def _library_paths(_dir):",
+      " _paths = []",
+      " try:",
+      "  _names = _os.listdir(_dir)",
+      " except OSError as _error:",
+      "  if _error.args[0] == 2: return _paths",
+      "  raise",
+      " _paths.append(_dir + '/')",
+      " for _name in _names:",
+      "  _path = _dir + '/' + _name",
+      "  if _os.stat(_path)[0] & 0x4000:",
+      "   _paths.extend(_library_paths(_path))",
+      "  else: _paths.append(_path)",
+      " return _paths",
+      `_ok = _ok and sorted(_library_paths('/lib')) == ${JSON.stringify(
+        libraryPaths.map((path) => "/" + path)
+      )}`,
+
+      `for _path in ${JSON.stringify(
+        [
+          ...new Set([
+            ...removed,
+            ...["font5x8.bin", "font5x8.bin.license"].filter(
+              (name) => !entries.some(([path]) => path === name)
+            ),
+          ]),
+        ].map((name) => "/" + name)
+      )}:`,
+      " try:",
+      "  _os.stat(_path)",
+      "  _ok = False",
+      " except OSError as _error:",
+      "  if _error.args[0] != 2: _ok = False",
       "print(int(_ok))",
     ].join("\n");
     let failure: Error | undefined;
@@ -619,22 +782,7 @@ export class WebFileSystemConnection
     } catch (cause) {
       // Cleanup must not hide the original filesystem error (including close()).
       await writable?.abort().catch(() => {});
-      let code: CircuitPythonErrorCode = "write";
-      if (cause instanceof DOMException) {
-        switch (cause.name) {
-          case "NoModificationAllowedError":
-            code = "filesystem-state";
-            break;
-          case "NotAllowedError":
-          case "SecurityError":
-            code = "permission";
-            break;
-          case "QuotaExceededError":
-            code = "storage-full";
-            break;
-        }
-      }
-      throw new CircuitPythonError(code, cause, { fileName, operation });
+      throw fileError(cause, fileName, operation);
     }
   }
 

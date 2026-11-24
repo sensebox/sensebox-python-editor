@@ -287,3 +287,45 @@ it("refuses symlinked library directories and nested traversal", async () => {
     false
   );
 });
+
+it("flushes nested parent directories for deleted libraries and rejects files still present", async () => {
+  await mkdir(join(volume, "lib", "adafruit_bus_device"), { recursive: true });
+  request.removed = ["lib/adafruit_bus_device/spi_device.mpy"];
+  expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
+    true
+  );
+  await writeFile(join(volume, request.removed[0]), contents);
+  expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
+    false
+  );
+});
+
+it.each([
+  "../outside",
+  "lib/../../outside",
+  "/absolute",
+  "lib\\outside",
+  "lib/./file",
+])("rejects unsafe deleted path %s", async (name) => {
+  request.removed = [name];
+  expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
+    false
+  );
+});
+
+it("flushes surviving ancestors when deleted library directories are already absent", async () => {
+  await mkdir(join(volume, "lib"));
+  request.removed = [
+    "lib/adafruit_bus_device/nested/old.mpy",
+    "lib/adafruit_bus_device/nested",
+    "lib/adafruit_bus_device",
+  ];
+  expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
+    true
+  );
+  await rm(join(volume, "lib"), { recursive: true });
+  request.removed.push("lib");
+  expect(await flushMatchingCircuitPythonFiles(request, mounted(volume))).toBe(
+    true
+  );
+});

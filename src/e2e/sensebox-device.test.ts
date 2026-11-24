@@ -24,6 +24,7 @@ declare global {
       commands: string[];
       written: Record<string, string>;
       bytes: Record<string, number[]>;
+      directories: string[];
       folderSelections: number;
       connections: number;
       validFolder: boolean;
@@ -56,6 +57,7 @@ test.beforeEach(async ({ page, context }) => {
       commands: [],
       written: {},
       bytes: {},
+      directories: [],
       folderSelections: 0,
       connections: 0,
       validFolder: true,
@@ -129,8 +131,55 @@ test.beforeEach(async ({ page, context }) => {
         ({
           kind: "directory",
           name: prefix ? prefix.split("/").slice(-2)[0] : state.directoryName,
-          getDirectoryHandle: async (name: string) =>
-            directory(prefix + name + "/"),
+          entries: async function* () {
+            const names = new Set<string>();
+            for (const path of [
+              ...Object.keys(state.bytes),
+              ...state.directories.map((path) => path + "/"),
+            ]) {
+              if (!path.startsWith(prefix)) continue;
+              const rest = path.slice(prefix.length);
+              if (!rest) continue;
+              const name = rest.split("/")[0];
+              if (names.has(name)) continue;
+              names.add(name);
+              yield [
+                name,
+                rest.includes("/")
+                  ? directory(prefix + name + "/")
+                  : { kind: "file", name },
+              ];
+            }
+          },
+          removeEntry: async (name: string) => {
+            if (state.readOnly)
+              throw new DOMException("Read-only", "NoModificationAllowedError");
+            const path = prefix + name;
+            if (
+              [...Object.keys(state.bytes), ...state.directories].some(
+                (child) => child.startsWith(path + "/")
+              )
+            )
+              throw new DOMException("Not empty", "InvalidModificationError");
+            delete state.bytes[path];
+            state.directories = state.directories.filter((dir) => dir !== path);
+          },
+          getDirectoryHandle: async (
+            name: string,
+            options?: { create?: boolean }
+          ) => {
+            const path = prefix + name;
+            if (
+              !options?.create &&
+              !state.directories.includes(path) &&
+              !Object.keys(state.bytes).some((child) =>
+                child.startsWith(path + "/")
+              )
+            )
+              throw new DOMException("Missing", "NotFoundError");
+            if (!state.directories.includes(path)) state.directories.push(path);
+            return directory(path + "/");
+          },
           getFileHandle: async (
             leaf: string,
             options?: { create?: boolean }
@@ -515,6 +564,28 @@ test("installs imported libraries, their dependencies and resources before code.
   expect(await page.evaluate(() => window.senseboxTest.writes)).toBe(
     state.writes
   );
+  await page.evaluate(() => {
+    window.senseboxTest.bytes["lib/custom.py"] = [1];
+  });
+  await replaceEditorCode(page, "import board\n");
+  await page
+    .getByRole("button", { name: "Code übertragen", exact: true })
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => window.senseboxTest.restarts))
+    .toBe(3);
+  const remaining = await page.evaluate(() =>
+    Object.keys(window.senseboxTest.bytes)
+  );
+  expect(remaining).toContain("lib/custom.py");
+  expect(await page.evaluate(() => window.senseboxTest.directories)).toEqual([
+    "lib",
+  ]);
+  expect(
+    remaining.filter(
+      (path) => path.startsWith("lib/adafruit_") || path.startsWith("font5x8")
+    )
+  ).toEqual([]);
 });
 
 test("reports a library download failure before changing the board or requesting a restart", async ({

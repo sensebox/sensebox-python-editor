@@ -108,3 +108,15 @@ it("bounds preparation time when reading the drive marker stalls", async () => {
   await expect(result).resolves.toBeUndefined();
   expect(fetch).not.toHaveBeenCalled();
 });
+
+it("includes deleted paths so their parent directories are flushed", async () => {
+  const { directory, fetch } = setup();
+  await flushCircuitPythonHostFiles(
+    directory,
+    [["code.py", new Uint8Array([1])]],
+    ["lib/adafruit_ssd1306.mpy"]
+  );
+  expect(JSON.parse(fetch.mock.calls[0][1].body).removed).toEqual([
+    "lib/adafruit_ssd1306.mpy",
+  ]);
+});

@@ -7,5 +7,6 @@
 export interface CircuitPythonFlushRequest {
   directoryName: string;
   bootOut: string;
+  removed?: string[];
   files: { name: string; size: number; sha256: string }[];
 }
