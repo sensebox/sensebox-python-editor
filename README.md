@@ -45,6 +45,23 @@ Hosted/production builds use the normal browser transfer and verification path.
 See [the senseBox change record](docs/sensebox-device-changes.md) for measurements
 and limitations.
 
+To reproduce the hosted transfer path locally without the host flush helper, stop
+the development server and restart it with:
+
+```sh
+VITE_CIRCUITPYTHON_HOST_FLUSH=false npm run dev
+```
+
+Reload the editor after restarting. File writes, library cleanup and MCU
+verification still run; only the local host flush helper is skipped. Start with
+`npm run dev` without this variable to enable the helper again. The helper remains
+disabled in production builds regardless of this setting.
+
+The board verification retries temporary directory read failures while host
+changes arrive, within the existing 60-second deadline. Slow checksum scans use
+the remaining deadline instead of a separate five-second timeout. A restart
+still requires matching files and library directories for at least one second.
+
 When transferring to a CircuitPython senseBox, static imports automatically
 install matching libraries and their dependencies into `CIRCUITPY/lib`. The
 editor selects the newest published library channel matching the board firmware

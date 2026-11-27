@@ -552,9 +552,14 @@ export class WebFileSystemConnection
       "   _paths.extend(_library_paths(_path))",
       "  else: _paths.append(_path)",
       " return _paths",
-      `_ok = _ok and sorted(_library_paths('/lib')) == ${JSON.stringify(
+      // Host directory changes can arrive between listdir() and stat(). Treat
+      // that transient read failure like stale contents, not a fatal raw error.
+      "try:",
+      ` _ok = _ok and sorted(_library_paths('/lib')) == ${JSON.stringify(
         libraryPaths.map((path) => "/" + path)
       )}`,
+      "except OSError:",
+      " _ok = False",
 
       `for _path in ${JSON.stringify(
         [
@@ -613,7 +618,9 @@ export class WebFileSystemConnection
             }
             return frame[1].trim() === "1";
           },
-          Math.min(5000, Math.max(1, deadline - Date.now()))
+          // Sending and executing a complete checksum scan can exceed five
+          // seconds. Bound it by the overall visibility deadline instead.
+          Math.max(1, deadline - Date.now())
         );
         if (matches) {
           matchingSince ??= Date.now();

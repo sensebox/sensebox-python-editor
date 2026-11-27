@@ -1313,3 +1313,39 @@ bundle tests** and both targeted Chrome tests passed, including the simulated
 without a concurrent build after the first high-load run hit parser/save test
 time limits. A production build passed; type checks and lint checks were also
 run. Real 9.x/10.x/11.x artifacts were published and reverified only under `/tmp`.
+
+## 2026-11-27 — Retry transient library inventory reads during transfers
+
+Switching between a sensor and a display can both install libraries and remove
+previously required files/directories. Host writes can still be reaching the
+board while the Raw REPL verification walks `lib/`. If a listed entry disappears
+before `stat()`, or the directory temporarily reports an I/O error, the previous
+script leaked `OSError` into stderr and immediately failed the transfer instead
+of using its remaining visibility deadline. This failure was reproduced by
+executing the previous generated script with simulated directory changes.
+
+- Treat inventory `OSError` as a nonmatching snapshot and retry in the same
+  transfer. Missing/wrong files, unexpected library entries and undeleted paths
+  still prevent success. Unexpected Python/protocol errors remain fatal.
+- Remove the separate five-second execution timeout for each complete checksum
+  scan. Sending the script and reading/checksumming the files share the remaining
+  portion of the existing 60-second visibility deadline. The one-second stable
+  match interval and confirmed normal REPL before restart are unchanged.
+- Retain fresh byte comparisons, skip identical writes, prepare all library
+  assets before board mutation, and keep host flush optional. The local switch
+  `VITE_CIRCUITPYTHON_HOST_FLUSH=false npm run dev` exercises verification without
+  the development helper.
+
+Regression checks:
+
+- `python3 tools/test_circuitpython_device_verification.py` executes the actual
+  generated Python script with simulated board files. It checks checksum and
+  inventory mismatches, pending deletions, missing files, disappearing entries
+  and transient directory/stat errors followed by recovery. This uses CPython,
+  not CircuitPython, and does not measure USB writeback or MCU performance.
+- The device Vitest regression simulates six-second scans with an initial
+  mismatch and successful recovery in one transfer without a host helper.
+  Existing tests retain timeout, framing, checksum gating and restart coverage.
+- No physical board transfer was performed. These fixes address reproduced code
+  weaknesses; resolving the reported physical-device case still needs a test
+  switching between sensor and display with the local helper disabled.

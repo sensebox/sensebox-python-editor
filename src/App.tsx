@@ -57,9 +57,11 @@ const device: MicrobitUSBConnection = isMockDeviceMode()
             ? "test"
             : "stable",
       }).prepare,
-      flushHostFiles: import.meta.env.DEV
-        ? flushCircuitPythonHostFiles
-        : undefined,
+      flushHostFiles:
+        import.meta.env.DEV &&
+        import.meta.env.VITE_CIRCUITPYTHON_HOST_FLUSH !== "false"
+          ? flushCircuitPythonHostFiles
+          : undefined,
     });
 
 // If this fails then we retry on access.

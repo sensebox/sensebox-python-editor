@@ -312,6 +312,11 @@ are not soft reboots and do not produce separate analytics success events.
 
 The file visibility gate now requires repeated matching reads for at least one
 second, restarting that interval after any mismatch, within a 60-second deadline.
+Each complete checksum scan shares that deadline rather than timing out after
+five seconds. Transient filesystem read errors while inventorying `lib/` count
+as mismatches and are retried within the same deadline. Raw protocol errors and
+unexpected Python exceptions still fail the transfer. No event or failure code
+is added.
 A `start` failure means the restart was requested but the first second of console
 output contained an immediate, traceback-free `code.py` load error with Errno 5.
 It suppresses the completion/success events, retains the directory and does not

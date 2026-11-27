@@ -26,6 +26,7 @@ function setup({
   failureName = "NoModificationAllowedError",
   replySync = true,
   syncMismatches = 0,
+  syncDelay = 0,
   echoSyncOnly = false,
   fragmentResponses = false,
   friendlyDelay = 0,
@@ -83,14 +84,15 @@ function setup({
           operations.push("verify-files");
           sources.push(rawSource);
           if (echoSyncOnly) deliver(rawSource);
-          else if (replySync)
-            deliver(
-              rawError
-                ? `OK\x04${rawError}\x04>`
-                : `OK${
-                    syncResults.shift() ?? (syncMismatches-- > 0 ? 0 : 1)
-                  }\r\n\x04\x04>`
-            );
+          else if (replySync) {
+            const response = rawError
+              ? `OK\x04${rawError}\x04>`
+              : `OK${
+                  syncResults.shift() ?? (syncMismatches-- > 0 ? 0 : 1)
+                }\r\n\x04\x04>`;
+            if (syncDelay) setTimeout(() => deliver(response), syncDelay);
+            else deliver(response);
+          }
           rawSource = "";
         } else if (!raw && text === "\x04") {
           operations.push("soft-reboot");
@@ -637,6 +639,28 @@ it("waits for delayed USB writes to become visible on the board before restartin
   expect(operations[operations.length - 1]).toBe("soft-reboot");
 });
 
+it("allows slow checksum scans and stale contents to recover in the same transfer without a host helper", async () => {
+  const { device, operations } = setup({
+    syncDelay: 6000,
+    syncMismatches: 1,
+  });
+  await device.connect();
+  await device.selectDirectory();
+  vi.useFakeTimers();
+  const transfer = device.flash(vi.fn(), {});
+  await vi.advanceTimersByTimeAsync(6500);
+  expect(operations).not.toContain("soft-reboot");
+  await vi.advanceTimersByTimeAsync(20000);
+  await transfer;
+  expect(operations.filter((entry) => entry === "verify-files")).toHaveLength(
+    3
+  );
+  expect(operations.filter((entry) => entry === "soft-reboot")).toHaveLength(1);
+  expect(operations.filter((entry) => entry === "close:code.py")).toHaveLength(
+    1
+  );
+});
+
 it.each([false, true])(
   "does not mistake an echoed verification command for board acknowledgement (echo only: %s)",
   async (echoSyncOnly) => {
@@ -649,7 +673,7 @@ it.each([false, true])(
     const result = expect(device.flash(vi.fn(), {})).rejects.toMatchObject({
       code: "sync",
     });
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(65000);
     await result;
     expect(operations).not.toContain("soft-reboot");
     expect(flashed).not.toHaveBeenCalled();
