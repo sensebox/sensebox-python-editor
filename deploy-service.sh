@@ -9,6 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 compose() { docker compose -f docker-compose.yml "$@"; }
 
+mkdir -p library-data
 compose pull
 compose up -d --remove-orphans
 docker image prune -f >/dev/null

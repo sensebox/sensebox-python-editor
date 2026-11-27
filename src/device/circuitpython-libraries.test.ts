@@ -38,7 +38,7 @@ function setup(version = "10.3.0") {
     fetch,
     getFileHandle,
     directory: { getFileHandle } as unknown as FileSystemDirectoryHandle,
-    load: createCircuitPythonLibraryLoader("/test/"),
+    load: createCircuitPythonLibraryLoader("/test/", { channel: null }),
   };
 }
 
@@ -267,4 +267,250 @@ it("ships a complete catalog with matching immutable payload and file hashes", a
         file.path
       ).toBe(file.sha256);
   }
+});
+
+function channels() {
+  vi.stubGlobal("crypto", webcrypto);
+  const responses = new Map<string, Uint8Array>();
+  const encode = (value: unknown) =>
+    new TextEncoder().encode(JSON.stringify(value));
+  const hash = (bytes: Uint8Array) =>
+    createHash("sha256").update(bytes).digest("hex");
+  const version = (release: string, dependency = false, firmwareMajor = 10) => {
+    const assetRoot = `circuitpython/versions/test-${release}${
+      firmwareMajor === 10 ? "" : `-${firmwareMajor}`
+    }/`;
+    const modules: Record<
+      string,
+      { version: string; dependencies: string[]; sha256: string }
+    > = {};
+    for (const name of dependency ? ["demo", "helper"] : ["demo"]) {
+      const data = new TextEncoder().encode(`${name}:${release}`);
+      const payload = encode({
+        name,
+        files: [
+          {
+            path: `lib/${name}.py`,
+            data: Buffer.from(data).toString("base64"),
+            sha256: hash(data),
+          },
+        ],
+      });
+      responses.set(`/test/${assetRoot}${name}.json`, payload);
+      modules[name] = {
+        version: release,
+        dependencies: name === "demo" && dependency ? ["helper"] : [],
+        sha256: hash(payload),
+      };
+    }
+    const catalog = encode({ release, firmwareMajor, assetRoot, modules });
+    responses.set(`/test/${assetRoot}catalog.json`, catalog);
+    return encode({
+      schemaVersion: 1,
+      catalog: `${assetRoot}catalog.json`,
+      sha256: hash(catalog),
+    });
+  };
+  const a = version("20260101");
+  const b = version("20260102", true);
+  const pointers = new Map<number, Uint8Array>([[10, a]]);
+  let firmwareMajor = 10;
+  const fetch = vi.fn(async (url: string) => {
+    const match = url.match(/current-(\d+)(?:-test)?\.json$/);
+    const bytes = match ? pointers.get(Number(match[1])) : responses.get(url);
+    if (!bytes) throw new Error(`Missing fixture: ${url}`);
+    return { ok: true, arrayBuffer: async () => bytes.slice().buffer };
+  });
+  vi.stubGlobal("fetch", fetch);
+  const directory = {
+    getFileHandle: async () => ({
+      getFile: async () => ({
+        text: async () => `Adafruit CircuitPython ${firmwareMajor}.3.0`,
+      }),
+    }),
+  } as unknown as FileSystemDirectoryHandle;
+  const load = createCircuitPythonLibraryLoader("/test/");
+  return {
+    load,
+    directory,
+    fetch,
+    responses,
+    a,
+    b,
+    version,
+    setFirmware: (major: number) => {
+      firmwareMajor = major;
+    },
+    select: (pointer: Uint8Array, major = 10) => {
+      pointers.set(major, pointer);
+    },
+  };
+}
+
+it("switches catalogs A to B and refreshes dependencies and cached payloads without an editor release", async () => {
+  const { load, directory, select, b } = channels();
+  const first = await load.prepare(project("import demo"), directory);
+  expect(new TextDecoder().decode(first.files["lib/demo.py"])).toBe(
+    "demo:20260101"
+  );
+  expect(first.modules).not.toContain("helper");
+  select(b);
+  const second = await load.prepare(project("import demo"), directory);
+  expect(second.release).toBe("20260102");
+  expect(new TextDecoder().decode(second.files["lib/demo.py"])).toBe(
+    "demo:20260102"
+  );
+  expect(second.files["lib/helper.py"]).toBeDefined();
+  expect(second.modules).toContain("helper");
+});
+
+it("freezes one catalog for an entire preparation even if the channel changes during downloads", async () => {
+  const { load, directory, select, b, fetch } = channels();
+  const original = fetch.getMockImplementation()!;
+  fetch.mockImplementation(async (url) => {
+    if (url.endsWith("demo.json")) select(b);
+    return original(url);
+  });
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260101"
+  );
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260102"
+  );
+});
+
+it("keeps the last prepared catalog when the channel or catalog becomes unavailable or corrupt", async () => {
+  const { load, directory, select, b, responses, fetch } = channels();
+  await load.prepare(project("import demo"), directory);
+  select(new TextEncoder().encode("invalid"));
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260101"
+  );
+  select(b);
+  responses.set(
+    "/test/circuitpython/versions/test-20260102/catalog.json",
+    new TextEncoder().encode("damaged")
+  );
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260101"
+  );
+  fetch.mockRejectedValueOnce(new Error("offline"));
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260101"
+  );
+});
+
+it("does not accept a new catalog when a required payload fails verification", async () => {
+  const { load, directory, select, b, responses } = channels();
+  await load.prepare(project("import demo"), directory);
+  select(b);
+  responses.set(
+    "/test/circuitpython/versions/test-20260102/helper.json",
+    new Uint8Array([1])
+  );
+  await expect(
+    load.prepare(project("import demo"), directory)
+  ).rejects.toMatchObject({ moduleName: "helper" });
+  select(new Uint8Array([1]));
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260101"
+  );
+});
+
+it("uses the built-in fallback when no channel is available and isolates the test channel", async () => {
+  const { directory, fetch } = channels();
+  fetch.mockRejectedValueOnce(new Error("offline"));
+  const fallback = createCircuitPythonLibraryLoader("/test/", {
+    channel: "test",
+  });
+  const plan = await fallback.prepare(project("import board"), directory);
+  expect(plan.release).toBe(catalog.release);
+  expect(fetch.mock.calls[0][0]).toBe(
+    "/test/circuitpython/current-10-test.json"
+  );
+});
+
+it("rejects a hash-valid catalog for another firmware major and unsafe pointer paths", async () => {
+  const { load, directory, select, b, responses, fetch } = channels();
+  await load.prepare(project("import demo"), directory);
+  const path = "/test/circuitpython/versions/test-20260102/catalog.json";
+  const invalid = JSON.parse(new TextDecoder().decode(responses.get(path)));
+  invalid.firmwareMajor = 11;
+  const bytes = new TextEncoder().encode(JSON.stringify(invalid));
+  responses.set(path, bytes);
+  const pointer = JSON.parse(new TextDecoder().decode(b));
+  pointer.sha256 = createHash("sha256").update(bytes).digest("hex");
+  select(new TextEncoder().encode(JSON.stringify(pointer)));
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260101"
+  );
+  pointer.catalog = "circuitpython/versions/../../other/catalog.json";
+  select(new TextEncoder().encode(JSON.stringify(pointer)));
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260101"
+  );
+  expect(fetch.mock.calls.some(([url]) => url.includes("../"))).toBe(false);
+});
+
+it.each([11, 23])(
+  "loads new libraries for firmware %i without hard-coded major support",
+  async (major) => {
+    const { load, directory, setFirmware, version, select, fetch } = channels();
+    select(version("20260103", true, major), major);
+    setFirmware(major);
+    const plan = await load.prepare(project("import demo"), directory);
+    expect(plan.release).toBe("20260103");
+    expect(new TextDecoder().decode(plan.files["lib/demo.py"])).toBe(
+      "demo:20260103"
+    );
+    expect(plan.files["lib/helper.py"]).toBeDefined();
+    expect(fetch.mock.calls[0][0]).toBe(
+      `/test/circuitpython/current-${major}.json`
+    );
+  }
+);
+
+it("keeps last-good catalogs separate when switching between firmware majors", async () => {
+  const { load, directory, setFirmware, version, select } = channels();
+  await load.prepare(project("import demo"), directory);
+  select(version("20260103", true, 11), 11);
+  setFirmware(11);
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260103"
+  );
+  select(new Uint8Array([0]), 11);
+  expect((await load.prepare(project("import demo"), directory)).release).toBe(
+    "20260103"
+  );
+  setFirmware(10);
+  select(new Uint8Array([0]));
+  const ten = await load.prepare(project("import demo"), directory);
+  expect(ten.release).toBe("20260101");
+  expect(ten.files["lib/helper.py"]).toBeUndefined();
+  expect(ten.modules).not.toContain("helper");
+});
+
+it("never falls back to 10.x libraries on an 11.x board when its channel is missing", async () => {
+  const { load, directory, setFirmware, fetch } = channels();
+  await load.prepare(project("import demo"), directory);
+  setFirmware(11);
+  await expect(
+    load.prepare(project("import neopixel"), directory)
+  ).rejects.toMatchObject({
+    moduleName: "adafruit_pixelbuf",
+    cause: { message: "No bundle available for CircuitPython 11.x" },
+  });
+  expect(fetch.mock.calls.some(([url]) => url.endsWith("neopixel.json"))).toBe(
+    false
+  );
+});
+
+it("allows firmware-only projects on a new major without borrowing another major's cleanup catalog", async () => {
+  const { load, directory, setFirmware } = channels();
+  setFirmware(11);
+  expect(await load.prepare(project("import board"), directory)).toEqual({
+    files: {},
+    modules: [],
+    release: "unavailable",
+  });
 });

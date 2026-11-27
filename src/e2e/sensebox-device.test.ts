@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 import { test, expect } from "@playwright/test";
+import { createHash } from "node:crypto";
 
 // Includes loading the editor and language server on cold dev-server starts.
 test.setTimeout(90000);
@@ -35,6 +36,7 @@ declare global {
       writes: number;
       hostFlushes: number;
       directoryName: string;
+      firmwareMajor: number;
       pauseVerification: boolean;
       releaseVerification?: () => void;
     };
@@ -68,6 +70,7 @@ test.beforeEach(async ({ page, context }) => {
       writes: 0,
       hostFlushes: 0,
       directoryName: "CIRCUITPY",
+      firmwareMajor: 10,
       pauseVerification: false,
     };
     window.senseboxTest = state;
@@ -190,7 +193,10 @@ test.beforeEach(async ({ page, context }) => {
                 throw new DOMException("Missing", "NotFoundError");
               return {
                 getFile: async () =>
-                  new File(["Adafruit CircuitPython 10.3.0"], name),
+                  new File(
+                    [`Adafruit CircuitPython ${state.firmwareMajor}.3.0`],
+                    name
+                  ),
               };
             }
             if (!state.bytes[name]) {
@@ -230,8 +236,10 @@ test.beforeEach(async ({ page, context }) => {
     expect(request.headers()["origin"]).toBe(new URL(request.url()).origin);
     expect(request.postDataJSON()).toMatchObject({
       directoryName: "CIRCUITPY",
-      bootOut: "Adafruit CircuitPython 10.3.0",
     });
+    expect(request.postDataJSON().bootOut).toMatch(
+      /^Adafruit CircuitPython \d+\.3\.0$/
+    );
     await page.evaluate(() => window.senseboxTest.hostFlushes++);
     await route.fulfill({ status: 204 });
   });
@@ -620,4 +628,129 @@ test("reports a library download failure before changing the board or requesting
   expect(await page.evaluate(() => window.senseboxTest.commands)).not.toContain(
     "\x03\x03\x02"
   );
+});
+
+test("updates runtime bundles A to B without an editor release and keeps B when channel metadata breaks", async ({
+  page,
+}) => {
+  const hash = (data: Buffer) =>
+    createHash("sha256").update(data).digest("hex");
+  const files = new Map<string, Buffer>();
+  const bundle = (release: string, dependency: boolean, firmwareMajor = 10) => {
+    const assetRoot = `circuitpython/versions/e2e-${release}-${firmwareMajor}/`;
+    const modules: Record<
+      string,
+      { version: string; dependencies: string[]; sha256: string }
+    > = {};
+    for (const name of ["runtime_sensor", "runtime_helper"]) {
+      const data = Buffer.from(`value = '${release}'\n`);
+      const path =
+        name === "runtime_helper"
+          ? "lib/runtime_helper/__init__.py"
+          : "lib/runtime_sensor.py";
+      const payload = Buffer.from(
+        JSON.stringify({
+          name,
+          files: [{ path, data: data.toString("base64"), sha256: hash(data) }],
+        })
+      );
+      files.set(`/${assetRoot}${name}.json`, payload);
+      modules[name] = {
+        version: release,
+        dependencies:
+          dependency && name === "runtime_sensor" ? ["runtime_helper"] : [],
+        sha256: hash(payload),
+      };
+    }
+    const catalog = Buffer.from(
+      JSON.stringify({ release, firmwareMajor, assetRoot, modules })
+    );
+    files.set(`/${assetRoot}catalog.json`, catalog);
+    return JSON.stringify({
+      schemaVersion: 1,
+      catalog: `${assetRoot}catalog.json`,
+      sha256: hash(catalog),
+    });
+  };
+  let current = bundle("20260101", true);
+  const second = bundle("20260102", false);
+  const eleven = bundle("20260104", false, 11);
+  await page.route("**/circuitpython/current-*.json", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: route.request().url().endsWith("current-11.json")
+        ? eleven
+        : current,
+    })
+  );
+  await page.route("**/circuitpython/versions/e2e-*/**", (route) => {
+    const data = files.get(new URL(route.request().url()).pathname);
+    return route.fulfill({
+      status: data ? 200 : 404,
+      contentType: "application/json",
+      body: data ?? "missing",
+    });
+  });
+  await replaceEditorCode(page, "import runtime_sensor\n");
+  await page
+    .getByRole("button", { name: "senseBox verbinden", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "CIRCUITPY-Verzeichnis auswählen" })
+    .click();
+  const transfer = page.getByRole("button", {
+    name: "Code übertragen",
+    exact: true,
+  });
+  await transfer.click();
+  await expect
+    .poll(() => page.evaluate(() => window.senseboxTest.restarts))
+    .toBe(1);
+  expect(
+    await page.evaluate(
+      () => window.senseboxTest.written["lib/runtime_sensor.py"]
+    )
+  ).toContain("20260101");
+  expect(
+    await page.evaluate(
+      () => window.senseboxTest.bytes["lib/runtime_helper/__init__.py"]
+    )
+  ).toBeDefined();
+  current = second;
+  await transfer.click();
+  await expect
+    .poll(() => page.evaluate(() => window.senseboxTest.restarts))
+    .toBe(2);
+  expect(
+    await page.evaluate(
+      () => window.senseboxTest.written["lib/runtime_sensor.py"]
+    )
+  ).toContain("20260102");
+  expect(
+    await page.evaluate(
+      () => window.senseboxTest.bytes["lib/runtime_helper/__init__.py"]
+    )
+  ).toBeUndefined();
+  expect(
+    await page.evaluate(() => window.senseboxTest.directories)
+  ).not.toContain("lib/runtime_helper");
+  const writes = await page.evaluate(() => window.senseboxTest.writes);
+  current = "broken metadata";
+  await transfer.click();
+  await expect
+    .poll(() => page.evaluate(() => window.senseboxTest.restarts))
+    .toBe(3);
+  expect(await page.evaluate(() => window.senseboxTest.writes)).toBe(writes);
+  await page.evaluate(() => {
+    window.senseboxTest.firmwareMajor = 11;
+  });
+  await transfer.click();
+  await expect
+    .poll(() => page.evaluate(() => window.senseboxTest.restarts))
+    .toBe(4);
+  expect(
+    await page.evaluate(
+      () => window.senseboxTest.written["lib/runtime_sensor.py"]
+    )
+  ).toContain("20260104");
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # (c) 2026, Micro:bit Educational Foundation and contributors
 # SPDX-License-Identifier: MIT
-"""Generate pinned same-origin library assets; never runs during a board transfer."""
+"""Generate validated CircuitPython assets offline from board transfers."""
 import argparse
 import base64
 import hashlib
@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import urllib.request
 import zipfile
+from circuitpython_bundle import discover_bundles, discover_inputs, pointer_name, validate_output
 
 RELEASE = "20261016"
 BASE = f"https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases/download/{RELEASE}/"
@@ -50,26 +51,39 @@ def encoded(value):
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cache-dir", type=Path, default=Path("/tmp/sensebox-library-bundle"))
-    args = parser.parse_args()
-    args.cache_dir.mkdir(parents=True, exist_ok=True)
-    for local, (remote, expected) in INPUTS.items():
-        path = args.cache_dir / local
+def prepare_bundle(release, inputs, cache_dir, output_dir=None, channel="stable", extras=EXTRA_INPUTS, download=None, firmware_major=10):
+    download = download or (lambda url: urllib.request.urlopen(url, timeout=60).read())
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    base = f"https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases/download/{release}/"
+    actual_inputs = {}
+    for local, (remote, expected) in inputs.items():
+        path = cache_dir / local
         if not path.exists():
-            path.write_bytes(urllib.request.urlopen(BASE + remote, timeout=60).read())
-        if digest(path.read_bytes()) != expected:
+            data = download(base + remote)
+            if expected and digest(data) != expected:
+                raise ValueError(f"Incorrect SHA-256: {remote}")
+            path.write_bytes(data)
+        actual = digest(path.read_bytes())
+        if expected and actual != expected:
             raise ValueError(f"Incorrect SHA-256: {path}")
-    metadata = json.loads((args.cache_dir / "metadata.json").read_text())
-    archive = zipfile.ZipFile(args.cache_dir / "10.zip")
-    source = zipfile.ZipFile(args.cache_dir / "py.zip")
-    prefix = f"adafruit-circuitpython-bundle-10.x-mpy-{RELEASE}/"
-    source_prefix = f"adafruit-circuitpython-bundle-py-{RELEASE}/lib/"
-    assets = ROOT / "public" / "circuitpython" / f"adafruit-10-{RELEASE}"
+        actual_inputs[local] = actual
+    # Input and generator fingerprints keep published directories immutable,
+    # including when the pinned senseBox extras or generation rules change.
+    fingerprint = digest(encoded({"inputs": actual_inputs, "extras": extras,
+                                  "generator": digest(Path(__file__).read_text().encode())}))[:16]
+    asset_root = (f"circuitpython/versions/adafruit-{firmware_major}-{release}-{fingerprint}/" if output_dir
+                  else f"circuitpython/adafruit-10-{release}/")
+    assets = (output_dir or ROOT / "public") / asset_root
     assets.mkdir(parents=True, exist_ok=True)
+    metadata = json.loads((cache_dir / "metadata.json").read_text())
+    if not metadata or any(not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) for name in [*metadata, *extras]):
+        raise ValueError("Invalid library names")
+    archive = zipfile.ZipFile(cache_dir / f"{firmware_major}.zip")
+    source = zipfile.ZipFile(cache_dir / "py.zip")
+    prefix = f"adafruit-circuitpython-bundle-{firmware_major}.x-mpy-{release}/"
+    source_prefix = f"adafruit-circuitpython-bundle-py-{release}/lib/"
     modules = {}
-    notice = {"release": RELEASE, "sourceBundle": BASE + INPUTS["py.zip"][0], "inputSha256": {key: value[1] for key, value in INPUTS.items()}, "modules": {}}
+    notice = {"release": release, "sourceBundle": base + inputs["py.zip"][0], "inputSha256": actual_inputs, "modules": {}}
     license_ids = set()
     for name, info in sorted(metadata.items()):
         paths = sorted(n for n in archive.namelist() if n.startswith(prefix + "lib/" + name + "/") or n == prefix + "lib/" + name + ".mpy" or n == prefix + "lib/" + name + ".py")
@@ -111,10 +125,10 @@ def main():
             source_dir = assets / "sources"
             source_dir.mkdir(exist_ok=True)
             (source_dir / (name + ".json")).write_bytes(encoded({"name": name, "files": sources}))
-    for name, info in EXTRA_INPUTS.items():
-        wheel_path = args.cache_dir / (name + ".whl")
+    for name, info in extras.items():
+        wheel_path = cache_dir / (name + ".whl")
         if not wheel_path.exists():
-            wheel_path.write_bytes(urllib.request.urlopen(info["url"], timeout=60).read())
+            wheel_path.write_bytes(download(info["url"]))
         if digest(wheel_path.read_bytes()) != info["sha256"]:
             raise ValueError(f"Incorrect SHA-256: {wheel_path}")
         wheel = zipfile.ZipFile(wheel_path)
@@ -143,11 +157,43 @@ def main():
     for identifier in sorted(license_ids):
         target = licenses / (identifier + ".txt")
         if not target.exists():
-            target.write_bytes(urllib.request.urlopen(f"https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/{identifier}.txt", timeout=30).read())
+            target.write_bytes(download(f"https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/{identifier}.txt"))
     (assets / "NOTICES.json").write_bytes(encoded(notice))
-    (assets / "README.txt").write_text(f"Library files from Adafruit's CircuitPython 10.x bundle {RELEASE}, plus pinned published senseBox modules listed in NOTICES.json.\nEach module retains its own license; see NOTICES.json and LICENSES/.\nPython source files for copyleft modules are in sources/; complete Adafruit source: {notice['sourceBundle']}\nGenerated with tools/prepare-circuitpython-libraries.py; only requested modules are copied to the board.\n")
-    (ROOT / "src/device/libraries/catalog.json").write_bytes(encoded({"release": RELEASE, "firmwareMajor": 10, "assetRoot": f"circuitpython/adafruit-10-{RELEASE}/", "modules": modules}))
+    (assets / "README.txt").write_text(f"Library files from Adafruit's CircuitPython {firmware_major}.x bundle {release}, plus pinned published senseBox modules listed in NOTICES.json.\nEach module retains its own license; see NOTICES.json and LICENSES/.\nPython source files for copyleft modules are in sources/; complete Adafruit source: {notice['sourceBundle']}\nGenerated with tools/prepare-circuitpython-libraries.py; only requested modules are copied to the board.\n")
+    catalog = encoded({"release": release, "firmwareMajor": firmware_major, "assetRoot": asset_root, "modules": modules})
+    if output_dir:
+        (assets / "catalog.json").write_bytes(catalog)
+        pointer = output_dir / "circuitpython" / pointer_name(channel, firmware_major)
+        candidate = {"schemaVersion": 1, "catalog": asset_root + "catalog.json", "sha256": digest(catalog)}
+        validate_output(output_dir, channel, candidate, firmware_major)
+        pointer.write_bytes(encoded(candidate))
+    else:
+        (ROOT / "src/device/libraries/catalog.json").write_bytes(catalog)
     print(f"Prepared {len(modules)} libraries, {sum(p.stat().st_size for p in assets.rglob('*') if p.is_file())} bytes")
+    return assets
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--release", default=RELEASE, help="YYYYMMDD or latest")
+    parser.add_argument("--cache-dir", type=Path, default=Path("/tmp/sensebox-library-bundle"))
+    parser.add_argument("--output-dir", type=Path, help="Generate standalone channels instead of replacing the built-in fallback")
+    parser.add_argument("--channel", choices=["stable", "test"], default="test")
+    parser.add_argument("--firmware-major", help="all (default with --output-dir) or a firmware major number")
+    args = parser.parse_args()
+    major = args.firmware_major or ("all" if args.output_dir else "10")
+    if not args.output_dir and (args.release != RELEASE or major != "10"):
+        parser.error("Updates require --output-dir; the built-in fallback stays pinned")
+    if major == "all":
+        bundles = discover_bundles(args.release)
+    else:
+        major = int(major)
+        pointer_name(args.channel, major)
+        bundles = {major: (RELEASE, INPUTS) if args.release == RELEASE and major == 10 else discover_inputs(args.release, firmware_major=major)}
+    for major, (release, inputs) in bundles.items():
+        prepare_bundle(release, inputs, args.cache_dir / release if args.output_dir else args.cache_dir,
+                       args.output_dir, args.channel, firmware_major=major)
+
 
 if __name__ == "__main__":
     main()

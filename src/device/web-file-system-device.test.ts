@@ -1124,3 +1124,28 @@ it("keeps directories needed by project files and unknown libraries", async () =
   expect(sources[0]).toContain('"/lib/adafruit_bus_device/"');
   expect(sources[0]).toContain("_paths.append(_dir + '/')");
 });
+
+it("uses the prepared runtime catalog for cleanup of modules absent from the built-in catalog", async () => {
+  const { device, stored, directoryNames, sources } = setup({
+    libraryFiles: async () => ({
+      files: { "lib/runtime_sensor/main.py": new Uint8Array([1]) },
+      modules: ["runtime_sensor", "runtime_unused"],
+      release: "20260102",
+    }),
+  });
+  stored.set("lib/runtime_sensor/old.py", new Uint8Array([2]));
+  stored.set("lib/runtime_unused/__init__.py", new Uint8Array([2]));
+  stored.set("lib/unknown.py", new Uint8Array([3]));
+  await device.connect();
+  await device.selectDirectory();
+  vi.useFakeTimers();
+  const transfer = device.flash({} as never, {});
+  await vi.advanceTimersByTimeAsync(5000);
+  await transfer;
+  expect(stored.has("lib/runtime_sensor/old.py")).toBe(false);
+  expect(stored.has("lib/runtime_unused/__init__.py")).toBe(false);
+  expect(directoryNames.has("lib/runtime_unused")).toBe(false);
+  expect(stored.has("lib/runtime_sensor/main.py")).toBe(true);
+  expect(stored.has("lib/unknown.py")).toBe(true);
+  expect(sources[0]).toContain('"/lib/runtime_sensor/main.py"');
+});

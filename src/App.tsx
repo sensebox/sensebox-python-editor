@@ -51,7 +51,12 @@ const device: MicrobitUSBConnection = isMockDeviceMode()
   : new WebFileSystemConnection({
       logging,
       files: () => fs.files(),
-      libraryFiles: createCircuitPythonLibraryLoader(import.meta.env.BASE_URL),
+      libraryFiles: createCircuitPythonLibraryLoader(import.meta.env.BASE_URL, {
+        channel:
+          import.meta.env.VITE_CIRCUITPYTHON_LIBRARY_CHANNEL === "test"
+            ? "test"
+            : "stable",
+      }).prepare,
       flushHostFiles: import.meta.env.DEV
         ? flushCircuitPythonHostFiles
         : undefined,

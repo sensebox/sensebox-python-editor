@@ -8,7 +8,8 @@ import { toByteArray } from "base64-js";
 import catalogData from "./libraries/catalog.json";
 import { CircuitPythonLibraryError } from "./circuitpython-library-error";
 
-interface LibraryCatalog {
+export interface LibraryCatalog {
+  release: string;
   firmwareMajor: number;
   assetRoot: string;
   modules: Record<
@@ -20,7 +21,76 @@ interface LibraryPayload {
   name: string;
   files: { path: string; data: string; sha256: string }[];
 }
-const catalog: LibraryCatalog = catalogData;
+export interface CircuitPythonLibraryPlan {
+  files: Record<string, Uint8Array>;
+  modules: string[];
+  release: string;
+}
+
+const relativePath = (path: string) =>
+  path
+    .split("/")
+    .every(
+      (part) => /^[A-Za-z0-9_.-]+$/.test(part) && part !== "." && part !== ".."
+    );
+
+function validateCatalog(
+  value: unknown,
+  firmwareMajor: number
+): LibraryCatalog {
+  const catalog = value as LibraryCatalog;
+  if (
+    !catalog ||
+    !/^\d{8}$/.test(catalog.release) ||
+    catalog.firmwareMajor !== firmwareMajor ||
+    typeof catalog.assetRoot !== "string" ||
+    !catalog.assetRoot.startsWith("circuitpython/versions/") ||
+    !relativePath(catalog.assetRoot.slice(0, -1)) ||
+    !catalog.assetRoot.endsWith("/") ||
+    !catalog.modules ||
+    typeof catalog.modules !== "object" ||
+    Array.isArray(catalog.modules) ||
+    !Object.keys(catalog.modules).length
+  )
+    throw new Error("Invalid library catalog");
+  for (const [name, info] of Object.entries(catalog.modules)) {
+    if (
+      !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ||
+      !info ||
+      typeof info.version !== "string" ||
+      !/^[a-f0-9]{64}$/.test(info.sha256) ||
+      !Array.isArray(info.dependencies) ||
+      !info.dependencies.every(
+        (dependency) =>
+          typeof dependency === "string" &&
+          Object.prototype.hasOwnProperty.call(catalog.modules, dependency)
+      )
+    )
+      throw new Error("Invalid library module");
+  }
+  return catalog;
+}
+
+async function fetchBytes(
+  url: string,
+  timeout: number,
+  fresh = false
+): Promise<Uint8Array> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      ...(fresh ? { cache: "no-store" as const } : {}),
+    });
+    if (!response.ok) throw new Error(`Library HTTP ${response.status}`);
+    return canonicalLibraryPayload(
+      new Uint8Array(await response.arrayBuffer())
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** Parse syntax, not text matches: comments, strings and aliases are not imports. */
 export function pythonImports(source: string): string[] {
@@ -79,7 +149,8 @@ export function pythonImports(source: string): string[] {
 }
 
 export function requiredCircuitPythonLibraries(
-  project: Record<string, Uint8Array>
+  project: Record<string, Uint8Array>,
+  catalog: LibraryCatalog = catalogData
 ): string[] {
   const required = new Set<string>();
   const visited = new Set<string>();
@@ -171,22 +242,69 @@ function canonicalLibraryPayload(bytes: Uint8Array): Uint8Array {
   return bytes;
 }
 
-export function createCircuitPythonLibraryLoader(baseUrl: string) {
+export function createCircuitPythonLibraryLoader(
+  baseUrl: string,
+  options: { channel?: "stable" | "test" | null } = {}
+) {
+  const channel = options.channel === undefined ? "stable" : options.channel;
+  const lastCatalogs = new Map<number, LibraryCatalog>([
+    [catalogData.firmwareMajor, catalogData],
+  ]);
+  const managedModuleNames = new Map<number, Set<string>>([
+    [catalogData.firmwareMajor, new Set(Object.keys(catalogData.modules))],
+  ]);
+  const selectCatalog = async (
+    firmwareMajor: number
+  ): Promise<LibraryCatalog | undefined> => {
+    if (!channel) return lastCatalogs.get(firmwareMajor);
+    try {
+      const pointer = JSON.parse(
+        new TextDecoder().decode(
+          await fetchBytes(
+            `${baseUrl}circuitpython/current-${firmwareMajor}${
+              channel === "test" ? "-test" : ""
+            }.json`,
+            3000,
+            true
+          )
+        )
+      ) as { schemaVersion: number; catalog: string; sha256: string };
+      if (
+        pointer.schemaVersion !== 1 ||
+        typeof pointer.catalog !== "string" ||
+        !pointer.catalog.startsWith("circuitpython/versions/") ||
+        !relativePath(pointer.catalog) ||
+        !/^[a-f0-9]{64}$/.test(pointer.sha256)
+      )
+        throw new Error("Invalid library channel");
+      const bytes = await fetchBytes(`${baseUrl}${pointer.catalog}`, 15000);
+      if ((await sha256(bytes)) !== pointer.sha256)
+        throw new Error("Catalog checksum mismatch");
+      const catalog = validateCatalog(
+        JSON.parse(new TextDecoder().decode(bytes)),
+        firmwareMajor
+      );
+      if (pointer.catalog !== catalog.assetRoot + "catalog.json")
+        throw new Error("Catalog path mismatch");
+      return catalog;
+    } catch {
+      // Metadata failures never switch cleanup to a partly fetched catalog.
+      return lastCatalogs.get(firmwareMajor);
+    }
+  };
   const cache = new Map<string, Promise<Record<string, Uint8Array>>>();
-  const load = (name: string): Promise<Record<string, Uint8Array>> => {
-    let pending = cache.get(name);
+  const load = (
+    catalog: LibraryCatalog,
+    name: string
+  ): Promise<Record<string, Uint8Array>> => {
+    const key = `${catalog.assetRoot}${name}:${catalog.modules[name].sha256}`;
+    let pending = cache.get(key);
     if (!pending) {
       pending = (async () => {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 15000);
         try {
-          const response = await fetch(
+          const bytes = await fetchBytes(
             `${baseUrl}${catalog.assetRoot}${name}.json`,
-            { signal: controller.signal }
-          );
-          if (!response.ok) throw new Error(`Library HTTP ${response.status}`);
-          const bytes = canonicalLibraryPayload(
-            new Uint8Array(await response.arrayBuffer())
+            15000
           );
           if ((await sha256(bytes)) !== catalog.modules[name].sha256)
             throw new Error("Library payload checksum mismatch");
@@ -219,31 +337,71 @@ export function createCircuitPythonLibraryLoader(baseUrl: string) {
           }
           return result;
         } catch (cause) {
-          cache.delete(name);
+          cache.delete(key);
           throw new CircuitPythonLibraryError(name, cause);
-        } finally {
-          clearTimeout(timer);
         }
       })();
-      cache.set(name, pending);
+      cache.set(key, pending);
     }
     return pending;
   };
-  return async (
+  const prepare = async (
     project: Record<string, Uint8Array>,
     directory: FileSystemDirectoryHandle
-  ): Promise<Record<string, Uint8Array>> => {
-    const names = requiredCircuitPythonLibraries(project);
-    if (!names.length) return {};
-    try {
+  ): Promise<CircuitPythonLibraryPlan> => {
+    const readFirmwareMajor = async () => {
       const boot = await (
         await (await directory.getFileHandle("boot_out.txt")).getFile()
       ).text();
+      const major = Number(boot.match(/CircuitPython\s+(\d+)\./)?.[1]);
+      if (!Number.isSafeInteger(major) || major < 1)
+        throw new Error("Unknown CircuitPython firmware");
+      return major;
+    };
+    let firmwareMajor = catalogData.firmwareMajor;
+    if (channel) {
+      try {
+        firmwareMajor = await readFirmwareMajor();
+      } catch (cause) {
+        throw new CircuitPythonLibraryError("CircuitPython", cause);
+      }
+    }
+    const catalog = await selectCatalog(firmwareMajor);
+    if (!catalog) {
+      const known = requiredCircuitPythonLibraries(project);
+      if (known.length)
+        throw new CircuitPythonLibraryError(
+          known[0],
+          new Error(`No bundle available for CircuitPython ${firmwareMajor}.x`)
+        );
+      // Firmware-only projects can still transfer without a matching library
+      // catalog. Do not use another major's catalog to clean this board.
+      return { files: {}, modules: [], release: "unavailable" };
+    }
+    const names = requiredCircuitPythonLibraries(project, catalog);
+    const plan = (
+      files: Record<string, Uint8Array>
+    ): CircuitPythonLibraryPlan => {
+      lastCatalogs.set(firmwareMajor, catalog);
+      const managedModules =
+        managedModuleNames.get(firmwareMajor) ?? new Set<string>();
+      for (const name of Object.keys(catalog.modules)) managedModules.add(name);
+      managedModuleNames.set(firmwareMajor, managedModules);
+      return {
+        files,
+        release: catalog.release,
+        modules: [...managedModules],
+      };
+    };
+    if (!names.length) return plan({});
+    try {
       if (
-        Number(boot.match(/CircuitPython\s+(\d+)\./)?.[1]) !==
+        (channel ? firmwareMajor : await readFirmwareMajor()) !==
         catalog.firmwareMajor
       )
-        throw new Error("The library bundle requires CircuitPython 10.x");
+        throw new Error(
+          `The library bundle requires CircuitPython ${catalog.firmwareMajor}.x`
+        );
     } catch (cause) {
       throw new CircuitPythonLibraryError(names[0], cause);
     }
@@ -251,10 +409,15 @@ export function createCircuitPythonLibraryLoader(baseUrl: string) {
     const result: Record<string, Uint8Array> = Object.create(null);
     for (let offset = 0; offset < names.length; offset += 6) {
       for (const files of await Promise.all(
-        names.slice(offset, offset + 6).map(load)
+        names.slice(offset, offset + 6).map((name) => load(catalog, name))
       ))
         Object.assign(result, files);
     }
-    return result;
+    return plan(result);
   };
+  const loader = async (
+    project: Record<string, Uint8Array>,
+    directory: FileSystemDirectoryHandle
+  ) => (await prepare(project, directory)).files;
+  return Object.assign(loader, { prepare });
 }
