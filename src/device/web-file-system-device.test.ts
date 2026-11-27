@@ -18,6 +18,7 @@ afterEach(async () => {
 
 function setup({
   reply = true,
+  dropInterrupts = [] as number[],
   failWrite = false,
   failWriteCount = 0,
   failCloseAfterCommitCount = 0,
@@ -45,6 +46,7 @@ function setup({
   let incoming: ReadableStreamDefaultController<Uint8Array>;
   let raw = startInRaw;
   let rawSource = "";
+  let interruptsToDrop = dropInterrupts.shift() ?? 0;
   const sources: string[] = [];
   let remainingWriteFailures = failWriteCount;
   let remainingCloseFailures = failCloseAfterCommitCount;
@@ -67,6 +69,7 @@ function setup({
         if (text === "\x03\x03") {
           if (reply) deliver(raw ? ">" : ">>> ");
         } else if (text === "\x03\x03\x02") {
+          if (interruptsToDrop-- > 0) return;
           raw = false;
           if (reply) deliver(">>> ");
         } else if (text === "\x01") {
@@ -91,6 +94,7 @@ function setup({
           rawSource = "";
         } else if (!raw && text === "\x04") {
           operations.push("soft-reboot");
+          interruptsToDrop = dropInterrupts.shift() ?? 0;
           deliver(rebootOutput);
         } else if (raw) {
           rawSource += text;
@@ -466,7 +470,46 @@ it("does not write anything unless the board confirms the REPL prompt", async ()
   });
   await vi.advanceTimersByTimeAsync(3000);
   await result;
-  expect(operations).toEqual(["\x03\x03\x02"]);
+  expect(operations).toEqual(Array(6).fill("\x03\x03\x02"));
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(operations).toHaveLength(6);
+});
+
+it("retries a lost stop command on first and repeated transfers before any writes", async () => {
+  const { device, operations } = setup({
+    dropInterrupts: [1, 2, 1],
+    fragmentResponses: true,
+  });
+  await device.connect();
+  await device.selectDirectory();
+  vi.useFakeTimers();
+  for (const dropped of [1, 2, 1]) {
+    const start = operations.length;
+    const transfer = device.flash(vi.fn(), {});
+    await vi.advanceTimersByTimeAsync(dropped * 500 - 1);
+    expect(operations.slice(start)).toEqual(
+      Array(dropped).fill("\x03\x03\x02")
+    );
+    await vi.advanceTimersByTimeAsync(4000);
+    await transfer;
+    expect(operations.slice(start, start + dropped + 1)).toEqual(
+      Array(dropped + 1).fill("\x03\x03\x02")
+    );
+    expect(
+      operations.slice(start).filter((op) => op === "soft-reboot")
+    ).toHaveLength(1);
+  }
+});
+
+it("does not retry the stop command after an immediate prompt", async () => {
+  const { device, operations } = setup();
+  await device.connect();
+  await device.selectDirectory();
+  vi.useFakeTimers();
+  const transfer = device.flash(vi.fn(), {});
+  await vi.advanceTimersByTimeAsync(5000);
+  await transfer;
+  expect(operations.filter((op) => op === "\x03\x03\x02")).toHaveLength(1);
 });
 
 it("reports write failure, forgets the stale directory and does not restart or report success", async () => {

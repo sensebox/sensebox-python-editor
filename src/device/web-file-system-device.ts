@@ -264,20 +264,44 @@ export class WebFileSystemConnection
     let output = "";
     let listener: (event: { data: string }) => void;
     let timer: ReturnType<typeof setTimeout>;
+    let retryTimer: ReturnType<typeof setTimeout>;
+    let waiting = true;
     const prompt = new Promise<void>((resolve, reject) => {
       listener = ({ data }) => {
         output = (output + data).slice(-256);
-        if (output.includes(">>> ")) resolve();
+        if (output.includes(">>> ")) {
+          waiting = false;
+          resolve();
+        }
       };
-      this.addEventListener("serialdata", listener);
-      timer = setTimeout(() => reject(new CircuitPythonError("repl")), 3000);
+      this.serialResponses.add(listener);
+      timer = setTimeout(() => {
+        waiting = false;
+        reject(new CircuitPythonError("repl"));
+      }, 3000);
+      const interrupt = async () => {
+        if (!waiting) return;
+        try {
+          // CircuitPython can discard queued input while stopping a program or
+          // initializing the REPL. Retry until its prompt arrives, including
+          // after a previous transfer restarted code.py. Never reboot here.
+          await this.writeSerial("\x03\x03\x02");
+          if (waiting) retryTimer = setTimeout(() => void interrupt(), 500);
+        } catch (error) {
+          waiting = false;
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
+      void interrupt();
     });
     try {
-      // Attach both failure handlers before writing to avoid unhandled rejections.
-      await Promise.all([prompt, this.writeSerial("\x03\x03\x02")]);
+      await prompt;
+      await this.writes;
     } finally {
+      waiting = false;
       clearTimeout(timer!);
-      this.removeEventListener("serialdata", listener!);
+      clearTimeout(retryTimer!);
+      this.serialResponses.delete(listener!);
     }
   }
 

@@ -38,6 +38,7 @@ declare global {
       directoryName: string;
       firmwareMajor: number;
       pauseVerification: boolean;
+      lostStopCommands: number;
       releaseVerification?: () => void;
     };
   }
@@ -72,6 +73,7 @@ test.beforeEach(async ({ page, context }) => {
       directoryName: "CIRCUITPY",
       firmwareMajor: 10,
       pauseVerification: false,
+      lostStopCommands: 0,
     };
     window.senseboxTest = state;
     Object.defineProperty(navigator, "serial", {
@@ -92,6 +94,10 @@ test.beforeEach(async ({ page, context }) => {
               write(bytes) {
                 const command = new TextDecoder().decode(bytes);
                 state.commands.push(command);
+                if (command === "\x03\x03\x02" && state.lostStopCommands > 0) {
+                  state.lostStopCommands--;
+                  return;
+                }
                 if (command === "\x03\x03\x02" || command === "\x03\x02") {
                   raw = false;
                   controller.enqueue(new TextEncoder().encode("\r\n>>> "));
@@ -560,6 +566,9 @@ test("installs imported libraries, their dependencies and resources before code.
   expect(state.written["code.py"]).toBe(
     "import board\nimport adafruit_ssd1306\n"
   );
+  await page.evaluate(() => {
+    window.senseboxTest.lostStopCommands = 1;
+  });
   await expect(
     page.getByRole("button", { name: "Code übertragen", exact: true })
   ).toBeEnabled();
@@ -582,6 +591,13 @@ test("installs imported libraries, their dependencies and resources before code.
   await expect
     .poll(() => page.evaluate(() => window.senseboxTest.restarts))
     .toBe(3);
+  expect(
+    await page.evaluate(() =>
+      window.senseboxTest.commands.filter(
+        (command) => command === "\x03\x03\x02"
+      )
+    )
+  ).toHaveLength(4);
   const remaining = await page.evaluate(() =>
     Object.keys(window.senseboxTest.bytes)
   );
