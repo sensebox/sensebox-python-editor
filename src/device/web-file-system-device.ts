@@ -13,6 +13,7 @@ import {
 } from "@microbit/microbit-connection";
 import { MicrobitUSBConnection } from "@microbit/microbit-connection/usb";
 import { CircuitPythonLibraryError } from "./circuitpython-library-error";
+import type { CircuitPythonLibraryPlan } from "./circuitpython-libraries";
 import libraryCatalog from "./libraries/catalog.json";
 import { Logging } from "../logging/logging";
 import { SimpleEventTarget } from "./simple-event-target";
@@ -138,7 +139,7 @@ export class WebFileSystemConnection
       libraryFiles?: (
         project: Record<string, Uint8Array>,
         directory: FileSystemDirectoryHandle
-      ) => Promise<Record<string, Uint8Array>>;
+      ) => Promise<Record<string, Uint8Array> | CircuitPythonLibraryPlan>;
       flushHostFiles?: (
         directory: FileSystemDirectoryHandle,
         entries: [string, Uint8Array][],
@@ -317,10 +318,17 @@ export class WebFileSystemConnection
       options.transferProgress?.({ phase: "libraries" });
       const project = await this.options.files();
       let libraries: Record<string, Uint8Array> = {};
+      let managedModules = new Set(Object.keys(libraryCatalog.modules));
       try {
-        libraries =
-          (await this.options.libraryFiles?.(project, this.directoryHandle)) ??
-          {};
+        const prepared = await this.options.libraryFiles?.(
+          project,
+          this.directoryHandle
+        );
+        if (prepared && Array.isArray(prepared.modules)) {
+          const plan = prepared as CircuitPythonLibraryPlan;
+          libraries = plan.files;
+          managedModules = new Set(plan.modules);
+        } else libraries = (prepared ?? {}) as Record<string, Uint8Array>;
       } catch (cause) {
         throw new CircuitPythonError(
           "library",
@@ -352,7 +360,8 @@ export class WebFileSystemConnection
       }
       const { obsolete, libraryPaths } = await this.obsoleteLibraryFiles(
         this.directoryHandle,
-        new Set(entries.map(([name]) => name))
+        new Set(entries.map(([name]) => name)),
+        managedModules
       );
       // Write the entry point after its dependencies.
       entries.sort(
@@ -434,7 +443,8 @@ export class WebFileSystemConnection
   /** Inventory fresh board contents before any mutation; project files win. */
   private async obsoleteLibraryFiles(
     directory: FileSystemDirectoryHandle,
-    required: Set<string>
+    required: Set<string>,
+    managedModules: Set<string>
   ): Promise<{
     obsolete: [FileSystemDirectoryHandle, string, string][];
     libraryPaths: string[];
@@ -454,10 +464,7 @@ export class WebFileSystemConnection
         const isManaged =
           managed ||
           (prefix === "lib/" &&
-            Object.prototype.hasOwnProperty.call(
-              libraryCatalog.modules,
-              name.replace(/\.(mpy|py)$/, "")
-            ));
+            managedModules.has(name.replace(/\.(mpy|py)$/, "")));
         if (handle.kind === "directory") {
           if (await visit(handle, path + "/", isManaged)) keep = true;
           else obsolete.push([parent, name, path]);

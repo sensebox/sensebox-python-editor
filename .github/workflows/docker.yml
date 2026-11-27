@@ -57,7 +57,6 @@ jobs:
           docker push "${IMAGE}:${GITHUB_SHA}"
           docker push "${IMAGE}:latest"
 
-
       - name: Deploy to production
         if: env.PUBLISH == 'true'
         env:
@@ -74,6 +73,13 @@ jobs:
 
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+
+          scp -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            docker-compose.yml deploy-service.sh \
+            "$SSH_USER@$SSH_HOST:/home/ubuntu/sensebox-python-editor/"
 
           ssh -i ~/.ssh/deploy_key \
             -o IdentitiesOnly=yes \

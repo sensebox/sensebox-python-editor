@@ -38,3 +38,9 @@ __pycache__
 
 # Typeshed JSON copied from @microbit/micropython-microbit-stubs (run `npm run stubs`)
 /src/micropython/main/typeshed.*.json
+
+# Published library channels are deployment data, independent of the app image.
+/library-data/
+/library-artifact/
+/public/circuitpython/versions/
+/public/circuitpython/current-*.json

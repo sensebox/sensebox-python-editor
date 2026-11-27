@@ -1243,39 +1243,73 @@ pass, as do TypeScript, ESLint and the targeted Chrome library-transfer test.
 The board inventory now includes directories as well as files, so stale empty
 folders also prevent a restart. No additional physical-board test was performed.
 
-## 2026-11-24 — Retry transfer entry while the board stops
+## 2026-11-24 — Independent library bundle channels
 
-Report: every other transfer fails with the stop-command (`repl`) error, and
-first transfer after opening the website is slow. The previous entry sequence
-sent Ctrl-C, Ctrl-C, Ctrl-B only once and waited three seconds for a prompt.
-A lost command during program shutdown or REPL initialization consequently
-required another user-initiated transfer. This is a plausible explanation for
-the alternating symptom; the physical board timing has not been reproduced.
+- The generator supports `--release latest` or an existing release and writes a
+  separately validated channel artifact with `--output-dir`. The pinned fallback
+  and senseBox wheel digests remain available. Latest discovery selects a stable
+  release containing a complete 10.x bundle; it never switches firmware majors.
+- A daily/manual workflow verifies dependencies, hashes and license assets,
+  uploads a reviewable artifact, and publishes immutable version directories
+  before atomically replacing the stable/test pointer. Manual runs default to
+  test-channel dry runs. No editor release, Docker build or board write is needed
+  for subsequent bundle updates. Nothing was activated on the production host
+  during implementation.
+- Compose/nginx expose a read-only host library-data directory separately from
+  the image, with no-store channel responses and immutable version caching.
+  Missing library URLs return 404 instead of the app HTML. The normal app route
+  and bundled fallback assets remain available.
+- Runtime catalog selection verifies the pointer/catalog and all required
+  payloads. One snapshot supplies import resolution, payload caching and cleanup
+  module names. Unknown/project files, byte comparison, empty-directory cleanup,
+  host flush and the 60-second MCU verification gate retain their existing roles.
+- Channel errors use the last successfully prepared catalog in the current
+  session, initially the built-in fallback. A required asset error aborts before
+  mutation. Dynamic imports and firmware-major support retain their prior limits.
+- Offline A/B fixtures test generation, discovery, publication, rollback and
+  corruption. Runtime and browser tests simulate catalog switching without new
+  upstream releases. See [the update guide](circuitpython-library-updates.md) for
+  commands, deployment prerequisites and limitations.
 
-- Transfer entry now repeats that interrupt/normal-REPL sequence every 500 ms
-  until the board acknowledges `>>> `. The existing three-second overall
-  deadline remains. An immediate response adds no delay. Response listeners and
-  retry timers are removed on success and failure; no file mutation, verification
-  command or restart is allowed before entry succeeds.
-- Internal response tracking is used directly, independently of terminal-output
-  visibility. Existing fresh file comparisons, library preparation and cleanup,
-  host flush, MCU checksum/inventory verification, 60-second visibility deadline,
-  friendly-REPL restoration and final restart checks remain in place.
-- Unit regressions simulate lost stop commands on three consecutive transfers,
-  including fragmented replies, no retry after immediate acknowledgement and
-  no writes or lingering retries after an unresponsive board times out. The
-  browser library-transfer regression now drops the first stop command after a
-  successful restart and checks that all three transfers still finish, without
-  replacement writes for identical files on the second transfer.
-- Cold-start duration is not attributed to this change: the first transfer can
-  download/verify required library assets and write missing files; host writeback
-  can also delay board verification. No physical duration measurement was made,
-  and none of these safety gates was shortened to hide the latency.
+Validation for independent channels:
 
-Validation: all 64 device tests pass, as do application TypeScript and ESLint for
-all three changed source/test files. The headless installed-Chrome regression
-passes with simulated USB/filesystem APIs and actual library asset downloads.
-The full unit run passed 543 tests; 15 host-flush tests failed because the sandbox
-blocks opening local server sockets. Repeating that suite outside the sandbox
-passed all 32 host-flush tests, including the 15 affected cases. No physical-board
-test was performed.
+- All **563 Vitest tests** and **6 offline Python bundle tests** passed.
+- The two targeted Chrome tests passed: existing installation/cleanup and the
+  new A-to-B runtime update with dependency/directory removal and corrupt-channel
+  fallback. No new upstream/editor release or physical board was used for these.
+- TypeScript, ESLint and the production build passed. Workflow/Compose YAML and
+  the deployment shell script were parsed/checked locally.
+- A real latest discovery/generation run prepared and verified Adafruit release
+  **20261121**, with **420 modules**, under `/tmp`. A publication/dry-run check
+  also ran entirely under `/tmp`. The checked-in fallback was not changed.
+- The live SSH workflow and nginx container were not exercised; production
+  activation requires the initial deployment described in the update guide.
+
+## 2026-11-24 — Discover all firmware-major library bundles automatically
+
+- Supersedes the earlier 10.x-only channel restriction. Latest-release discovery
+  now detects every compiled firmware-major bundle offered by Adafruit, without
+  a supported-version list. Daily updates generate and publish independent
+  `current-N.json` / `current-N-test.json` pointers for all offered majors. A
+  manual `firmware_major` input can select one major; the default is `all`.
+- The browser reads the board firmware from `boot_out.txt` and uses the matching
+  major's channel. Last-good catalogs are isolated by firmware major. The pinned
+  10.x catalog is never substituted for another firmware major. Firmware-only
+  projects can still transfer when no matching catalog is available, without
+  using another major's catalog to delete libraries.
+- All libraries in each upstream bundle remain available to static-import
+  resolution. Only project-required libraries/dependencies are copied to the
+  board. Firmware upgrades and arbitrary PyPI packages are not automatic.
+- Python fixtures cover new majors 11 and 23, independent publication, retained
+  older-major pointers and mismatched catalog rejection. Runtime/browser fixtures
+  cover board-major selection and prevent fallback across firmware majors.
+- A real latest-release generation run produced and validated 420 modules each
+  for majors 9, 10 and 11 under `/tmp`. No production activation or board writes
+  were performed.
+
+Validation of automatic major discovery: all **568 Vitest tests**, **9 Python
+bundle tests** and both targeted Chrome tests passed, including the simulated
+10.x-to-11.x board selection. The full Vitest suite was run with two workers
+without a concurrent build after the first high-load run hit parser/save test
+time limits. A production build passed; type checks and lint checks were also
+run. Real 9.x/10.x/11.x artifacts were published and reverified only under `/tmp`.

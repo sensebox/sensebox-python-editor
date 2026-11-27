@@ -45,18 +45,17 @@ Hosted/production builds use the normal browser transfer and verification path.
 See [the senseBox change record](docs/sensebox-device-changes.md) for measurements
 and limitations.
 
-When transferring to a CircuitPython 10.x senseBox, static imports automatically
-install matching libraries and their dependencies from the pinned Adafruit bundle
-into `CIRCUITPY/lib`. Imports in reachable project modules are included. Built-in
-modules such as `board` need no installation; project-owned modules take priority.
-Unchanged files are compared and skipped. Each transfer removes unneeded catalog
-library files from `lib/` and unused default font resources from the board root.
-Project files and libraries outside the catalog are preserved. Empty directories
-under `lib/` are removed from the inside out, including `lib/` itself when empty.
-The board must confirm the resulting file and directory inventory before restart.
-Unknown libraries and dynamic imports
-still require manual installation. The first use needs access to the editor's
-library assets. This also works in hosted builds.
+When transferring to a CircuitPython senseBox, static imports automatically
+install matching libraries and their dependencies into `CIRCUITPY/lib`. The
+editor selects the newest published library channel matching the board firmware
+major before each transfer. New firmware majors are discovered automatically;
+the checked-in bundle remains a fallback for 10.x boards. Imports in reachable project modules
+are included. Built-in modules such as `board` need no installation;
+project-owned modules take priority. Unchanged files are compared and skipped.
+Each transfer removes unneeded catalog library files, unused default fonts and
+empty library directories. Unknown libraries and dynamic imports still require
+manual installation. See [automatic library updates](docs/circuitpython-library-updates.md)
+for the daily updater, test channel, rollback and tests without new releases.
 
 The bundled third-party assets retain their individual licenses and notices under
 [`public/circuitpython/adafruit-10-20261016/`](public/circuitpython/adafruit-10-20261016/README.txt).

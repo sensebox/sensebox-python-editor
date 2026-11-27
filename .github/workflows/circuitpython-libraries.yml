@@ -1,0 +1,103 @@
+name: CircuitPython libraries
+
+on:
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Adafruit release (latest or YYYYMMDD)"
+        default: latest
+        type: string
+      firmware_major:
+        description: "all (discover automatically) or one CircuitPython major"
+        default: all
+        type: string
+      channel:
+        description: "Channel to prepare and optionally activate"
+        default: test
+        type: choice
+        options: [test, stable]
+      dry_run:
+        description: "Validate and upload an artifact without activating it"
+        default: true
+        type: boolean
+  pull_request:
+    paths:
+      - "tools/*circuitpython*"
+      - "src/device/*circuitpython*"
+      - ".github/workflows/circuitpython-libraries.yml"
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: circuitpython-libraries
+  cancel-in-progress: false
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CHANNEL: ${{ github.event_name == 'schedule' && 'stable' || inputs.channel || 'test' }}
+      BUNDLE_RELEASE: ${{ inputs.release || 'latest' }}
+      FIRMWARE_MAJOR: ${{ inputs.firmware_major || 'all' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Test discovery, generation and atomic publication without upstream releases
+        run: python3 -m unittest discover -s tools -p 'test_circuitpython*.py' -v
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.x
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+      - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test runtime catalog switching and transfer
+        run: npm test -- --run src/device/circuitpython-libraries.test.ts src/device/web-file-system-device.test.ts
+      - name: Prepare and validate a standalone bundle
+        if: github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 tools/prepare-circuitpython-libraries.py \
+            --release "$BUNDLE_RELEASE" --firmware-major "$FIRMWARE_MAJOR" --channel "$CHANNEL" --output-dir library-artifact
+          python3 tools/circuitpython_bundle.py verify --source library-artifact --channel "$CHANNEL"
+      - name: Save validated bundle for inspection or local testing
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: circuitpython-${{ env.CHANNEL }}-${{ github.run_id }}
+          path: library-artifact/
+          retention-days: 14
+      - name: Publish assets and atomically activate the channel
+        if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run))
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          tar -czf /tmp/sensebox-libraries.tar.gz library-artifact tools/circuitpython_bundle.py
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            /tmp/sensebox-libraries.tar.gz "$SSH_USER@$SSH_HOST:/tmp/sensebox-libraries-${GITHUB_RUN_ID}.tar.gz"
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "$SSH_USER@$SSH_HOST" bash -s -- "$CHANNEL" "$GITHUB_RUN_ID" <<'REMOTE'
+          set -euo pipefail
+          channel="$1"
+          run_id="$2"
+          work_dir=$(mktemp -d)
+          trap 'rm -rf "$work_dir"; rm -f "/tmp/sensebox-libraries-${run_id}.tar.gz"' EXIT
+          tar --no-same-owner -xzf "/tmp/sensebox-libraries-${run_id}.tar.gz" -C "$work_dir"
+          python3 "$work_dir/tools/circuitpython_bundle.py" publish \
+            --source "$work_dir/library-artifact" \
+            --destination /home/ubuntu/sensebox-python-editor/library-data --channel "$channel"
+          REMOTE
